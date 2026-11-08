@@ -1,0 +1,88 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Solicitar alquiler | MaquiRent{% endblock %}
+{% block page_name %}Solicitar alquiler{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 1000px;">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Solicitar alquiler</h1>
+            <p class="text-secondary mb-0">Elige las fechas y envía la solicitud para revisión administrativa.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver al equipo
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <section class="card border-0 shadow-sm rounded-4 h-100">
+                {% with imagen=unidad.maquinaria.imagenes.all|first %}
+                {% if imagen %}
+                <img src="{{ imagen.imagen.url }}" class="card-img-top" alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}" style="height: 240px; object-fit: cover;">
+                {% endif %}
+                {% endwith %}
+                <div class="card-body p-4">
+                    <span class="badge text-bg-success mb-2">Disponible</span>
+                    <h2 class="h4 fw-bold">{{ unidad.maquinaria.nombre }}</h2>
+                    <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripción disponible."|linebreaksbr }}</p>
+                    <dl class="row mb-0">
+                        <dt class="col-7">Código / Serie</dt>
+                        <dd class="col-5 text-end">{{ unidad.maquinaria.codigo }} / {{ unidad.numero_serie }}</dd>
+                        <dt class="col-7">Tarifa diaria</dt>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</dd>
+                        <dt class="col-7">Tarifa semanal</dt>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_semanal|floatformat:2 }}</dd>
+                        <dt class="col-7">Tarifa mensual</dt>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_mensual|floatformat:2 }}</dd>
+                        <dt class="col-7">Depósito de garantía</dt>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</dd>
+                    </dl>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-7">
+            <section class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="h5 fw-bold mb-3">Fechas de alquiler</h2>
+                    <div class="alert alert-info" role="note">
+                        Enviar esta solicitud no confirma el alquiler. Un administrador revisará las fechas y disponibilidad.
+                    </div>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.fecha_inicio.id_for_label }}">{{ form.fecha_inicio.label }}</label>
+                            {{ form.fecha_inicio }}
+                            {% if form.fecha_inicio.errors %}<div class="text-danger small mt-1">{{ form.fecha_inicio.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.fecha_fin.id_for_label }}">{{ form.fecha_fin.label }}</label>
+                            {{ form.fecha_fin }}
+                            {% if form.fecha_fin.errors %}<div class="text-danger small mt-1">{{ form.fecha_fin.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="{{ form.comentario.id_for_label }}">{{ form.comentario.label }}</label>
+                            {{ form.comentario }}
+                            {% if form.comentario.errors %}<div class="text-danger small mt-1">{{ form.comentario.errors }}</div>{% endif %}
+                        </div>
+
+                        <button class="btn btn-warning fw-bold" type="submit">
+                            <i class="bi bi-send me-1" aria-hidden="true"></i>Enviar solicitud
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

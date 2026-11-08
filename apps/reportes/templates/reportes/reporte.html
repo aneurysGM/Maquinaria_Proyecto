@@ -1,0 +1,116 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Reporte de {{ titulo }}{% endblock %}
+{% block page_name %}Reporte · {{ titulo }}{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'reportes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="report-heading mb-4">
+    <div>
+        <a href="{% url 'reportes:indice' %}" class="report-back">
+            <i class="bi bi-arrow-left"></i> Todos los reportes
+        </a>
+        <span class="report-eyebrow d-block mt-3">REPORTE ADMINISTRATIVO</span>
+        <h1 class="h3 fw-bold mb-1">{{ titulo }}</h1>
+        <p class="text-secondary mb-0">{{ descripcion }}</p>
+    </div>
+</div>
+
+<section class="card report-panel mb-4">
+    <div class="card-body p-4">
+        <div class="report-panel-title mb-3">
+            <span class="report-panel-icon"><i class="bi bi-sliders"></i></span>
+            <div>
+                <h2 class="h5 fw-bold mb-0">Filtrar resultados</h2>
+                <p class="small text-secondary mb-0">Completa los filtros y pulsa Consultar.</p>
+            </div>
+        </div>
+
+        <form method="get">
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="row g-3">
+                {% for field in form %}
+                <div class="col-md-6 col-xl-4">
+                    <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <button class="btn btn-warning fw-bold px-4" type="submit">
+                    <i class="bi bi-search me-1"></i> Consultar
+                </button>
+                <a class="btn btn-outline-secondary" href="{{ request.path }}">Limpiar filtros</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if filtrado_valido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+        <h2 class="h5 fw-bold mb-1">Resultados</h2>
+        <span class="text-secondary small">
+            {{ filas|length }} registro{{ filas|length|pluralize:"s" }} encontrados
+        </span>
+    </div>
+    <a class="btn btn-dark fw-semibold" href="{{ exportar_excel_url }}">
+        <i class="bi bi-file-earmark-spreadsheet text-warning me-1"></i> Descargar Excel (.xlsx)
+    </a>
+</div>
+
+{% if filas %}
+<div class="card report-table-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <caption class="visually-hidden">{{ titulo }}: resultados de los filtros aplicados</caption>
+            <thead>
+                <tr>{% for encabezado in encabezados %}<th scope="col">{{ encabezado }}</th>{% endfor %}</tr>
+            </thead>
+            <tbody>
+                {% for fila in filas %}
+                <tr>{% for celda in fila %}<td>{{ celda|default_if_none:"" }}</td>{% endfor %}</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<section class="report-empty">
+    <i class="bi bi-search"></i>
+    <h2 class="h5 fw-bold">Sin resultados</h2>
+    <p class="mb-0">No hay registros que coincidan con los filtros seleccionados.</p>
+</section>
+{% endif %}
+
+{% if total_costo != None %}
+<section class="report-total mt-4">
+    <div>
+        <span class="report-eyebrow">COSTOS FILTRADOS</span>
+        <h2 class="h5 fw-bold mb-0">Total de mantenimiento</h2>
+    </div>
+    <strong>${{ total_costo|floatformat:2 }}</strong>
+</section>
+{% endif %}
+{% elif csv_retirado %}
+<section class="alert alert-warning report-notice" role="alert">
+    <i class="bi bi-info-circle me-2"></i>
+    La descarga CSV ya no está disponible. Consulta el reporte y descarga un archivo Excel.
+    <a href="{{ volver_url }}" class="alert-link d-block mt-2">Volver al reporte conservando los filtros</a>
+</section>
+{% elif request.GET %}
+<section class="alert alert-danger report-notice" role="alert">
+    Revisa los filtros indicados. No se generaron resultados ni una descarga.
+</section>
+{% endif %}
+{% endblock %}

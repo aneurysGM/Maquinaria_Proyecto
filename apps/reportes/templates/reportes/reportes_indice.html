@@ -1,0 +1,39 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Reportes{% endblock %}
+{% block page_name %}Reportes{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'reportes.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="report-hero mb-4">
+    <div class="report-hero-icon"><i class="bi bi-graph-up-arrow"></i></div>
+    <div>
+        <span class="report-eyebrow">ANÁLISIS DEL NEGOCIO</span>
+        <h1 class="h3 fw-bold mb-1">Centro de reportes</h1>
+        <p class="mb-0">Consulta la actividad de tu flota y descarga los resultados en Excel.</p>
+    </div>
+</section>
+
+<div class="row g-4">
+    {% for tipo, reporte in reportes.items %}
+    <div class="col-md-6">
+        <a class="report-card" href="{% url 'reportes:reporte' tipo=tipo %}">
+            <span class="report-card-icon">
+                {% if tipo == 'maquinaria' %}<i class="bi bi-truck-flatbed"></i>
+                {% elif tipo == 'solicitudes' %}<i class="bi bi-file-earmark-text"></i>
+                {% elif tipo == 'entregas' %}<i class="bi bi-box-arrow-up-right"></i>
+                {% else %}<i class="bi bi-tools"></i>{% endif %}
+            </span>
+            <span class="report-card-content">
+                <strong>{{ reporte.titulo }}</strong>
+                <span>{{ reporte.descripcion }}</span>
+            </span>
+            <i class="bi bi-arrow-right report-card-arrow" aria-hidden="true"></i>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Categorías de Maquinaria | MaquiRent{% endblock %}
+{% block page_name %}Categorías{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- Encabezado -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Categorías de Equipos</h1>
+            <p class="text-secondary mb-0">Gestiona las clasificaciones bajo las cuales se organizan las maquinarias.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-arrow-left"></i> Volver a Maquinaria
+            </a>
+            <a href="{% url 'inventario:categoria_crear' %}" class="btn fw-bold text-dark"
+                style="background-color: var(--mq-amber); border: none;">
+                <i class="bi bi-plus-lg"></i> Nueva Categoría
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabla de Categorías -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase small">
+                        <tr>
+                            <th class="py-3 ps-4">Nombre</th>
+                            <th class="py-3">Descripción</th>
+                            <th class="py-3 text-center">Equipos Asociados</th>
+                            <th class="py-3 text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categorias %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">
+                                <i class="bi bi-folder2-open text-warning me-2"></i>{{ cat.nombre }}
+                            </td>
+                            <td class="text-secondary">{{ cat.descripcion|default:"Sin descripción" }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border px-3 py-2">
+                                    {{ cat.maquinarias.count }} equipo(s)
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="#" class="btn btn-sm btn-light border" title="Editar categoría">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder-x display-6 d-block mb-2 text-secondary"></i>
+                                No hay categorías registradas todavía.
+                                <a href="{% url 'inventario:categoria_crear' %}" class="fw-bold">¡Crea la primera
+                                    categoría!</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

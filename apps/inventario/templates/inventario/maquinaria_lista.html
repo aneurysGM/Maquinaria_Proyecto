@@ -1,0 +1,151 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Inventario de Maquinaria{% endblock %}
+{% block page_name %}Maquinaria Pesada{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Flota de Maquinaria</h1>
+            <p class="text-secondary mb-0">Consulta y administra los equipos registrados en el sistema.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventario:categoria_lista' %}" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-tags"></i> Gestionar Categorías
+            </a>
+            <a href="{% url 'inventario:maquinaria_crear' %}" class="btn btn-warning fw-bold text-dark"
+                style="background-color: var(--mq-amber); border: none;">
+                <i class="bi bi-plus-lg"></i> Registrar Maquinaria
+            </a>
+        </div>
+    </div>
+
+    <!-- TARJETA DE FILTROS Y BÚSQUEDA -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <!-- Buscador por texto (Código, Nombre, Serie, Marca) -->
+                <div class="col-md-4">
+                    <label for="q" class="form-label small fw-bold text-secondary">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="q" name="q" 
+                               value="{{ request.GET.q }}" placeholder="Código, nombre, serie o marca...">
+                    </div>
+                </div>
+
+                <!-- Filtro por Categoría -->
+                <div class="col-md-3">
+                    <label for="categoria" class="form-label small fw-bold text-secondary">Categoría</label>
+                    <select name="categoria" id="categoria" class="form-select bg-light">
+                        <option value="">Todas las categorías</option>
+                        {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro por Estado -->
+                <div class="col-md-3">
+                    <label for="estado" class="form-label small fw-bold text-secondary">Estado</label>
+                    <select name="estado" id="estado" class="form-select bg-light">
+                        <option value="">Todos los estados</option>
+                        {% for key, val in estados %}
+                            <option value="{{ key }}" {% if request.GET.estado == key %}selected{% endif %}>
+                                {{ val }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Botones de acción del filtro -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 fw-semibold">
+                        Filtrar
+                    </button>
+                    {% if request.GET.q or request.GET.categoria or request.GET.estado %}
+                        <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-outline-secondary" title="Limpiar filtros">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABLA DE RESULTADOS -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase small">
+                        <tr>
+                            <th class="py-3 ps-4">Código</th>
+                            <th class="py-3">Equipo / Nombre</th>
+                            <th class="py-3">Categoría</th>
+                            <th class="py-3">Tarifa Diaria</th>
+                            <th class="py-3">Estado</th>
+                            <th class="py-3 text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for unidad in unidades %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">{{ unidad.maquinaria.codigo }}</td>
+                            <td>
+                                <div class="fw-bold">{{ unidad.maquinaria.nombre }}</div>
+                                <small class="text-muted">Serie: {{ unidad.numero_serie }} 
+                                {{ unidad.maquinaria.marca|default_if_none:"" }} {{ unidad.maquinaria.modelo|default_if_none:"" }}</small>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ unidad.maquinaria.categoria.nombre }}</span></td>
+                            <td class="fw-semibold">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</td>
+                            <td>
+                                {% if unidad.estado == 'Disponible' %}
+                                <span class="badge bg-success-subtle text-success">Disponible</span>
+                                {% elif unidad.estado == 'Alquilado' %}
+                                <span class="badge bg-primary-subtle text-primary">Alquilado</span>
+                                {% else %}
+                                <span class="badge bg-warning-subtle text-warning">{{ unidad.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <!-- Botón Ver Detalle (Asegúrate de ajustar el nombre de la URL si en tus urls.py es diferente, ej: 'inventario:maquinaria_detalle') -->
+                                    <a href="{% url 'inventario:maquinaria_detalle' unidad.id %}" class="btn btn-sm btn-light border text-secondary" title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    {% if puede_registrar_maquinaria %}
+                                    <a href="{% url 'inventario:maquinaria_editar' unidad.id %}" class="btn btn-sm btn-light border text-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'inventario:maquinaria_eliminar' unidad.id %}"
+                                        onsubmit="return confirm('¿Retirar esta maquinaria del inventario? Sus registros se conservarán y podrá reactivarse con el mismo código.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-light border text-danger" title="Retirar del inventario">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-truck-flatbed display-6 d-block mb-2 text-secondary"></i>
+                                No se encontraron maquinarias con los filtros aplicados. 
+                                <a href="{% url 'inventario:maquinaria_lista' %}" class="d-block mt-1">Ver todas las maquinarias</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

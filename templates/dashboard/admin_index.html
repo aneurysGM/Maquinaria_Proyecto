@@ -1,0 +1,196 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Panel de Control | MaquiRent{% endblock %}
+{% block page_name %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="p-4 bg-white border rounded-4 shadow-sm">
+                <span class="text-muted small text-uppercase fw-bold">Bienvenido al sistema</span>
+                <h1 class="h3 fw-bold text-dark mt-1">Panel de Administración General</h1>
+                <p class="text-secondary mb-0">
+                    Desde aquí puedes supervisar el inventario de maquinaria pesada, contratos de alquiler, solicitudes
+                    y el mantenimiento de la flota.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Estadísticas / Accesos Rápidos -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 border-start border-4 border-warning">
+                <div class="text-muted small fw-bold">INVENTARIO</div>
+                <div class="h4 fw-bold mt-1 mb-0">Maquinaria</div>
+                <small class="text-secondary">Gestión de flota y equipos</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 border-start border-4 border-primary">
+                <div class="text-muted small fw-bold">OPERACIONES</div>
+                <div class="h4 fw-bold mt-1 mb-0">Alquileres</div>
+                <small class="text-secondary">Contratos y solicitudes</small>
+                {% if es_administrador or es_cliente %}
+                <a class="small d-block mt-2" href="{% url 'alquileres:solicitud_lista' %}">Ver solicitudes</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 border-start border-4 border-success">
+                <div class="text-muted small fw-bold">FINANZAS</div>
+                <div class="h4 fw-bold mt-1 mb-0">Ventas</div>
+                <small class="text-secondary">Presupuestos y facturación</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 border-start border-4 border-danger">
+                <div class="text-muted small fw-bold">SOPORTE TÉCNICO</div>
+                <div class="h4 fw-bold mt-1 mb-0">Mantenimiento</div>
+                <small class="text-secondary">Revisiones y talleres</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="p-4 bg-white border rounded-4 shadow-sm h-100" aria-labelledby="access-panel-title">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <p class="text-muted small text-uppercase fw-bold mb-1">Cuenta actual</p>
+                        <h2 class="h4 fw-bold mb-0" id="access-panel-title">Tu acceso</h2>
+                    </div>
+                    <span class="fs-3 text-warning" aria-hidden="true">♙</span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="rounded-circle bg-warning text-dark fw-bold d-grid flex-shrink-0"
+                        style="width: 3rem; height: 3rem; place-items: center;">
+                        {{ nombre_usuario|first|upper }}
+                    </div>
+                    <div>
+                        <h3 class="h6 fw-bold mb-1">{{ nombre_usuario }}</h3>
+                        <p class="text-secondary mb-0">Usuario del sistema</p>
+                    </div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between gap-3 mb-3">
+                        <span>Rol asignado</span>
+                        <strong>{{ rol_usuario }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                        <span>Consultar maquinaria</span>
+                        {% if puede_consultar_maquinaria %}
+                        <span class="badge text-bg-success">Permitido</span>
+                        {% else %}
+                        <span class="badge text-bg-warning">No disponible</span>
+                        {% endif %}
+                    </div>
+                    {% if puede_consultar_maquinaria %}
+                    <a class="btn btn-outline-primary btn-sm mb-3" href="{% url 'inventario:maquinaria_lista' %}">
+                        <i class="bi bi-search me-1" aria-hidden="true"></i>Consultar maquinaria
+                    </a>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                        <span>Registrar maquinaria</span>
+                        {% if puede_registrar_maquinaria %}
+                        <span class="badge text-bg-success">Permitido</span>
+                        {% else %}
+                        <span class="badge text-bg-secondary">Solo consulta</span>
+                        {% endif %}
+                    </div>
+                    {% if puede_registrar_maquinaria %}
+                    <a class="btn btn-warning btn-sm mb-3" href="{% url 'inventario:maquinaria_crear' %}">
+                        <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Registrar maquinaria
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-info mb-0 mt-2" role="note">
+                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                    Las funciones disponibles dependen de los permisos asignados a tu cuenta.
+                </div>
+            </section>
+        </div>
+    </div>
+
+    {% if es_administrador or es_cliente %}
+    <section class="mt-5" aria-labelledby="available-machinery-title">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div>
+                <p class="text-muted small text-uppercase fw-bold mb-1">Inventario disponible</p>
+                <h2 class="h4 fw-bold mb-0" id="available-machinery-title">
+                    {% if es_administrador %}Maquinaria disponible en tu inventario{% else %}Maquinaria para alquilar{% endif %}
+                </h2>
+            </div>
+            {% if es_administrador %}
+            <a class="btn btn-warning btn-sm" href="{% url 'inventario:maquinaria_crear' %}">
+                <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Registrar maquinaria
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="row g-4">
+            {% for unidad in maquinarias_disponibles %}
+            <div class="col-sm-6 col-xl-4">
+                <article class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                    {% with imagen=unidad.maquinaria.imagenes.all|first %}
+                    {% if imagen %}
+                    <img src="{{ imagen.imagen.url }}" class="card-img-top" alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}" style="height: 210px; object-fit: cover;">
+                    {% else %}
+                    <div class="bg-light d-grid text-secondary" style="height: 210px; place-items: center;" aria-label="Sin imagen disponible">
+                        <i class="bi bi-truck fs-1" aria-hidden="true"></i>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                    <div class="card-body d-flex flex-column p-4">
+                        <span class="badge text-bg-success align-self-start mb-2">Disponible</span>
+                        <h3 class="h5 fw-bold">{{ unidad.maquinaria.nombre }}</h3>
+                        <p class="text-secondary small mb-3">
+                            {{ unidad.maquinaria.categoria.nombre }} · {{ unidad.maquinaria.marca|default:"Marca no especificada" }}
+                        </p>
+                        <p class="small text-secondary flex-grow-1">
+                            {{ unidad.maquinaria.descripcion|default:"Consulta los detalles de este equipo."|truncatechars:130 }}
+                        </p>
+                        <div class="border-top pt-3 mb-3">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span>Alquiler por día</span>
+                                <strong>${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between gap-2 mt-1">
+                                <span>Depósito de garantía</span>
+                                <strong>${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong>
+                            </div>
+                            {% if es_administrador %}
+                            <div class="d-flex justify-content-between gap-2 mt-1 text-secondary">
+                                <span>Costo de adquisición</span>
+                                <strong>${{ unidad.maquinaria.costo_adquisicion|floatformat:2 }}</strong>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <a class="btn btn-outline-primary mt-auto" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">
+                            {% if es_cliente %}Ver detalle y alquilar{% else %}Ver detalles{% endif %}
+                        </a>
+                    </div>
+                </article>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-light border mb-0">
+                    {% if es_administrador %}
+                    Todavía no has registrado maquinaria disponible.
+                    {% else %}
+                    No hay maquinaria disponible para alquilar en este momento.
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

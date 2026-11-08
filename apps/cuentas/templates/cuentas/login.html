@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión · MaquiRent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap"
+        rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'main.css' %}">
+</head>
+
+<body>
+    <div class="mq-shell">
+
+        <!-- Panel de marca (solo en pantallas grandes) -->
+        <aside class="mq-side">
+            <a class="mq-brand" href="{% url 'index' %}">
+                <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
+                <span class="mq-brand-name">MaquiRent</span>
+            </a>
+            <div>
+                <h2>Maquinaria pesada, lista para tu obra</h2>
+                <p>Entra a tu cuenta para consultar el catálogo, ver el estado de los equipos y gestionar tus
+                    alquileres.</p>
+            </div>
+            <span class="small" style="color:#7d8b95;">Lo que necesitas para mayor comodidad</span>
+            <div class="mq-hazard" aria-hidden="true"></div>
+        </aside>
+
+        <!-- Formulario -->
+        <main class="mq-main">
+            <div class="mq-auth-card">
+
+                <a class="mq-brand mq-brand-mobile" href="{% url 'index' %}">
+                    <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
+                    <span class="mq-brand-name">MaquiRent</span>
+                </a>
+
+                <h1>Iniciar sesión</h1>
+                <p class="mq-sub">Ingresa tus datos para continuar.</p>
+
+                {# Mensaje para un intento de acceso incorrecto #}
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show d-flex gap-2 align-items-start py-2 small"
+                    role="alert">
+                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                    <div>Correo electrónico o contraseña incorrectos. Inténtalo de nuevo.</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+                {% endif %}
+
+                {# POST envía las credenciales sin colocarlas en la URL #}
+                <form method="post" id="mqLogin">
+                    {# Protección de Django contra solicitudes falsificadas #}
+                    {% csrf_token %}
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Correo electrónico</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            {{ form.username }}
+                        </div>
+                        {% for error in form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            {{ form.password }}
+                            <button class="btn btn-eye" type="button" id="mostrar-clave" aria-label="Mostrar contraseña"
+                                aria-pressed="false" aria-controls="id_password" title="Mostrar contraseña">
+                                <i class="bi bi-eye" id="icono-ojo"></i>
+                            </button>
+                        </div>
+                        {% for error in form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Oculto hasta detectar Bloq Mayús activo #}
+                    <div id="aviso-mayusculas"
+                        class="alert alert-warning d-flex gap-2 align-items-center py-2 px-3 small mb-3" role="status"
+                        hidden>
+                        <i class="bi bi-exclamation-triangle"></i> Bloq Mayús está activado.
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn mq-btn-primary" id="mqEntrar">
+                            <span class="mq-label">Entrar</span>
+                            <span class="mq-loading d-none">
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Entrando…
+                            </span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mq-links text-center mt-4">
+                    ¿Aún no tienes cuenta? <a href="{% url 'cuentas:registro' %}">Regístrate</a>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'index' %}" class="mq-back"><i class="bi bi-arrow-left"></i> Volver al inicio</a>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <script>
+        // Elementos que vamos a controlar
+        const campoClave = document.getElementById('id_password');
+        const campoCorreo = document.getElementById('id_username');
+        const botonOjo = document.getElementById('mostrar-clave');
+        const iconoOjo = document.getElementById('icono-ojo');
+        const avisoMayusculas = document.getElementById('aviso-mayusculas');
+
+        // Django no pone las clases de Bootstrap en sus widgets, las añadimos aquí
+        if (campoClave) {
+            campoClave.classList.add('form-control');
+            campoClave.setAttribute('autocomplete', 'current-password');
+        }
+        if (campoCorreo) {
+            campoCorreo.classList.add('form-control');
+            campoCorreo.setAttribute('type', 'email');
+            campoCorreo.setAttribute('autocomplete', 'email');
+            campoCorreo.setAttribute('placeholder', 'nombre@correo.com');
+            if (!document.querySelector('.invalid-feedback')) campoCorreo.focus();
+        }
+
+        // Un clic muestra la contraseña; otro vuelve a ocultarla
+        botonOjo.addEventListener('click', function () {
+            const mostrar = campoClave.type === 'password';
+            campoClave.type = mostrar ? 'text' : 'password';
+
+            const descripcion = mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña';
+            botonOjo.setAttribute('aria-label', descripcion);
+            botonOjo.setAttribute('aria-pressed', String(mostrar));
+            botonOjo.title = descripcion;
+            iconoOjo.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+
+        // Comprueba Bloq Mayús cuando se pulsa una tecla en el campo
+        function comprobarMayusculas(evento) {
+            avisoMayusculas.hidden = !evento.getModifierState('CapsLock');
+        }
+        campoClave.addEventListener('keydown', comprobarMayusculas);
+        campoClave.addEventListener('keyup', comprobarMayusculas);
+
+        // Oculta el aviso cuando dejamos el campo de contraseña
+        campoClave.addEventListener('blur', function () {
+            avisoMayusculas.hidden = true;
+        });
+
+        // Evita doble envío y muestra "Entrando…"
+        document.getElementById('mqLogin').addEventListener('submit', function () {
+            const btn = document.getElementById('mqEntrar');
+            btn.disabled = true;
+            btn.querySelector('.mq-label').classList.add('d-none');
+            btn.querySelector('.mq-loading').classList.remove('d-none');
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

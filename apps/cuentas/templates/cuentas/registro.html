@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear cuenta · MaquiRent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap"
+        rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'main.css' %}"> <!-- Ajusta la ruta de tu static si es necesario -->
+</head>
+
+<body>
+    <div class="mq-shell">
+
+        <!-- Panel de marca (solo en pantallas grandes) -->
+        <aside class="mq-side">
+            <a class="mq-brand" href="{% url 'index' %}">
+                <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
+                <span class="mq-brand-name">MaquiRent</span>
+            </a>
+            <div>
+                <h2>Crea tu cuenta y empieza a trabajar</h2>
+                <p>Regístrate para consultar el catálogo de maquinaria y gestionar tus solicitudes de alquiler en un
+                    solo lugar.</p>
+            </div>
+            <span class="small" style="color:#7d8b95;">Lo que necesitas para mayor comodidad</span>
+            <div class="mq-hazard" aria-hidden="true"></div>
+        </aside>
+
+        <!-- Formulario -->
+        <main class="mq-main">
+            <div class="mq-auth-card">
+
+                <a class="mq-brand mq-brand-mobile" href="{% url 'index' %}">
+                    <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
+                    <span class="mq-brand-name">MaquiRent</span>
+                </a>
+
+                <h1>Crear cuenta</h1>
+                <p class="mq-sub mb-4">Completa tus datos para registrarte.</p>
+
+                {% if es_primer_usuario %}
+                <div class="alert alert-warning border-0 d-flex gap-2 align-items-center py-2 px-3 mb-4 small"
+                    style="background-color: #fff8e1; color: #7a5c00; border-left: 4px solid var(--mq-amber) !important;"
+                    role="alert">
+                    <i class="bi bi-shield-lock-fill fs-5"></i>
+                    <div>
+                        <strong>¡Atención!</strong> Este será el primer usuario registrado en el sistema y se le
+                        asignará automáticamente el rol de <strong>Administrador</strong>.
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show d-flex gap-2 align-items-start py-2 small mb-4"
+                    role="alert">
+                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                    <div>
+                        Revisa los campos marcados y corrige los errores.
+                        {% for error in form.non_field_errors %}<div class="mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+                {% endif %}
+
+                <form method="post" id="mqRegistro">
+                    {% csrf_token %}
+
+                    <!-- Fila de Bootstrap para organizar los campos en dos columnas -->
+                    <div class="row g-2">
+                        {% for field in form %}
+                        <div class="col-md-6 mq-field" data-name="{{ field.name }}">
+
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                            </label>
+
+                            {{ field }}
+
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block" data-server="1">
+                                {{ error }}
+                            </div>
+                            {% endfor %}
+
+                            {% if field.help_text %}
+                            {% if field.name == 'password1' %}
+                            <details class="mq-password-help">
+                                <summary>Ver requisitos de contraseña</summary>
+                                <div class="form-text">
+                                    {{ field.help_text|safe }}
+                                </div>
+                            </details>
+
+                            {% elif field.name == 'password2' %}
+                            <div class="form-text">
+                                Confirma la contraseña ingresada.
+                            </div>
+
+                            {% else %}
+                            <div class="form-text">
+                                {{ field.help_text|safe }}
+                            </div>
+                            {% endif %}
+                            {% endif %}
+
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {# Aviso de Bloq Mayús, visible solo al escribir una contraseña #}
+                    <div id="aviso-mayusculas"
+                        class="alert alert-warning d-flex gap-2 align-items-center py-2 px-3 small mb-3" role="status"
+                        hidden>
+                        <i class="bi bi-exclamation-triangle"></i> Bloq Mayús está activado.
+                    </div>
+
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn mq-btn-primary" id="mqCrear">
+                            <span class="mq-label">Crear cuenta</span>
+                            <span class="mq-loading d-none">
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Creando
+                                cuenta…
+                            </span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mq-links text-center mt-4">
+                    ¿Ya tienes cuenta? <a href="{% url 'cuentas:login' %}">Inicia sesión</a>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'index' %}" class="mq-back"><i class="bi bi-arrow-left"></i> Volver al inicio</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            var form = document.getElementById('mqRegistro');
+            var aviso = document.getElementById('aviso-mayusculas');
+            var campos = Array.prototype.slice.call(form.querySelectorAll('.mq-field'));
+
+            // Ícono según el tipo de campo
+            function iconoPara(control) {
+                var n = (control.name || '').toLowerCase();
+                if (control.type === 'password' || n.indexOf('pass') !== -1 || n.indexOf('clave') !== -1) return 'bi-lock';
+                if (control.type === 'email' || n.indexOf('email') !== -1 || n.indexOf('correo') !== -1) return 'bi-envelope';
+                if (control.type === 'tel' || n.indexOf('tel') !== -1 || n.indexOf('phone') !== -1) return 'bi-telephone';
+                if (n.indexOf('user') !== -1 || n.indexOf('usuario') !== -1) return 'bi-person';
+                if (n.indexOf('nombre') !== -1 || n.indexOf('name') !== -1 || n.indexOf('apellido') !== -1) return 'bi-person-badge';
+                return '';
+            }
+
+            var passwords = [];
+
+            campos.forEach(function (wrap) {
+                var control = wrap.querySelector('input, select, textarea');
+                if (!control) return;
+
+                // 1) Clases de Bootstrap
+                if (control.type === 'checkbox' || control.type === 'radio') {
+                    control.classList.add('form-check-input');
+                    return;
+                }
+                control.classList.add(control.tagName === 'SELECT' ? 'form-select' : 'form-control');
+                if (wrap.querySelector('.invalid-feedback')) control.classList.add('is-invalid');
+
+                // 2) Ícono + (ojo si es contraseña)
+                var icono = iconoPara(control);
+                var esClave = control.type === 'password';
+                if (control.tagName !== 'SELECT' && (icono || esClave)) {
+                    var group = document.createElement('div');
+                    group.className = 'input-group';
+                    control.parentNode.insertBefore(group, control);
+                    if (icono) {
+                        var pre = document.createElement('span');
+                        pre.className = 'input-group-text';
+                        pre.innerHTML = '<i class="bi ' + icono + '"></i>';
+                        group.appendChild(pre);
+                    }
+                    group.appendChild(control);
+
+                    if (esClave) {
+                        var ojo = document.createElement('button');
+                        ojo.type = 'button';
+                        ojo.className = 'btn btn-eye';
+                        ojo.title = 'Mostrar contraseña';
+                        ojo.setAttribute('aria-label', 'Mostrar contraseña');
+                        ojo.setAttribute('aria-pressed', 'false');
+                        ojo.innerHTML = '<i class="bi bi-eye"></i>';
+                        group.appendChild(ojo);
+
+                        ojo.addEventListener('click', function () {
+                            var mostrar = control.type === 'password';
+                            control.type = mostrar ? 'text' : 'password';
+                            var texto = mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña';
+                            ojo.title = texto;
+                            ojo.setAttribute('aria-label', texto);
+                            ojo.setAttribute('aria-pressed', String(mostrar));
+                            ojo.firstChild.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
+                        });
+
+                        // Bloq Mayús
+                        function caps(e) { aviso.hidden = !e.getModifierState('CapsLock'); }
+                        control.addEventListener('keydown', caps);
+                        control.addEventListener('keyup', caps);
+                        control.addEventListener('blur', function () { aviso.hidden = true; });
+
+                        passwords.push({ wrap: wrap, control: control });
+                    }
+                }
+
+                // Al editar, quitar el error que vino del servidor
+                control.addEventListener('input', function () {
+                    control.classList.remove('is-invalid');
+                    wrap.querySelectorAll('.invalid-feedback[data-server]').forEach(function (el) { el.remove(); });
+                });
+            });
+
+            // 3) Medidor de fortaleza y coincidencia
+            if (passwords.length >= 1) {
+                var p1 = passwords[0].control;
+                var meter = document.createElement('div');
+                meter.innerHTML = '<div class="mq-meter"><span></span></div><div class="mq-meter-text" aria-live="polite"></div>';
+                var anchor = passwords[0].wrap.querySelector('.input-group');
+                anchor.insertAdjacentElement('afterend', meter);
+                var barra = meter.querySelector('.mq-meter > span');
+                var etiqueta = meter.querySelector('.mq-meter-text');
+
+                var NIVELES = [
+                    { txt: '', color: 'transparent', w: 0 },
+                    { txt: 'Débil', color: '#b3261e', w: 25 },
+                    { txt: 'Aceptable', color: '#e08a00', w: 50 },
+                    { txt: 'Buena', color: '#7aa800', w: 75 },
+                    { txt: 'Fuerte', color: '#1e7a3c', w: 100 }
+                ];
+                function puntuar(v) {
+                    if (!v) return 0;
+                    var s = 0;
+                    if (v.length >= 8) s++;
+                    if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+                    if (/\d/.test(v)) s++;
+                    if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) s++;
+                    return Math.max(s, 1);
+                }
+                function actualizarMedidor() {
+                    var n = NIVELES[puntuar(p1.value)];
+                    barra.style.width = n.w + '%';
+                    barra.style.background = n.color;
+                    etiqueta.textContent = n.txt ? 'Seguridad: ' + n.txt : '';
+                }
+                p1.addEventListener('input', actualizarMedidor);
+                actualizarMedidor();
+            }
+
+            if (passwords.length >= 2) {
+                var p1b = passwords[0].control, p2 = passwords[1].control;
+                var estado = document.createElement('div');
+                estado.className = 'mq-match';
+                estado.setAttribute('aria-live', 'polite');
+                passwords[1].wrap.querySelector('.input-group').insertAdjacentElement('afterend', estado);
+
+                function comprobar() {
+                    if (!p2.value) { estado.textContent = ''; estado.className = 'mq-match'; return; }
+                    var ok = p1b.value === p2.value;
+                    estado.className = 'mq-match ' + (ok ? 'ok' : 'bad');
+                    estado.innerHTML = ok
+                        ? '<i class="bi bi-check-circle-fill"></i> Las contraseñas coinciden'
+                        : '<i class="bi bi-x-circle-fill"></i> Las contraseñas no coinciden';
+                }
+                p1b.addEventListener('input', comprobar);
+                p2.addEventListener('input', comprobar);
+            }
+
+            // 4) Si el servidor devolvió errores, ir al primero
+            var primero = form.querySelector('.is-invalid');
+            if (primero) {
+                primero.scrollIntoView({ block: 'center' });
+                primero.focus({ preventScroll: true });
+            }
+
+            // 5) Evitar doble envío
+            form.addEventListener('submit', function () {
+                var btn = document.getElementById('mqCrear');
+                btn.disabled = true;
+                btn.querySelector('.mq-label').classList.add('d-none');
+                btn.querySelector('.mq-loading').classList.remove('d-none');
+            });
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

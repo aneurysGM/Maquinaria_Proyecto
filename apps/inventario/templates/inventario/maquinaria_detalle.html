@@ -1,0 +1,208 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Detalle de Maquinaria{% endblock %}
+{% block page_name %}Detalle de Equipo{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- ENCABEZADO Y BOTONES DE ACCIÓN -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h1 class="h3 fw-bold text-dark mb-0">{{ unidad.maquinaria.nombre }}</h1>
+                <!-- Badge de Estado con colores dinámicos -->
+                {% if unidad.estado == 'Disponible' %}
+                    <span class="badge bg-success-subtle text-success fs-6 px-3">Disponible</span>
+                {% elif unidad.estado == 'Alquilado' %}
+                    <span class="badge bg-primary-subtle text-primary fs-6 px-3">Alquilado</span>
+                {% elif unidad.estado == 'Mantenimiento' %}
+                    <span class="badge bg-warning-subtle text-warning fs-6 px-3">En mantenimiento</span>
+                {% else %}
+                    <span class="badge bg-danger-subtle text-danger fs-6 px-3">{{ unidad.estado }}</span>
+                {% endif %}
+            </div>
+            <p class="text-secondary mb-0">Código: <strong class="text-dark">{{ unidad.maquinaria.codigo }}</strong> | N° Serie: <strong class="text-dark">{{ unidad.numero_serie }}</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-arrow-left"></i> Volver a la Flota
+            </a>
+            {% if puede_registrar_maquinaria %}
+            <a href="{% url 'inventario:maquinaria_editar' unidad.id %}" class="btn btn-warning fw-bold text-dark"
+                style="background-color: var(--mq-amber); border: none;">
+                <i class="bi bi-pencil"></i> Editar Equipo
+            </a>
+            <form method="post" action="{% url 'inventario:maquinaria_eliminar' unidad.id %}"
+                onsubmit="return confirm('¿Retirar esta maquinaria del inventario? Sus registros se conservarán y podrá reactivarse con el mismo código.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger fw-semibold">
+                    <i class="bi bi-trash"></i> Retirar
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- COLUMNA IZQUIERDA: INFORMACIÓN DE LA UNIDAD Y EQUIPO -->
+        <div class="col-lg-8">
+            <!-- Tarjeta 1: Especificaciones Físicas y Operativas -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-info-circle text-primary me-2"></i> Información Operativa</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <span class="text-secondary small d-block">Categoría</span>
+                            <span class="fw-bold text-dark fs-6">
+                                <span class="badge bg-light text-dark border">{{ unidad.maquinaria.categoria.nombre }}</span>
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-secondary small d-block">Ubicación Actual</span>
+                            <span class="fw-bold text-dark fs-6">
+                                <i class="bi bi-geo-alt text-danger me-1"></i> {{ unidad.ubicacion_actual|default:"No especificada" }}
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-secondary small d-block">Horas de Uso</span>
+                            <span class="fw-bold text-dark fs-6"><i class="bi bi-speedometer2 text-muted me-1"></i> {{ unidad.horas_uso|floatformat:1 }} hrs</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-secondary small d-block">Año de Fabricación</span>
+                            <span class="fw-bold text-dark fs-6">{{ unidad.anio_fabricacion|default:"N/D" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-secondary small d-block">Fecha de Adquisición</span>
+                            <span class="fw-bold text-dark fs-6">{{ unidad.fecha_adquisicion|default:"N/D" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 2: Datos de Marca y Modelo (Maquinaria Base) -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-gear-wide-connected text-secondary me-2"></i> Especificaciones del Modelo</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <span class="text-secondary small d-block">Marca</span>
+                            <span class="fw-bold text-dark fs-6">{{ unidad.maquinaria.marca|default:"No especificada" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-secondary small d-block">Modelo</span>
+                            <span class="fw-bold text-dark fs-6">{{ unidad.maquinaria.modelo|default:"No especificado" }}</span>
+                        </div>
+                        <div class="col-md-12">
+                            <span class="text-secondary small d-block">Descripción</span>
+                            <span class="fw-bold text-dark fs-6">{{ unidad.maquinaria.descripcion|default:"Sin descripción disponible."|linebreaksbr }}</span>
+                        </div>
+                        {% if es_administrador %}
+                        <div class="col-md-12">
+                            <span class="text-secondary small d-block">Costo de Adquisición (uso administrativo)</span>
+                            <span class="fw-bold text-dark fs-6">${{ unidad.maquinaria.costo_adquisicion|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: TARIFAS Y COSTOS -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-light">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-cash-stack text-success me-2"></i> Tarifas y Depósito</h5>
+                    <p class="text-secondary small mb-4">Esquema de cobro configurado para el alquiler de esta maquinaria.</p>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <span class="text-secondary">Tarifa Diaria:</span>
+                        <span class="fw-bold text-dark fs-5">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <span class="text-secondary">Tarifa Semanal:</span>
+                        <span class="fw-bold text-dark fs-5">${{ unidad.maquinaria.tarifa_semanal|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <span class="text-secondary">Tarifa Mensual:</span>
+                        <span class="fw-bold text-dark fs-5">${{ unidad.maquinaria.tarifa_mensual|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-secondary">Depósito Garantía:</span>
+                        <span class="fw-bold text-success fs-5">${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if unidad.maquinaria.imagenes.all %}
+    <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="machine-images-title">
+        <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3" id="machine-images-title">Imágenes de la maquinaria</h2>
+            <div class="row g-3">
+                {% for imagen in unidad.maquinaria.imagenes.all %}
+                <div class="col-6 col-md-4 col-xl-3">
+                    <a href="{{ imagen.imagen.url }}" target="_blank" rel="noopener">
+                        <img src="{{ imagen.imagen.url }}" class="img-fluid rounded-3 w-100"
+                            alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}"
+                            style="height: 180px; object-fit: cover;">
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <div class="d-flex flex-wrap align-items-center gap-3 mt-4">
+        {% if es_cliente and unidad.estado == 'Disponible' %}
+        <a class="btn btn-warning fw-bold" href="{% url 'alquileres:solicitud_registrar' unidad.id %}">
+            <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>Solicitar alquiler
+        </a>
+        <span class="small text-secondary">La solicitud será revisada por un administrador.</span>
+        {% endif %}
+    </div>
+
+    <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="machine-comments-title">
+        <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3" id="machine-comments-title">Comentarios de clientes</h2>
+            {% for comentario in unidad.maquinaria.comentarios.all %}
+            <article class="border-bottom py-3">
+                <div class="d-flex justify-content-between gap-3">
+                    <strong>{{ comentario.cliente.get_full_name|default:comentario.cliente.email }}</strong>
+                    <time class="small text-secondary" datetime="{{ comentario.creado_en|date:'c' }}">
+                        {{ comentario.creado_en|date:"d/m/Y H:i" }}
+                    </time>
+                </div>
+                <p class="mb-0 mt-2">{{ comentario.texto|linebreaksbr }}</p>
+            </article>
+            {% empty %}
+            <p class="text-secondary">Todavía no hay comentarios para esta maquinaria.</p>
+            {% endfor %}
+
+            {% if puede_comentar %}
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <label for="{{ comentario_form.texto.id_for_label }}" class="form-label fw-semibold">
+                    Deja tu comentario
+                </label>
+                {{ comentario_form.texto }}
+                {% if comentario_form.texto.errors %}
+                <div class="text-danger small mt-1">{{ comentario_form.texto.errors }}</div>
+                {% endif %}
+                <button class="btn btn-primary mt-3" type="submit">Publicar comentario</button>
+            </form>
+            {% elif request.user.is_authenticated %}
+            <p class="small text-secondary mt-3 mb-0">Solo las cuentas con rol Cliente pueden comentar.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock  %}

@@ -1,0 +1,114 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Registrar Mantenimiento{% endblock %}
+{% block page_name %}Registrar Mantenimiento{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Contenedor centrado con ancho máximo para mantener proporción de formulario -->
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-xl-8">
+            
+            <!-- ENCABEZADO Y BOTÓN DE RETORNO -->
+            <div class="mb-4">
+                <a href="{% url 'mantenimiento:mantenimiento_lista' %}" class="text-secondary text-decoration-none fw-semibold d-inline-flex align-items-center gap-1 mb-2">
+                    <i class="bi bi-arrow-left"></i> Volver a mantenimientos
+                </a>
+                <h1 class="h3 fw-bold text-dark mb-1">Registrar mantenimiento</h1>
+                <p class="text-secondary mb-0">Completa todos los campos y comprueba el número de serie de la unidad.</p>
+            </div>
+
+            <!-- ALERTA INFORMATIVA -->
+            <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-start gap-3 p-3 mb-4" role="alert" style="background-color: #fff6d6; color: #6b5200;">
+                <i class="bi bi-info-circle-fill fs-5 mt-1"></i>
+                <div>
+                    La unidad quedará en estado <strong>En mantenimiento</strong> al guardar. 
+                    Puedes añadir actividades a una unidad que ya esté en mantenimiento.
+                </div>
+            </div>
+
+            <!-- TARJETA DEL FORMULARIO -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <!-- Barra superior decorativa al estilo de tus componentes -->
+                <div style="height: 6px; background: repeating-linear-gradient(-45deg, var(--mq-amber) 0 12px, var(--mq-ink) 12px 24px);"></div>
+                
+                <div class="card-body p-4 p-md-5">
+                    
+                    <!-- INFO DEL TÉCNICO RESPONSABLE -->
+                    <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 mb-4 border">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                            {{ nombre_usuario|first|upper }}
+                        </div>
+                        <div>
+                            <strong class="text-dark d-block">Técnico responsable: {{ nombre_usuario }}</strong>
+                            <small class="text-muted">Usuario: {{ request.user.username }} · Se obtiene de tu sesión.</small>
+                        </div>
+                    </div>
+
+                    <!-- ERRORES GENERALES DEL FORMULARIO -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger border-0 rounded-3 p-3 mb-4" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <!-- FORMULARIO PRINCIPAL -->
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            {% for field in form %}
+                            <!-- Ajuste dinámico: si el campo es unidad o descripción, ocupa todo el ancho (col-12) -->
+                            <div class="col-12 {% if field.name != 'unidad' and field.name != 'descripcion' %}col-md-6{% endif %}">
+                                <label for="{{ field.id_for_label }}" class="form-label small fw-bold text-secondary">
+                                    {{ field.label }}
+                                </label>
+                                
+                                <!-- Renderizado inteligente adaptando clases nativas de Bootstrap -->
+                                {{ field }}
+
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted d-block mt-1">{{ field.help_text }}</small>
+                                {% endif %}
+
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- BOTONES DE ACCIÓN -->
+                        <div class="d-flex flex-wrap gap-2 justify-content-end mt-4 pt-3 border-top">
+                            <a href="{% url 'mantenimiento:mantenimiento_lista' %}" class="btn btn-outline-secondary px-4 fw-semibold">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning fw-bold text-dark px-4" style="background-color: var(--mq-amber); border: none;">
+                                <i class="bi bi-check-lg me-1"></i> Guardar mantenimiento
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Script rápido para inyectar clases de Bootstrap a los widgets de Django (Inputs, Selects, Textareas) -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const formFields = document.querySelectorAll('input, select, textarea');
+        formFields.forEach(field => {
+            if (field.type !== 'checkbox' && field.type !== 'radio') {
+                field.classList.add('form-control');
+                if (field.tagName === 'SELECT') {
+                    field.classList.remove('form-control');
+                    field.classList.add('form-select');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

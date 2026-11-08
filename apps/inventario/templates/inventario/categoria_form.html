@@ -1,0 +1,68 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar Categoría{% else %}Nueva Categoría{% endif %} | MaquiRent{% endblock %}
+{% block page_name %}Gestión de Categorías{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 700px;">
+
+    <!-- Encabezado -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                {% if form.instance.pk %}Editar Categoría{% else %}Registrar Nueva Categoría{% endif %}
+            </h1>
+            <p class="text-secondary mb-0">Agrupa los equipos de tu flota de manera lógica.</p>
+        </div>
+        <a href="{% url 'inventario:categoria_lista' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+            <i class="bi bi-arrow-left"></i> Volver a la lista
+        </a>
+    </div>
+
+    <!-- Formulario Card -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-md-5">
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small" role="alert">
+                    {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}"
+                        class="form-label fw-semibold small text-uppercase text-secondary">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="invalid-feedback d-block small">
+                        {% for error in field.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if field.help_text %}
+                    <div class="form-text text-muted small">{{ field.help_text }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a href="{% url 'inventario:categoria_lista' %}"
+                        class="btn btn-light border px-4 fw-semibold">Cancelar</a>
+                    <button type="submit" class="btn fw-bold px-4 text-dark" style="background-color: var(--mq-amber);">
+                        <i class="bi bi-check-lg"></i> Guardar Categoría
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

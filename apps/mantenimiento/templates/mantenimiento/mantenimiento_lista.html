@@ -1,0 +1,95 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Mantenimientos{% endblock %}
+{% block page_name %}Mantenimientos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- Cabecera -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family: 'Barlow Semi Condensed', sans-serif;">Mantenimientos</h1>
+            <p class="text-secondary mb-0">Consulta el estado de cada unidad física y su historial de mantenimiento.</p>
+        </div>
+        {% if puede_registrar_mantenimiento %}
+        <a href="{% url 'mantenimiento:mantenimiento_registrar' %}" class="btn btn-warning fw-bold" style="background-color: var(--mq-amber); border: none;">
+            <i class="bi bi-plus-lg"></i> Registrar mantenimiento
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Tarjeta Principal con Buscador y Tabla -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        
+        <!-- Barra de Búsqueda -->
+        <form class="card-header bg-white border-bottom p-3 d-flex gap-2" method="get">
+            <input type="search" name="q" value="{{ consulta }}" class="form-control"
+                   placeholder="Buscar por código, nombre o número de serie">
+            <button class="btn btn-dark" type="submit">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+            {% if consulta %}
+            <a class="btn btn-outline-secondary" href="{% url 'mantenimiento:mantenimiento_lista' %}">Limpiar</a>
+            {% endif %}
+        </form>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase small">
+                        <tr>
+                            <th class="py-3 ps-4">Código</th>
+                            <th class="py-3">Maquinaria</th>
+                            <th class="py-3">Serie</th>
+                            <th class="py-3">Estado</th>
+                            <th class="py-3 text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for unidad in unidades %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">{{ unidad.maquinaria.codigo }}</td>
+                            <td>
+                                <div class="fw-bold">{{ unidad.maquinaria.nombre }}</div>
+                            </td>
+                            <td class="text-secondary">{{ unidad.numero_serie }}</td>
+                            <td>
+                                {% if unidad.estado == 'Disponible' %}
+                                <span class="badge bg-success-subtle text-success">Disponible</span>
+                                {% elif unidad.estado == 'Mantenimiento' %}
+                                <span class="badge bg-warning-subtle text-warning">Mantenimiento</span>
+                                {% elif unidad.estado == 'Alquilado' %}
+                                <span class="badge bg-primary-subtle text-primary">Alquilado</span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary">{{ unidad.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a class="btn btn-sm btn-light border" href="{% url 'mantenimiento:mantenimiento_historial' unidad.pk %}" title="Historial">
+                                        <i class="bi bi-clock-history"></i> <span class="d-none d-md-inline">Historial</span>
+                                    </a>
+                                    {% if puede_registrar_mantenimiento %}
+                                    <a class="btn btn-sm btn-dark" href="{% url 'mantenimiento:mantenimiento_registrar' %}?unidad={{ unidad.pk }}" title="Registrar">
+                                        <i class="bi bi-tools"></i> <span class="d-none d-md-inline">Registrar</span>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-6 d-block mb-2 text-warning"></i>
+                                No se encontraron unidades{% if consulta %} para "{{ consulta }}"{% endif %}.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

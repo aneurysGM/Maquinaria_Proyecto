@@ -1,0 +1,1265 @@
+        :root {
+            --mq-ink: #1f2a33;
+            --mq-steel: #5b6b77;
+            --mq-concrete: #eef0f1;
+            --mq-line: #d9dee2;
+            --mq-amber: #f2b705;
+            --mq-amber-dark: #c99700;
+            --mq-radius: 14px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Barlow', system-ui, sans-serif;
+            color: var(--mq-ink);
+            background: #fff;
+        }
+
+        h1,
+        h2,
+        h3,
+        .mq-brand-name {
+            font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif;
+            font-weight: 700;
+            letter-spacing: -.01em;
+        }
+
+        section[id] {
+            scroll-margin-top: 72px;
+        }
+
+        .mq-muted {
+            color: var(--mq-steel);
+        }
+
+        /* ---------- Botones ---------- */
+        .mq-btn-primary {
+            background: var(--mq-amber);
+            border: 0;
+            color: var(--mq-ink);
+            font-weight: 700;
+            padding: .75rem 1.6rem;
+            border-radius: 10px;
+        }
+
+        .mq-btn-primary:hover,
+        .mq-btn-primary:focus {
+            background: var(--mq-amber-dark);
+            color: var(--mq-ink);
+        }
+
+        .mq-btn-secondary {
+            border: 1px solid #b9c2c9;
+            background: #fff;
+            color: var(--mq-ink);
+            font-weight: 600;
+            padding: .75rem 1.4rem;
+            border-radius: 10px;
+        }
+
+        .mq-btn-secondary:hover {
+            background: var(--mq-concrete);
+            color: var(--mq-ink);
+        }
+
+        .mq-btn-ghost {
+            border: 1px solid rgba(255, 255, 255, .4);
+            color: #fff;
+            font-weight: 600;
+            padding: .75rem 1.4rem;
+            border-radius: 10px;
+        }
+
+        .mq-btn-ghost:hover {
+            background: rgba(255, 255, 255, .1);
+            color: #fff;
+        }
+
+        /* ---------- Navegación ---------- */
+        .mq-nav {
+            background: rgba(255, 255, 255, .94);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--mq-line);
+        }
+
+        .mq-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: .6rem;
+            text-decoration: none;
+            color: var(--mq-ink);
+        }
+
+        .mq-brand-mark {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            background: var(--mq-ink);
+            color: var(--mq-amber);
+            font-size: 1.15rem;
+        }
+
+        .mq-brand-name {
+            font-size: 1.5rem;
+        }
+
+        .mq-nav .nav-link {
+            color: var(--mq-ink);
+            font-weight: 600;
+            padding: .5rem .9rem;
+            border-radius: 8px;
+        }
+
+        .mq-nav .nav-link:hover {
+            background: var(--mq-concrete);
+        }
+
+        .mq-nav .nav-link.active {
+            box-shadow: inset 0 -3px 0 var(--mq-amber);
+            border-radius: 0;
+        }
+
+        /* ---------- Hero ---------- */
+        .mq-hero {
+            background: var(--mq-concrete);
+            padding: 4rem 0 3.5rem;
+            overflow: hidden;
+        }
+
+        .mq-hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.2rem);
+            line-height: 1.02;
+            margin-bottom: 1.1rem;
+        }
+
+        .mq-hero .mq-lead {
+            font-size: 1.2rem;
+            color: var(--mq-steel);
+            max-width: 34rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .mq-stage {
+            background: #fff;
+            border: 1px solid var(--mq-line);
+            border-radius: 22px;
+            padding: 1.5rem 1rem .5rem;
+        }
+
+        .mq-stage svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Cinta de precaución */
+        .mq-hazard {
+            height: 12px;
+            background: repeating-linear-gradient(-45deg, var(--mq-amber) 0 14px, var(--mq-ink) 14px 28px);
+        }
+
+        /* Animaciones tractor */
+        .mq-tractor {
+            animation: mq-drive 1.8s cubic-bezier(.2, .7, .2, 1) both;
+        }
+
+        .mq-wheel {
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        .mq-wheel-rear {
+            animation: mq-spin-rear 1.8s cubic-bezier(.2, .7, .2, 1) both;
+        }
+
+        .mq-wheel-front {
+            animation: mq-spin-front 1.8s cubic-bezier(.2, .7, .2, 1) both;
+        }
+
+        @keyframes mq-drive {
+            from {
+                transform: translateX(-640px);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes mq-spin-rear {
+            from {
+                transform: rotate(-386deg);
+            }
+
+            to {
+                transform: rotate(0);
+            }
+        }
+
+        @keyframes mq-spin-front {
+            from {
+                transform: rotate(-814deg);
+            }
+
+            to {
+                transform: rotate(0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .mq-tractor,
+            .mq-wheel-rear,
+            .mq-wheel-front {
+                animation: none;
+            }
+
+            html {
+                scroll-behavior: auto;
+            }
+        }
+
+        /* ---------- Secciones ---------- */
+        .mq-section {
+            padding: 5rem 0;
+        }
+
+        .mq-section-alt {
+            background: var(--mq-concrete);
+        }
+
+        .mq-section-head {
+            max-width: 40rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .mq-section-head h2 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: .5rem;
+        }
+
+        .mq-section-head p {
+            color: var(--mq-steel);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .mq-card {
+            background: #fff;
+            border: 1px solid var(--mq-line);
+            border-radius: var(--mq-radius);
+            padding: 1.6rem;
+            height: 100%;
+        }
+
+        .mq-card h3 {
+            font-size: 1.35rem;
+            margin-bottom: .5rem;
+        }
+
+        .mq-card p {
+            color: var(--mq-steel);
+            margin: 0;
+        }
+
+        .mq-icon {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--mq-ink);
+            color: var(--mq-amber);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .mq-card-accent {
+            border-left: 5px solid var(--mq-amber);
+        }
+
+        /* Valores */
+        .mq-value {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .mq-value .mq-icon {
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .mq-value h3 {
+            font-size: 1.15rem;
+            margin: 0 0 .15rem;
+        }
+
+        .mq-value p {
+            color: var(--mq-steel);
+            margin: 0;
+        }
+
+        /* Catálogo */
+        .mq-cat {
+            display: flex;
+            flex-direction: column;
+            gap: .25rem;
+            text-decoration: none;
+            color: var(--mq-ink);
+            background: #fff;
+            border: 1px solid var(--mq-line);
+            border-radius: var(--mq-radius);
+            padding: 1.4rem;
+            height: 100%;
+            transition: border-color .15s, background .15s;
+        }
+
+        .mq-cat:hover {
+            border-color: var(--mq-amber-dark);
+            background: #fffbea;
+            color: var(--mq-ink);
+        }
+
+        .mq-cat .mq-icon {
+            margin-bottom: .75rem;
+        }
+
+        .mq-cat strong {
+            font-family: 'Barlow Semi Condensed', sans-serif;
+            font-size: 1.25rem;
+        }
+
+        .mq-cat span {
+            color: var(--mq-steel);
+            font-size: .95rem;
+        }
+
+        .mq-cat .mq-go {
+            margin-top: auto;
+            padding-top: .75rem;
+            font-weight: 600;
+            font-size: .92rem;
+        }
+
+        /* Soporte */
+        .mq-contact {
+            display: flex;
+            gap: .9rem;
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--mq-line);
+            border-radius: var(--mq-radius);
+            padding: 1rem 1.2rem;
+            text-decoration: none;
+            color: var(--mq-ink);
+        }
+
+        a.mq-contact:hover {
+            border-color: var(--mq-amber-dark);
+            background: #fffbea;
+            color: var(--mq-ink);
+        }
+
+        .mq-contact .mq-icon {
+            margin: 0;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+        }
+
+        .mq-contact small {
+            display: block;
+            color: var(--mq-steel);
+        }
+
+        .mq-contact strong {
+            font-weight: 600;
+        }
+
+        .mq-faq .accordion-item {
+            border: 1px solid var(--mq-line);
+            border-radius: var(--mq-radius) !important;
+            overflow: hidden;
+            margin-bottom: .75rem;
+        }
+
+        .mq-faq .accordion-button {
+            font-weight: 600;
+            padding: 1.1rem 1.3rem;
+            background: #fff;
+            color: var(--mq-ink);
+            box-shadow: none;
+        }
+
+        .mq-faq .accordion-button:not(.collapsed) {
+            background: #fffbea;
+            color: var(--mq-ink);
+        }
+
+        .mq-faq .accordion-button:focus {
+            box-shadow: 0 0 0 .25rem rgba(242, 183, 5, .28);
+        }
+
+        .mq-faq .accordion-body {
+            color: var(--mq-steel);
+            padding: 0 1.3rem 1.2rem;
+            background: #fffbea;
+        }
+
+        /* Llamado final */
+        .mq-cta {
+            background: var(--mq-ink);
+            color: #fff;
+            padding: 4rem 0;
+        }
+
+        .mq-cta h2 {
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+        }
+
+        .mq-cta p {
+            color: #b9c4cc;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* Pie */
+        .mq-footer {
+            background: #151d24;
+            color: #9aa7b0;
+            padding: 3rem 0 1.5rem;
+        }
+
+        .mq-footer h3 {
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: .8rem;
+        }
+
+        .mq-footer a {
+            color: #9aa7b0;
+            text-decoration: none;
+        }
+
+        .mq-footer a:hover {
+            color: var(--mq-amber);
+        }
+
+        .mq-footer ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .mq-footer li {
+            margin-bottom: .45rem;
+        }
+
+        .mq-footer .mq-brand {
+            color: #fff;
+        }
+
+        .mq-footer-bottom {
+            border-top: 1px solid #28343d;
+            margin-top: 2rem;
+            padding-top: 1.2rem;
+            font-size: .9rem;
+        }
+
+        /* Volver arriba */
+        .mq-top {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            width: 48px;
+            height: 48px;
+            border: 0;
+            border-radius: 12px;
+            background: var(--mq-amber);
+            color: var(--mq-ink);
+            font-size: 1.3rem;
+            display: grid;
+            place-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: opacity .2s, transform .2s;
+            z-index: 1030;
+        }
+
+        .mq-top.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none;
+        }
+
+        .mq-top:hover {
+            background: var(--mq-amber-dark);
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--mq-amber-dark);
+            outline-offset: 2px;
+        }
+
+        /* ========== Auth (login / registro) ========== */
+
+        /* Shell de dos columnas */
+        .mq-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 992px) {
+            .mq-shell {
+                grid-template-columns: 5fr 6fr;
+            }
+        }
+
+        /* Panel lateral izquierdo */
+        .mq-side {
+            display: none;
+            background: var(--mq-ink);
+            color: #fff;
+            padding: 3rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        @media (min-width: 992px) {
+            .mq-side {
+                display: flex;
+            }
+        }
+
+        .mq-side h2 {
+            font-size: clamp(2rem, 3.2vw, 2.9rem);
+            line-height: 1.05;
+            max-width: 22rem;
+        }
+
+        .mq-side p {
+            color: #b9c4cc;
+            font-size: 1.1rem;
+            max-width: 24rem;
+        }
+
+        .mq-side .mq-hazard {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 12px;
+            background: repeating-linear-gradient(-45deg, var(--mq-amber) 0 14px, var(--mq-ink) 14px 28px);
+        }
+
+        .mq-side .mq-brand {
+            color: #fff;
+        }
+
+        /* Área principal del formulario */
+        .mq-main {
+            display: grid;
+            place-items: center;
+            padding: 2rem 1rem;
+            background: var(--mq-concrete);
+            min-height: 100vh;
+        }
+
+        /* Ajuste para que la tarjeta de autenticación sea más ancha y soporte 2 columnas */
+        .mq-auth-card {
+            width: 100%;
+            max-width: 680px;
+            margin: 2rem auto;
+            background: #fff;
+            border-radius: var(--mq-radius);
+            border: 1px solid var(--mq-line);
+            padding: 2.5rem;
+        }
+
+        /* Estilo para los mensajes de alerta que abarcan todo el ancho en un grid de 2 columnas */
+        .mq-full-width {
+            grid-column: 1 / -1;
+        }
+
+        .mq-auth-card .mq-brand-mobile {
+            display: inline-flex;
+            margin-bottom: 1.5rem;
+        }
+
+        .mq-auth-card .mq-brand-mobile .mq-brand-mark {
+            background: var(--mq-ink);
+            color: var(--mq-amber);
+        }
+
+        @media (min-width: 992px) {
+            .mq-auth-card .mq-brand-mobile {
+                display: none;
+            }
+        }
+
+        .mq-auth-card h1 {
+            font-size: 2rem;
+            margin-bottom: .25rem;
+        }
+
+        .mq-auth-card .mq-sub {
+            color: var(--mq-steel);
+            margin-bottom: 1.6rem;
+        }
+
+        .mq-auth-card .form-label {
+            font-weight: 600;
+            font-size: .92rem;
+            margin-bottom: .35rem;
+        }
+
+        .mq-auth-card .form-control,
+        .mq-auth-card .form-select,
+        .mq-auth-card .input-group-text,
+        .mq-auth-card .btn-eye {
+            border-color: #c5ccd2;
+            padding: .65rem .85rem;
+            min-height: 48px;
+        }
+
+        .mq-auth-card .input-group-text {
+            background: var(--mq-concrete);
+            color: var(--mq-steel);
+        }
+
+        .mq-auth-card .btn-eye {
+            background: #fff;
+            color: var(--mq-steel);
+            border: 1px solid #c5ccd2;
+        }
+
+        .mq-auth-card .btn-eye:hover {
+            background: var(--mq-concrete);
+            color: var(--mq-ink);
+        }
+
+        .mq-auth-card .form-control:focus,
+        .mq-auth-card .form-select:focus {
+            border-color: var(--mq-amber-dark);
+            box-shadow: 0 0 0 .25rem rgba(242, 183, 5, .28);
+            position: relative;
+            z-index: 3;
+        }
+
+        .mq-auth-card .invalid-feedback {
+            font-size: .86rem;
+        }
+
+        .mq-auth-card .form-text {
+            font-size: .8rem;
+            color: var(--mq-steel);
+        }
+
+        .mq-auth-card .form-text ul {
+            margin: .35rem 0 0;
+            padding-left: 1.1rem;
+        }
+
+        .mq-auth-card .form-text li {
+            margin-bottom: .1rem;
+        }
+
+        /* Medidor de fortaleza de contraseña */
+        .mq-meter {
+            height: 6px;
+            background: var(--mq-concrete);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: .6rem;
+        }
+
+        .mq-meter>span {
+            display: block;
+            height: 100%;
+            width: 0;
+            border-radius: 999px;
+            transition: width .25s, background .25s;
+        }
+
+        .mq-meter-text {
+            font-size: .82rem;
+            margin-top: .3rem;
+            color: var(--mq-steel);
+            min-height: 1.1em;
+        }
+
+        /* Indicador de coincidencia / cédula */
+        .mq-match {
+            font-size: .85rem;
+            margin-top: .4rem;
+            min-height: 1.1em;
+        }
+
+        .mq-match.ok {
+            color: #1e7a3c;
+        }
+
+        .mq-match.bad {
+            color: #b3261e;
+        }
+
+        /* Botón primario en contexto auth (padding extendido) */
+        .mq-auth-card .mq-btn-primary {
+            padding: .8rem 1.4rem;
+            font-size: 1.05rem;
+        }
+
+        .mq-auth-card .mq-btn-primary:disabled {
+            background: var(--mq-amber);
+            color: var(--mq-ink);
+            opacity: .75;
+        }
+
+        /* Links de navegación entre páginas auth */
+        .mq-links {
+            font-size: .95rem;
+            color: var(--mq-steel);
+        }
+
+        .mq-links a {
+            color: var(--mq-ink);
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 2px solid var(--mq-amber);
+        }
+
+        .mq-links a:hover {
+            background: rgba(242, 183, 5, .25);
+        }
+
+        /* Enlace "Volver al inicio" */
+        .mq-back {
+            color: var(--mq-steel);
+            text-decoration: none;
+            font-size: .95rem;
+        }
+
+        .mq-back:hover {
+            color: var(--mq-ink);
+        }
+
+        /* d-flex de Bootstrap anula el atributo hidden; esto lo respeta */
+        #aviso-mayusculas[hidden] {
+            display: none !important;
+        }
+
+        /* =========================================
+   REGISTRO COMPACTO - MAQUIRENT
+========================================= */
+
+        /* Contenedor principal */
+        .mq-main {
+            padding: 1rem;
+        }
+
+        /* Tarjeta */
+        .mq-auth-card {
+            max-width: 720px;
+            padding: 1.7rem 2rem;
+            margin: .5rem auto;
+        }
+
+        /* Título */
+        .mq-auth-card h1 {
+            font-size: 1.8rem;
+            margin-bottom: .1rem;
+        }
+
+        .mq-auth-card .mq-sub {
+            font-size: .92rem;
+            margin-bottom: 1rem !important;
+        }
+
+        /* Campos */
+        .mq-auth-card .mq-field {
+            margin-bottom: .45rem;
+        }
+
+        .mq-auth-card .form-label {
+            font-size: .86rem;
+            margin-bottom: .2rem;
+        }
+
+        /* Inputs */
+        .mq-auth-card .form-control,
+        .mq-auth-card .form-select,
+        .mq-auth-card .input-group-text,
+        .mq-auth-card .btn-eye {
+            min-height: 40px;
+            padding: .4rem .7rem;
+            font-size: .9rem;
+        }
+
+        .mq-auth-card .input-group-text {
+            min-width: 38px;
+            justify-content: center;
+        }
+
+        /* Ayudas */
+        .mq-auth-card .form-text {
+            font-size: .74rem;
+            line-height: 1.3;
+            margin-top: .25rem;
+        }
+
+        /* Requisitos de contraseña desplegables */
+        .mq-password-help {
+            margin-top: .3rem;
+            font-size: .76rem;
+            color: var(--mq-steel);
+        }
+
+        .mq-password-help summary {
+            cursor: pointer;
+            color: var(--mq-amber-dark);
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .mq-password-help .form-text {
+            padding: .4rem .6rem;
+            background: var(--mq-concrete);
+            border-radius: 7px;
+            margin-top: .35rem;
+        }
+
+        .mq-password-help ul {
+            margin-bottom: 0;
+            padding-left: 1rem;
+        }
+
+        /* Medidor de contraseña */
+        .mq-meter {
+            height: 4px;
+            margin-top: .3rem;
+        }
+
+        .mq-meter-text {
+            font-size: .72rem;
+            min-height: .8rem;
+            margin-top: .1rem;
+        }
+
+        /* Alertas */
+        .mq-auth-card .alert {
+            margin-bottom: .8rem !important;
+            font-size: .8rem;
+        }
+
+        /* Botón */
+        .mq-auth-card .mq-btn-primary {
+            min-height: 43px;
+            padding: .55rem 1rem;
+            font-size: .95rem;
+            margin-top: .2rem;
+        }
+
+        /* Enlaces inferiores */
+        .mq-links {
+            margin-top: .9rem !important;
+            font-size: .86rem;
+        }
+
+        .mq-auth-card .text-center.mt-3 {
+            margin-top: .5rem !important;
+        }
+
+        .mq-back {
+            font-size: .85rem;
+        }
+
+        /* Tarjeta adaptable a móviles */
+        @media (max-width: 576px) {
+            .mq-main {
+                padding: .5rem;
+            }
+
+            .mq-auth-card {
+                padding: 1.3rem 1rem;
+                margin: .25rem auto;
+            }
+
+            .mq-auth-card h1 {
+                font-size: 1.65rem;
+            }
+        }
+
+        /* =========================================
+   MÓDULO DE TABLAS Y FILTROS - MAQUIRENT
+   ESTILOS AISLADOS PARA .mq-wrap
+========================================= */
+
+        .mq-wrap {
+            --mq-ink: #1f2a33;
+            --mq-steel: #5b6b77;
+            --mq-concrete: #eef0f1;
+            --mq-line: #d9dee2;
+            --mq-amber: #f2b705;
+            --mq-amber-dark: #c99700;
+            --mq-radius: 14px;
+
+            font-family: 'Barlow', system-ui, sans-serif;
+            color: var(--mq-ink);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem 4rem;
+        }
+
+        .mq-wrap h1,
+        .mq-wrap h2 {
+            font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif;
+            font-weight: 700;
+            letter-spacing: -.01em;
+        }
+
+        /* ---------- Encabezado ---------- */
+
+        .mq-wrap .mq-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .mq-wrap .mq-head h1 {
+            font-size: clamp(1.9rem, 4vw, 2.6rem);
+            margin: 0 0 .25rem;
+        }
+
+        .mq-wrap .mq-head p {
+            color: var(--mq-steel);
+            font-size: 1.05rem;
+            margin: 0;
+        }
+
+        /* ---------- Botones ---------- */
+
+        .mq-wrap .mq-btn-primary {
+            background: var(--mq-amber);
+            border: 0;
+            color: var(--mq-ink);
+            font-weight: 700;
+            padding: .65rem 1.4rem;
+            border-radius: 10px;
+        }
+
+        .mq-wrap .mq-btn-primary:hover,
+        .mq-wrap .mq-btn-primary:focus {
+            background: var(--mq-amber-dark);
+            color: var(--mq-ink);
+        }
+
+        .mq-wrap .mq-btn-secondary {
+            border: 1px solid #c5ccd2;
+            background: #fff;
+            color: var(--mq-ink);
+            font-weight: 600;
+            padding: .65rem 1.2rem;
+            border-radius: 10px;
+        }
+
+        .mq-wrap .mq-btn-secondary:hover {
+            background: var(--mq-concrete);
+            color: var(--mq-ink);
+        }
+
+        /* ---------- Filtros ---------- */
+
+        .mq-wrap .mq-filters {
+            background: #fff;
+            border: 1px solid var(--mq-line);
+            border-radius: var(--mq-radius);
+            padding: 1.1rem 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .mq-wrap .form-label {
+            font-weight: 600;
+            font-size: .9rem;
+            margin-bottom: .35rem;
+        }
+
+        .mq-wrap .form-control,
+        .mq-wrap .form-select,
+        .mq-wrap .input-group-text {
+            border-color: #c5ccd2;
+            padding: .6rem .8rem;
+            min-height: 46px;
+        }
+
+        .mq-wrap .input-group-text {
+            background: var(--mq-concrete);
+            color: var(--mq-steel);
+        }
+
+        .mq-wrap .form-control:focus,
+        .mq-wrap .form-select:focus {
+            border-color: var(--mq-amber-dark);
+            box-shadow: 0 0 0 .25rem rgba(242, 183, 5, .28);
+        }
+
+        /* ---------- Resumen de resultados ---------- */
+
+        .mq-wrap .mq-summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: .75rem;
+            color: var(--mq-steel);
+            font-weight: 500;
+        }
+
+        .mq-wrap .mq-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            background: var(--mq-concrete);
+            border-radius: 999px;
+            padding: .2rem .7rem;
+            font-size: .88rem;
+            color: var(--mq-ink);
+        }
+
+        /* ---------- Tabla ---------- */
+
+        .mq-wrap .mq-table-card {
+            background: #fff;
+            border: 1px solid var(--mq-line);
+            border-radius: var(--mq-radius);
+            overflow: hidden;
+        }
+
+        .mq-wrap .mq-table {
+            margin: 0;
+        }
+
+        .mq-wrap .mq-table thead th {
+            background: var(--mq-ink);
+            color: #fff;
+            font-weight: 600;
+            font-size: .88rem;
+            border: 0;
+            padding: .85rem 1rem;
+            white-space: nowrap;
+        }
+
+        .mq-wrap .mq-table tbody td {
+            padding: .95rem 1rem;
+            vertical-align: middle;
+            border-color: var(--mq-line);
+        }
+
+        .mq-wrap .mq-table tbody tr {
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .mq-wrap .mq-table tbody tr:hover {
+            background: #fffbea;
+        }
+
+        .mq-wrap .mq-code {
+            font-weight: 700;
+            background: var(--mq-concrete);
+            border-radius: 6px;
+            padding: .15rem .5rem;
+            font-size: .9rem;
+            white-space: nowrap;
+        }
+
+        .mq-wrap .mq-name {
+            font-weight: 600;
+            display: block;
+        }
+
+        .mq-wrap .mq-sub {
+            color: var(--mq-steel);
+            font-size: .85rem;
+        }
+
+        .mq-wrap .mq-serial {
+            font-variant-numeric: tabular-nums;
+            color: var(--mq-steel);
+        }
+
+        .mq-wrap .mq-place {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        .mq-wrap .mq-place.is-empty {
+            color: #8a96a0;
+            font-style: italic;
+        }
+
+        .mq-wrap .mq-link {
+            color: var(--mq-ink);
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 2px solid var(--mq-amber);
+            white-space: nowrap;
+        }
+
+        .mq-wrap .mq-link:hover {
+            color: var(--mq-ink);
+            background: rgba(242, 183, 5, .25);
+        }
+
+        /* ---------- Estados ---------- */
+
+        .mq-wrap .mq-status {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            border-radius: 999px;
+            padding: .25rem .75rem;
+            font-size: .85rem;
+            font-weight: 600;
+            background: var(--mq-concrete);
+            color: var(--mq-ink);
+        }
+
+        .mq-wrap .mq-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .mq-wrap .mq-status.is-ok {
+            background: #e3f4e8;
+            color: #1e7a3c;
+        }
+
+        .mq-wrap .mq-status.is-busy {
+            background: #e3eefb;
+            color: #1d5fa8;
+        }
+
+        .mq-wrap .mq-status.is-warn {
+            background: #fff3cd;
+            color: #8a6400;
+        }
+
+        .mq-wrap .mq-status.is-danger {
+            background: #fde4e1;
+            color: #b3261e;
+        }
+
+        /* ---------- Estado vacío ---------- */
+
+        .mq-wrap .mq-empty {
+            background: #fff;
+            border: 1px dashed #b9c2c9;
+            border-radius: var(--mq-radius);
+            text-align: center;
+            padding: 3.5rem 1.5rem;
+        }
+
+        .mq-wrap .mq-empty .mq-empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            background: var(--mq-ink);
+            color: var(--mq-amber);
+            font-size: 1.9rem;
+        }
+
+        .mq-wrap .mq-empty h2 {
+            font-size: 1.5rem;
+            margin-bottom: .35rem;
+        }
+
+        .mq-wrap .mq-empty p {
+            color: var(--mq-steel);
+            margin-bottom: 1.25rem;
+        }
+
+        /* ---------- Responsive: móvil ---------- */
+
+        @media (max-width: 767.98px) {
+
+            .mq-wrap .mq-table thead {
+                display: none;
+            }
+
+            .mq-wrap .mq-table,
+            .mq-wrap .mq-table tbody,
+            .mq-wrap .mq-table tr,
+            .mq-wrap .mq-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .mq-wrap .mq-table tbody tr {
+                padding: .9rem 1rem;
+                border-bottom: 1px solid var(--mq-line);
+            }
+
+            .mq-wrap .mq-table tbody td {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                padding: .3rem 0;
+                border: 0;
+                text-align: right;
+            }
+
+            .mq-wrap .mq-table tbody td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--mq-steel);
+                text-align: left;
+                flex-shrink: 0;
+            }
+
+            .mq-wrap .mq-table tbody td[data-label=""]::before {
+                display: none;
+            }
+
+            .mq-wrap .mq-table tbody td.mq-cell-actions {
+                justify-content: flex-end;
+                padding-top: .6rem;
+            }
+        }
+
+        /* Información del usuario en el sidebar */
+        .mq-sidebar-user .mq-user-info {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .mq-sidebar-user .mq-user-info strong {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Bloqueo de scroll cuando se abre el menú móvil */
+        body.mq-lock {
+            overflow: hidden;
+        }

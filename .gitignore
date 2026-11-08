@@ -1,0 +1,31 @@
+# Archivos de entorno y credenciales
+.env
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv/
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de la base de datos local (si usas SQLite para desarrollo local)
+*.sqlite3
+db.sqlite3
+
+# Archivos estáticos recolectados (cuando ejecutas collectstatic)
+/staticfiles/
+/media/
+
+# Archivos de configuración del IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db

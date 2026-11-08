@@ -1,0 +1,338 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar Maquinaria{% else %}Registrar Maquinaria{% endif %} | MaquiRent{% endblock %}
+{% block page_name %}Inventario de Equipos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 900px;">
+    
+    <!-- Encabezado -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                {% if form.instance.pk %}Editar Maquinaria{% else %}Registrar Nuevo Equipo{% endif %}
+            </h1>
+            <p class="text-secondary mb-0">Completa la ficha técnica, tarifas de alquiler y datos físicos del equipo.</p>
+        </div>
+        <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+            <i class="bi bi-arrow-left"></i> Volver al inventario
+        </a>
+    </div>
+
+    <!-- Formulario Card -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-md-5">
+            
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2 small" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Fila 1: Categoría y Código -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.categoria.label }}
+                        </label>
+                        {{ form.categoria }}
+                        {% if form.categoria.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.categoria.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                        <div class="form-text small mt-1">
+                            ¿No aparece la categoría? <a href="{% url 'inventario:categoria_crear' %}" target="_blank">Créala aquí</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.codigo.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.codigo.label }}
+                        </label>
+                        {{ form.codigo }}
+                        {% if form.codigo.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.codigo.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fila 2: Nombre -->
+                <div class="mb-3">
+                    <label for="{{ form.nombre.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                        {{ form.nombre.label }}
+                    </label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}
+                        <div class="invalid-feedback d-block small">{% for error in form.nombre.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label for="{{ form.descripcion.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                        {{ form.descripcion.label }}
+                    </label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.errors %}
+                    <div class="invalid-feedback d-block small">{% for error in form.descripcion.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Fila 3: Marca y Modelo -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.marca.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.marca.label }}
+                        </label>
+                        {{ form.marca }}
+                        {% if form.marca.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.marca.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.modelo.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.modelo.label }}
+                        </label>
+                        {{ form.modelo }}
+                        {% if form.modelo.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.modelo.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+                <h5 class="fw-bold mb-2 text-dark">Imágenes de la maquinaria</h5>
+                <p class="small text-secondary">Puedes cargar hasta 8 imágenes, de máximo 5 MB cada una.</p>
+                {{ imagenes_formset.management_form }}
+                {% if imagenes_formset.non_form_errors %}
+                <div class="alert alert-danger py-2 small" role="alert">
+                    {{ imagenes_formset.non_form_errors }}
+                </div>
+                {% endif %}
+                <div class="row g-3 mb-3" id="image-formset"
+                    data-formset-prefix="{{ imagenes_formset.prefix }}" data-max-num="8">
+                    {% for imagen_form in imagenes_formset %}
+                    <div class="col-md-6 image-form-row">
+                        <div class="border rounded-3 p-3 h-100">
+                            {% if imagen_form.instance.pk and imagen_form.instance.imagen %}
+                            <img src="{{ imagen_form.instance.imagen.url }}" alt="{{ imagen_form.instance.texto_alternativo|default:'Imagen actual de la maquinaria' }}" class="img-fluid rounded mb-3" style="max-height: 160px;">
+                            {% endif %}
+                            {{ imagen_form.id }}
+                            <label class="form-label fw-semibold" for="{{ imagen_form.imagen.id_for_label }}">Imagen</label>
+                            {{ imagen_form.imagen }}
+                            {% if imagen_form.imagen.errors %}
+                            <div class="text-danger small">{{ imagen_form.imagen.errors }}</div>
+                            {% endif %}
+                            <label class="form-label fw-semibold mt-3" for="{{ imagen_form.texto_alternativo.id_for_label }}">Descripción accesible (opcional)</label>
+                            {{ imagen_form.texto_alternativo }}
+                            {% if imagen_form.DELETE %}
+                            <div class="form-check mt-3">
+                                {{ imagen_form.DELETE }}
+                                <label class="form-check-label" for="{{ imagen_form.DELETE.id_for_label }}">Eliminar esta imagen</label>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <template id="empty-image-form">
+                    <div class="col-md-6 image-form-row">
+                        <div class="border rounded-3 p-3 h-100">
+                            {{ imagenes_formset.empty_form.id }}
+                            <label class="form-label fw-semibold" for="{{ imagenes_formset.empty_form.imagen.id_for_label }}">Imagen</label>
+                            {{ imagenes_formset.empty_form.imagen }}
+                            <label class="form-label fw-semibold mt-3" for="{{ imagenes_formset.empty_form.texto_alternativo.id_for_label }}">Descripción accesible (opcional)</label>
+                            {{ imagenes_formset.empty_form.texto_alternativo }}
+                            <div class="form-check mt-3">
+                                {{ imagenes_formset.empty_form.DELETE }}
+                                <label class="form-check-label" for="{{ imagenes_formset.empty_form.DELETE.id_for_label }}">Eliminar esta imagen</label>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <button type="button" class="btn btn-outline-secondary btn-sm mb-4" id="add-image-form">
+                    <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar otra imagen
+                </button>
+
+                <hr class="my-4 text-muted opacity-25">
+                <h5 class="fw-bold mb-3 text-dark">Información Financiera y Tarifas</h5>
+
+                <!-- Fila 4: Costo y Depósito -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.costo_adquisicion.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.costo_adquisicion.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.costo_adquisicion }}
+                        </div>
+                        {% if form.costo_adquisicion.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.costo_adquisicion.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.deposito_garantia.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.deposito_garantia.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.deposito_garantia }}
+                        </div>
+                        {% if form.deposito_garantia.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.deposito_garantia.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fila 5: Tarifas (Diaria, Semanal, Mensual) -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="{{ form.tarifa_diaria.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.tarifa_diaria.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.tarifa_diaria }}
+                        </div>
+                        {% if form.tarifa_diaria.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.tarifa_diaria.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tarifa_semanal.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.tarifa_semanal.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.tarifa_semanal }}
+                        </div>
+                        {% if form.tarifa_semanal.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.tarifa_semanal.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tarifa_mensual.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.tarifa_mensual.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.tarifa_mensual }}
+                        </div>
+                        {% if form.tarifa_mensual.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.tarifa_mensual.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+                <h5 class="fw-bold mb-3 text-dark">Datos Físicos de la Unidad</h5>
+
+                <!-- Fila 6: Serie y Estado -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.numero_serie.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.numero_serie.label }}
+                        </label>
+                        {{ form.numero_serie }}
+                        {% if form.numero_serie.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.numero_serie.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.estado.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.estado.label }}
+                        </label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.estado.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fila 7: Horas, Año, Fecha y Ubicación -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label for="{{ form.horas_uso.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">{{ form.horas_uso.label }}</label>
+                        {{ form.horas_uso }}
+                        {% if form.horas_uso.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.horas_uso.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.anio_fabricacion.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">{{ form.anio_fabricacion.label }}</label>
+                        {{ form.anio_fabricacion }}
+                        {% if form.anio_fabricacion.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.anio_fabricacion.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.fecha_adquisicion.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">{{ form.fecha_adquisicion.label }}</label>
+                        {{ form.fecha_adquisicion }}
+                        {% if form.fecha_adquisicion.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.fecha_adquisicion.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.ubicacion_actual.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">{{ form.ubicacion_actual.label }}</label>
+                        {{ form.ubicacion_actual }}
+                        {% if form.ubicacion_actual.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.ubicacion_actual.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="d-flex justify-content-between gap-2 pt-3 border-top">
+                    {% if unidad %}
+                        <button type="submit" form="retirar-maquinaria" class="btn btn-outline-danger fw-semibold"
+                            onclick="return confirm('¿Retirar esta maquinaria del inventario? Sus registros se conservarán y podrá reactivarse con el mismo código.');">
+                            <i class="bi bi-trash"></i> Retirar del inventario
+                        </button>
+                    {% endif %}
+                    <div class="d-flex justify-content-end gap-2 ms-auto">
+                    <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-light border px-4 fw-semibold">Cancelar</a>
+                    <button type="submit" class="btn fw-bold px-4 text-dark" style="background-color: var(--mq-amber);">
+                        <i class="bi bi-check-lg"></i> Guardar Maquinaria
+                    </button>
+                    </div>
+                </div>
+
+            </form>
+            {% if unidad %}
+            <form id="retirar-maquinaria" method="post" action="{% url 'inventario:maquinaria_eliminar' unidad.id %}" class="d-none">
+                {% csrf_token %}
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('image-formset');
+        const addButton = document.getElementById('add-image-form');
+        const template = document.getElementById('empty-image-form');
+        if (!container || !addButton || !template) return;
+
+        const prefix = container.dataset.formsetPrefix;
+        const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+        const maximum = Number(container.dataset.maxNum);
+        if (Number(totalForms.value) >= maximum) addButton.disabled = true;
+
+        addButton.addEventListener('click', function () {
+            const index = Number(totalForms.value);
+            if (index >= maximum) return;
+
+            const form = template.content.firstElementChild.cloneNode(true);
+            form.innerHTML = form.innerHTML.replace(/__prefix__/g, String(index));
+            container.appendChild(form);
+            totalForms.value = String(index + 1);
+            if (index + 1 >= maximum) addButton.disabled = true;
+        });
+    });
+</script>
+{% endblock %}
