@@ -2,9 +2,10 @@ from datetime import date, datetime, timedelta, timezone as tz
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.contrib.messages import ERROR, get_messages
 from django.core.exceptions import ValidationError
-from django.db import DatabaseError
-from django.test import Client, SimpleTestCase, TestCase
+from django.db import DatabaseError, connection
+from django.test import Client, SimpleTestCase, TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -253,10 +254,12 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         anterior.save()
         entrega = self.crear_entrega(atraso=4)
         self.client.force_login(self.admin)
-        respuesta = self.client.post(reverse('alquileres:solicitud_retorno', args=[entrega.pk]), {'horas_uso_actualizadas': '11'}, follow=True)
+        with self.captureOnCommitCallbacks(execute=True):
+            respuesta = self.client.post(reverse('alquileres:solicitud_retorno', args=[entrega.pk]), {'horas_uso_actualizadas': '11'})
         self.cliente.refresh_from_db()
         self.assertTrue(self.cliente.is_active)
-        self.assertContains(respuesta, 'primera devolución con más de 3 días')
+        avisos = [str(aviso) for aviso in get_messages(respuesta.wsgi_request)]
+        self.assertTrue(any('primera devolución con más de 3 días' in aviso for aviso in avisos), avisos)
 
     def test_retorno_de_unidad_inactiva_fecha_automatica_y_no_repeticion(self):
         entrega = self.crear_entrega(atraso=1)
@@ -312,6 +315,55 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         self.assertEqual(self.unidad.estado, 'Alquilado')
         self.assertEqual(self.maquinaria.nombre, 'Excavadora integración')
 
+    def datos_edicion_horometro(self, horas, estado='Disponible'):
+        return dict(
+            categoria=self.maquinaria.categoria_id, codigo=self.maquinaria.codigo,
+            nombre='Nombre editado', descripcion=self.maquinaria.descripcion,
+            costo_adquisicion='90000', tarifa_diaria='750', tarifa_semanal='4500',
+            tarifa_mensual='15000', deposito_garantia='3000', numero_serie=self.unidad.numero_serie,
+            estado=estado, horas_uso=str(horas), ubicacion_actual='Santo Domingo',
+        )
+
+    def test_formulario_abierto_antes_del_retorno_no_rebaja_horometro(self):
+        entrega = self.crear_entrega()
+        self.unidad.refresh_from_db()
+        form = MaquinariaIntegralForm(self.datos_edicion_horometro('10.5', 'Alquilado'), unidad=self.unidad)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.client.force_login(self.admin)
+        self.client.post(reverse('alquileres:solicitud_retorno', args=[entrega.pk]), {'horas_uso_actualizadas': '17.5'})
+        with self.assertRaises(ValidationError) as error:
+            form.save()
+        self.assertIn('horas_uso', error.exception.message_dict)
+        self.unidad.refresh_from_db()
+        self.maquinaria.refresh_from_db()
+        self.assertEqual(self.unidad.horas_uso, Decimal('17.5'))
+        self.assertEqual(self.unidad.estado, 'Disponible')
+        self.assertEqual(self.maquinaria.nombre, 'Excavadora integración')
+
+    def test_edicion_admite_lectura_actual_o_superior(self):
+        for horas in ('10.5', '17.5'):
+            with self.subTest(horas=horas):
+                form = MaquinariaIntegralForm(self.datos_edicion_horometro(horas), unidad=self.unidad)
+                self.assertTrue(form.is_valid(), form.errors)
+                form.save()
+                self.unidad.refresh_from_db()
+                self.assertEqual(self.unidad.horas_uso, Decimal(horas))
+
+    def test_reactivacion_no_rebaja_horometro_y_revierte_catalogo(self):
+        self.maquinaria.activo = False
+        self.maquinaria.save(update_fields=['activo'])
+        Unidad.objects.filter(pk=self.unidad.pk).update(activo=False, horas_uso=Decimal('17.5'))
+        form = MaquinariaIntegralForm(self.datos_edicion_horometro('10.5'))
+        self.assertTrue(form.is_valid(), form.errors)
+        with self.assertRaises(ValidationError):
+            form.save()
+        self.unidad.refresh_from_db()
+        self.maquinaria.refresh_from_db()
+        self.assertEqual(self.unidad.horas_uso, Decimal('17.5'))
+        self.assertFalse(self.unidad.activo)
+        self.assertFalse(self.maquinaria.activo)
+        self.assertEqual(self.maquinaria.nombre, 'Excavadora integración')
+
     def test_avisos_vence_hoy_proximo_vencido_y_cambio_de_dia_local(self):
         entrega = self.crear_entrega()
         hoy = timezone.localdate()
@@ -329,3 +381,57 @@ class SeisMesesTests(SimpleTestCase):
     def test_seis_meses_calendario_y_ultimo_dia(self):
         for inicio, fin in [(date(2026, 11, 9), date(2027, 5, 9)), (date(2026, 8, 31), date(2027, 2, 28)), (date(2027, 8, 31), date(2028, 2, 29))]:
             self.assertEqual(sumar_seis_meses(inicio), fin)
+
+
+class MensajesRetornoTests(DatosIntegracion, TransactionTestCase):
+    def setUp(self):
+        self.crear_datos()
+        self.client.force_login(self.admin)
+
+    def test_mora_se_muestra_despues_de_confirmar_y_sobrevive_redireccion(self):
+        entrega = self.crear_entrega(atraso=4)
+        with patch.object(connection, '_commit', wraps=connection._commit) as confirmar:
+            respuesta = self.client.post(reverse('alquileres:solicitud_retorno', args=[entrega.pk]), {'horas_uso_actualizadas': '18'}, follow=True)
+        self.assertTrue(confirmar.called)
+        entrega.refresh_from_db()
+        self.assertIsNotNone(entrega.fecha_retorno)
+        avisos = [str(aviso) for aviso in get_messages(respuesta.wsgi_request)]
+        self.assertTrue(any('Mora calculada: $375.00' in aviso for aviso in avisos), avisos)
+        self.assertTrue(any('primera devolución con más de 3 días' in aviso for aviso in avisos), avisos)
+
+    def test_fallo_al_confirmar_transaccion_solo_muestra_error(self):
+        entrega = self.crear_entrega(atraso=4)
+        with patch.object(connection, '_commit', side_effect=DatabaseError('fallo al confirmar')):
+            respuesta = self.client.post(reverse('alquileres:solicitud_retorno', args=[entrega.pk]), {'horas_uso_actualizadas': '18'})
+        avisos = list(get_messages(respuesta.wsgi_request))
+        self.assertEqual(len(avisos), 1, [str(aviso) for aviso in avisos])
+        self.assertEqual(avisos[0].level, ERROR)
+        self.assertIn('No se guardaron cambios', str(avisos[0]))
+        entrega.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertIsNone(entrega.fecha_retorno)
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+        self.assertEqual(self.unidad.horas_uso, Decimal('10.5'))
+        self.assertEqual(entrega.presupuesto.mora_total, 0)
+
+    def test_fallo_en_suspension_no_muestra_mora_y_revierte_retorno(self):
+        anterior = self.crear_entrega(atraso=5)
+        anterior.fecha_retorno = timezone.now() - timedelta(days=1)
+        anterior.recibido_por = self.admin
+        anterior.dias_atraso = 4
+        anterior.save()
+        entrega = self.crear_entrega(atraso=4)
+        with patch('apps.cuentas.models.UsuarioPersonalizado.save', side_effect=DatabaseError('fallo al suspender')):
+            respuesta = self.client.post(reverse('alquileres:solicitud_retorno', args=[entrega.pk]), {'horas_uso_actualizadas': '18'})
+        avisos = list(get_messages(respuesta.wsgi_request))
+        self.assertEqual(len(avisos), 1, [str(aviso) for aviso in avisos])
+        self.assertEqual(avisos[0].level, ERROR)
+        entrega.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.cliente.refresh_from_db()
+        self.assertIsNone(entrega.fecha_retorno)
+        self.assertEqual(self.unidad.horas_uso, Decimal('10.5'))
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+        self.assertEqual(entrega.presupuesto.mora_total, 0)
+        self.assertTrue(self.cliente.is_active)
+        self.assertIsNone(self.cliente.suspension_hasta)

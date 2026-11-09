@@ -79,6 +79,24 @@ Django 6.1.3 y openpyxl 3.1.5. `check` no encontró incidencias y
 `makemigrations --check --dry-run` no detectó cambios. No se aplicaron migraciones
 ni se crearon registros en la base de trabajo.
 
+### Correcciones del horómetro y los avisos del retorno
+
+- `MaquinariaIntegralForm` compara el horómetro enviado con la lectura actual de
+  la unidad, después de releerla bajo bloqueo al guardar. Rechaza valores menores
+  tanto al editar como al reactivar, por lo que un formulario abierto antes de un
+  retorno no sobrescribe las horas registradas después. Se admiten lecturas
+  iguales o superiores; el rechazo revierte también los cambios de catálogo.
+- Los avisos de mora, devolución a tiempo y suspensión se publican mediante
+  `transaction.on_commit` en `apps/alquileres/views.py`. Si falla el guardado o la
+  confirmación de la transacción, se descartan esos avisos y solo se muestra el
+  error de la operación.
+- Se añadieron seis pruebas de regresión en
+  `apps/alquileres/tests_integracion.py`, incluidos fallos al confirmar la
+  transacción y al guardar la suspensión. La suite completa aprobó **73 pruebas**
+  sobre SQLite temporal. `check` no encontró incidencias y
+  `makemigrations --check --dry-run` no detectó cambios. La base de trabajo no se
+  modificó.
+
 ### Catálogo público
 
 - Se registró la vista pública del catálogo en la ruta `/catalogo/`, que lista

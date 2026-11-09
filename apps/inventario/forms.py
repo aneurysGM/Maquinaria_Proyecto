@@ -183,11 +183,21 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
         return cleaned_data
 
+    def _validar_horometro(self, unidad):
+        if self.cleaned_data['horas_uso'] < unidad.horas_uso:
+            raise ValidationError({
+                'horas_uso': (
+                    f'El horómetro no puede ser menor que la lectura actual '
+                    f'de la unidad ({unidad.horas_uso} h). Actualiza el formulario.'
+                ),
+            })
+
     @transaction.atomic
     def save(self, commit=True):
         unidad_bloqueada = None
         if commit and self.unidad_instancia:
             unidad_bloqueada = bloquear_unidad(pk=self.unidad_instancia.pk)
+            self._validar_horometro(unidad_bloqueada)
             unidad_bloqueada.estado = self.cleaned_data['estado']
             unidad_bloqueada.clean()
         if self.maquinaria_reactivada:
@@ -214,6 +224,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
                 ).first()
                 if unidad:
                     unidad = bloquear_unidad(pk=unidad.pk)
+                    self._validar_horometro(unidad)
                     unidad.activo = True
                     unidad.estado = self.cleaned_data['estado']
                     unidad.horas_uso = self.cleaned_data['horas_uso']

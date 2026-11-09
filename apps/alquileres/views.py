@@ -1,6 +1,6 @@
 from calendar import monthrange
 from datetime import timedelta
-from functools import wraps
+from functools import partial, wraps
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -429,12 +429,15 @@ def solicitud_registrar_retorno(request, solicitud_id):
         mensaje = f'La devolución tuvo {dias_atraso} día(s) de atraso.'
         if presupuesto and solicitud.politica_mora_aplica:
             mensaje += f' Mora calculada: ${presupuesto.mora_total}.'
-        messages.warning(
+        transaction.on_commit(partial(
+            messages.warning,
             request,
             mensaje,
-        )
+        ))
     else:
-        messages.success(request, 'La maquinaria fue devuelta dentro del plazo.')
+        transaction.on_commit(partial(
+            messages.success, request, 'La maquinaria fue devuelta dentro del plazo.',
+        ))
 
     if not aplica_suspension:
         return redirect('alquileres:solicitud_lista')
@@ -448,16 +451,18 @@ def solicitud_registrar_retorno(request, solicitud_id):
         cliente.is_active = False
         cliente.suspension_hasta = sumar_seis_meses(timezone.localdate())
         cliente.save(update_fields=['is_active', 'suspension_hasta'])
-        messages.error(
+        transaction.on_commit(partial(
+            messages.error,
             request,
             f'La cuenta de {cliente.email} quedó suspendida hasta '
             f'{cliente.suspension_hasta:%d/%m/%Y} por su segunda devolución '
             'con más de 3 días de atraso.',
-        )
+        ))
     else:
-        messages.warning(
+        transaction.on_commit(partial(
+            messages.warning,
             request,
             'Advertencia: esta es la primera devolución con más de 3 días de atraso. '
             'Una segunda infracción de este tipo suspenderá la cuenta por 6 meses.',
-        )
+        ))
     return redirect('alquileres:solicitud_lista')
