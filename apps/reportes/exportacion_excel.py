@@ -13,7 +13,7 @@ CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.shee
 
 
 def _es_decimal_seguro(valor):
-    return len(valor.as_tuple().digits) <= 15
+    return len(valor.normalize().as_tuple().digits) <= 15
 
 
 def _valor_celda(celda, valor):

@@ -1,0 +1,33 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+        <h2 class="h5 fw-bold mb-1"><a class="link-dark" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Solicitud #{{ solicitud.pk }} · {{ solicitud.unidad.maquinaria.nombre }}</a></h2>
+        <p class="text-secondary small mb-0">Código {{ solicitud.unidad.maquinaria.codigo }} · Serie {{ solicitud.unidad.numero_serie }}</p>
+    </div>
+    <span class="badge {% if solicitud.estado == 'Aprobada' %}text-bg-success{% elif solicitud.estado == 'Rechazada' %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ solicitud.estado }}</span>
+</div>
+<dl class="row g-2 mt-3 mb-0">
+    <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">{{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}</dd>
+    <dt class="col-sm-3">Plan</dt><dd class="col-sm-9">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} período(s)</dd>
+    <dt class="col-sm-3">Fechas programadas</dt><dd class="col-sm-9">{{ solicitud.fecha_inicio|date:"d/m/Y" }} – {{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
+    <dt class="col-sm-3">Enviada</dt><dd class="col-sm-9">{{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+    <dt class="col-sm-3">Entrega</dt><dd class="col-sm-9">{{ solicitud.estado_entrega }}</dd>
+</dl>
+{% if solicitud.comentario %}<p class="mt-2 mb-0"><strong>Comentario:</strong> {{ solicitud.comentario }}</p>{% endif %}
+{% if solicitud.aviso_vencimiento %}<p class="alert {% if solicitud.aviso_vencimiento == 'Vencido' %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0" role="status">{{ solicitud.aviso_vencimiento }} · Devolución programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.</p>{% endif %}
+{% if solicitud.dias_atraso_actual > 0 %}
+<div class="alert alert-warning mt-3 mb-0" role="alert">
+    {{ solicitud.dias_atraso_actual }} día(s) de atraso.
+    {% if solicitud.politica_mora_aplica %}
+        {% if solicitud.presupuesto %}
+            {% if solicitud.fecha_retorno %}Mora registrada: ${{ solicitud.presupuesto.mora_total|floatformat:2 }}.
+            {% else %}Mora estimada hasta hoy: ${{ solicitud.presupuesto.mora_aplicable|floatformat:2 }}; se incrementa cada día.{% endif %}
+        {% endif %}
+        {% if solicitud.fecha_retorno and solicitud.dias_atraso > 3 %}Esta devolución cuenta como infracción grave; una segunda infracción grave suspende la cuenta por 6 meses.{% endif %}
+    {% else %}Registro histórico exento de mora y suspensión.{% endif %}
+</div>
+{% endif %}
+<div class="d-flex flex-wrap gap-2 mt-3">
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Ver detalle</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'inventario:maquinaria_detalle' solicitud.unidad_id %}">Ver maquinaria</a>
+    {% if solicitud.presupuesto %}<a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Presupuesto · ${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}</a>{% endif %}
+</div>
