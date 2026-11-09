@@ -17,15 +17,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
+from apps.inventario.views import CatalogoPublicoView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Ruta temporal para la página de inicio (apuntando al index.html que creamos)
     path('', TemplateView.as_view(template_name='publico/index.html'), name='index'),
+    path('catalogo/', CatalogoPublicoView.as_view(), name='catalogo'),
     # Rutas de la app cuentas (prefijo /cuentas/ o directamente en la raíz)
     path('auth/', include('apps.cuentas.urls')),
     path('inventario/', include('apps.inventario.urls')),
     path('alquileres/', include('apps.alquileres.urls')),
     path('mantenimiento/', include('apps.mantenimiento.urls')),
     path('reportes/', include('apps.reportes.urls')),
+    path('clientes/', include('apps.clientes.urls')),
 ]

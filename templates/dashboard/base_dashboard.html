@@ -385,6 +385,12 @@
                     <span>Solicitudes de alquiler</span>
                 </a>
                 {% endif %}
+                {% if puede_gestionar_clientes %}
+                <a href="{% url 'clientes:cliente_lista' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'clientes' %}active{% endif %}">
+                    <i class="bi bi-people"></i>
+                    <span>Clientes</span>
+                </a>
+                {% endif %}
                 <a href="#" class="mq-nav-link">
                     <i class="bi bi-cart-check"></i>
                     <span>Ventas y Presupuestos</span>
@@ -399,10 +405,6 @@
                     <span>Reportes</span>
                 </a>
                 {% endif %}
-                <a href="#" class="mq-nav-link">
-                    <i class="bi bi-people"></i>
-                    <span>Cuentas y Usuarios</span>
-                </a>
             </nav>
 
             <div class="mq-sidebar-user">

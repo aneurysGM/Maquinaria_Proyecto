@@ -36,7 +36,7 @@
             <div class="collapse navbar-collapse" id="mqMenu">
                 <ul class="navbar-nav mx-lg-auto mb-3 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#catalogo">Catálogo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'catalogo' %}">Catálogo</a></li>
                     <li class="nav-item"><a class="nav-link" href="#soporte">Soporte</a></li>
                 </ul>
                 <div class="d-flex gap-2">
@@ -65,7 +65,7 @@
                             cada proyecto con nuestra flota de maquinaria pesada.
                         </p>
                         <div class="d-grid gap-2 d-sm-flex">
-                            <a href="#catalogo" class="btn mq-btn-primary btn-lg">Ver catálogo</a>
+                            <a href="{% url 'catalogo' %}" class="btn mq-btn-primary btn-lg">Ver catálogo</a>
                             <a href="#soporte" class="btn mq-btn-secondary btn-lg">Contactar soporte</a>
                         </div>
                     </div>
@@ -223,12 +223,12 @@
                         <h2>Catálogo de maquinaria</h2>
                         <p>Explora nuestras categorías y encuentra el equipo que necesita tu obra.</p>
                     </div>
-                    <a href="#" class="btn mq-btn-primary">Ver catálogo completo</a>
+                    <a href="{% url 'catalogo' %}" class="btn mq-btn-primary">Ver catálogo completo</a>
                 </div>
 
                 <div class="row g-4">
                     <div class="col-sm-6 col-lg-4">
-                        <a class="mq-cat" href="#">
+                        <a class="mq-cat" href="{% url 'catalogo' %}">
                             <div class="mq-icon"><i class="bi bi-gear-wide-connected"></i></div>
                             <strong>Excavadoras y retroexcavadoras</strong>
                             <span>Movimiento de tierra, zanjas y cimentaciones.</span>
@@ -236,7 +236,7 @@
                         </a>
                     </div>
                     <div class="col-sm-6 col-lg-4">
-                        <a class="mq-cat" href="#">
+                        <a class="mq-cat" href="{% url 'catalogo' %}">
                             <div class="mq-icon"><i class="bi bi-truck"></i></div>
                             <strong>Tractores</strong>
                             <span>Potencia para nivelar, arrastrar y preparar terreno.</span>
@@ -244,7 +244,7 @@
                         </a>
                     </div>
                     <div class="col-sm-6 col-lg-4">
-                        <a class="mq-cat" href="#">
+                        <a class="mq-cat" href="{% url 'catalogo' %}">
                             <div class="mq-icon"><i class="bi bi-layers"></i></div>
                             <strong>Compactadoras</strong>
                             <span>Compactación de suelos y asfalto con acabado parejo.</span>
@@ -252,7 +252,7 @@
                         </a>
                     </div>
                     <div class="col-sm-6 col-lg-4">
-                        <a class="mq-cat" href="#">
+                        <a class="mq-cat" href="{% url 'catalogo' %}">
                             <div class="mq-icon"><i class="bi bi-arrow-bar-up"></i></div>
                             <strong>Grúas y elevación</strong>
                             <span>Carga y montaje de materiales a cualquier altura.</span>
@@ -260,21 +260,14 @@
                         </a>
                     </div>
                     <div class="col-sm-6 col-lg-4">
-                        <a class="mq-cat" href="#">
+                        <a class="mq-cat" href="{% url 'catalogo' %}">
                             <div class="mq-icon"><i class="bi bi-truck-flatbed"></i></div>
                             <strong>Camiones y volquetes</strong>
                             <span>Transporte de material dentro y fuera de la obra.</span>
                             <span class="mq-go">Ver equipos <i class="bi bi-arrow-right"></i></span>
                         </a>
                     </div>
-                    <div class="col-sm-6 col-lg-4">
-                        <a class="mq-cat" href="#">
-                            <div class="mq-icon"><i class="bi bi-tools"></i></div>
-                            <strong>Herramientas y generadores</strong>
-                            <span>Equipo de apoyo para trabajos en cualquier terreno.</span>
-                            <span class="mq-go">Ver equipos <i class="bi bi-arrow-right"></i></span>
-                        </a>
-                    </div>
+
                 </div>
             </div>
         </section>
@@ -406,7 +399,7 @@
                     <ul>
                         <li><a href="#inicio">Inicio</a></li>
                         <li><a href="#nosotros">Nosotros</a></li>
-                        <li><a href="#catalogo">Catálogo</a></li>
+                        <li><a href="{% url 'catalogo' %}">Catálogo</a></li>
                         <li><a href="#soporte">Soporte</a></li>
                     </ul>
                 </div>

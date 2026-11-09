@@ -1,0 +1,110 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block title %}Clientes{% endblock %}
+{% block page_name %}Clientes{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <p class="text-uppercase text-muted small fw-semibold mb-1">Gestión de negocio</p>
+            <h1 class="h2 mb-1">Clientes registrados</h1>
+            <p class="text-muted mb-0">Consulta el estado de las cuentas y el historial de solicitudes de alquiler.</p>
+        </div>
+        <span class="badge text-bg-dark fs-6">{{ page_obj.paginator.count }} clientes</span>
+    </div>
+
+    <form method="get" class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-7">
+                    <label for="cliente-busqueda" class="form-label fw-semibold">Buscar cliente</label>
+                    <input id="cliente-busqueda" class="form-control" type="search" name="q"
+                        value="{{ request.GET.q }}" placeholder="Nombre, correo o teléfono">
+                </div>
+                <div class="col-md-3">
+                    <label for="cliente-estado" class="form-label fw-semibold">Estado de la cuenta</label>
+                    <select id="cliente-estado" class="form-select" name="estado">
+                        <option value="" {% if not request.GET.estado %}selected{% endif %}>Todos</option>
+                        <option value="activos" {% if request.GET.estado == "activos" %}selected{% endif %}>Activos</option>
+                        <option value="inactivos" {% if request.GET.estado == "inactivos" %}selected{% endif %}>Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn btn-warning fw-semibold" type="submit">
+                        <i class="bi bi-search me-1"></i>Filtrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col" class="ps-3">Cliente</th>
+                        <th scope="col">Teléfono</th>
+                        <th scope="col">Cuenta</th>
+                        <th scope="col" class="text-end pe-3">Historial</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td class="ps-3">
+                            <span class="d-block fw-semibold">{{ cliente.get_full_name|default:cliente.email }}</span>
+                            {% if cliente.get_full_name %}
+                            <span class="small text-muted">{{ cliente.email }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ cliente.telefono|default:"No registrado" }}</td>
+                        <td>
+                            {% if cliente.is_active %}
+                            <span class="badge rounded-pill text-bg-success">Activa</span>
+                            {% else %}
+                            <span class="badge rounded-pill text-bg-secondary">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a class="btn btn-sm btn-outline-dark"
+                                href="{% url 'clientes:cliente_detalle' cliente.pk %}">
+                                <i class="bi bi-clock-history me-1"></i>Ver historial
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="bi bi-people display-6 text-muted d-block mb-2"></i>
+                            <span class="fw-semibold">No hay clientes que coincidan con la búsqueda.</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav class="mt-4" aria-label="Paginación de clientes">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ request.GET.q|urlencode }}&estado={{ request.GET.estado|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ request.GET.q|urlencode }}&estado={{ request.GET.estado|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

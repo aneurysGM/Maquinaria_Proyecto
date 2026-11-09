@@ -29,3 +29,6 @@ db.sqlite3
 # Archivos del sistema operativo
 .DS_Store
 Thumbs.db
+
+# Archivos de imagenes y videos temporales
+.Imagenes

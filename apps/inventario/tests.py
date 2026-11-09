@@ -115,6 +115,23 @@ class CatalogoPanelTests(TestCase):
             estado=estado,
         )
 
+    def test_catalogo_publico_es_accesible_desde_inicio(self):
+        unidad = self.crear_unidad(
+            'PUB-001', 'Excavadora pública', self.admin
+        )
+
+        inicio = self.client.get(reverse('index'))
+        self.assertEqual(inicio.status_code, 200)
+        self.assertContains(inicio, reverse('catalogo'))
+
+        catalogo = self.client.get(reverse('catalogo'))
+        self.assertEqual(catalogo.status_code, 200)
+        self.assertContains(catalogo, unidad.maquinaria.nombre)
+        self.assertContains(
+            catalogo,
+            reverse('inventario:maquinaria_detalle', args=[unidad.pk]),
+        )
+
     def test_panel_admin_muestra_solo_sus_unidades_disponibles_y_costo_interno(self):
         propia = self.crear_unidad('ADM-001', 'Excavadora propia', self.admin)
         self.crear_unidad('ADM-002', 'Excavadora ajena', self.cliente)
