@@ -1,16 +1,12 @@
 {% extends 'dashboard/base_dashboard.html' %}
-
 {% block title %}Solicitudes de alquiler | MaquiRent{% endblock %}
-{% block page_name %}Solicitudes de alquiler{% endblock %}
-
+{% block page_name %}Alquileres{% endblock %}
 {% block content %}
 <div class="container-fluid px-0">
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
         <div>
             <p class="text-muted small text-uppercase fw-bold mb-1">Alquileres</p>
-            <h1 class="h3 fw-bold mb-0">
-                {% if es_administrador %}Solicitudes recibidas{% else %}Mis solicitudes{% endif %}
-            </h1>
+            <h1 class="h3 fw-bold mb-0">{% if es_administrador %}Solicitudes recibidas{% else %}Mis solicitudes{% endif %}</h1>
         </div>
         {% if es_cliente %}
         <a class="btn btn-outline-primary" href="{% url 'inventario:maquinaria_lista' %}">
@@ -18,143 +14,41 @@
         </a>
         {% endif %}
     </div>
-
-    {% if solicitudes %}
+    {% if filtros %}
+    <form method="get" class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <h2 class="h5">Filtrar solicitudes</h2>
+            {{ filtros.non_field_errors }}
+            <div class="row g-3">
+                {% for field in filtros %}
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                <a class="btn btn-outline-secondary" href="{% url 'alquileres:solicitud_lista' %}">Limpiar filtros</a>
+            </div>
+            <p class="small text-secondary mt-2 mb-0">El período incluye los alquileres que coinciden total o parcialmente con las fechas indicadas.</p>
+        </div>
+    </form>
+    {% endif %}
     <div class="row g-3">
         {% for solicitud in solicitudes %}
         <div class="col-12">
             <article class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                        <div>
-                            <h2 class="h5 fw-bold mb-1">{{ solicitud.unidad.maquinaria.nombre }}</h2>
-                            <p class="text-secondary small mb-0">
-                                Código {{ solicitud.unidad.maquinaria.codigo }} · Serie {{ solicitud.unidad.numero_serie }}
-                            </p>
-                        </div>
-                        {% if solicitud.estado == 'Aprobada' %}
-                        <span class="badge text-bg-success">Aprobada</span>
-                        {% elif solicitud.estado == 'Rechazada' %}
-                        <span class="badge text-bg-danger">Rechazada</span>
-                        {% else %}
-                        <span class="badge text-bg-warning">Pendiente</span>
-                        {% endif %}
-                    </div>
-
-                    <div class="row g-3 mt-2">
-                        {% if es_administrador %}
-                        <div class="col-md-4">
-                            <span class="small text-secondary d-block">Cliente</span>
-                            <strong>{{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}</strong>
-                        </div>
-                        {% endif %}
-                        <div class="col-md-4">
-                            <span class="small text-secondary d-block">Plan y fechas programadas</span>
-                            <strong>{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} período(s)</strong>
-                            <span class="d-block small">{{ solicitud.fecha_inicio|date:"d/m/Y" }} – {{ solicitud.fecha_fin|date:"d/m/Y" }}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <span class="small text-secondary d-block">Enviada</span>
-                            <strong>{{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</strong>
-                        </div>
-                    </div>
-
-                    {% if solicitud.comentario %}
-                    <p class="mt-3 mb-0"><span class="fw-semibold">Comentario:</span> {{ solicitud.comentario }}</p>
-                    {% endif %}
-
-                    {% if solicitud.fecha_salida %}
-                    <div class="row g-2 mt-2 small">
-                        <div class="col-md-6">
-                            <span class="text-secondary">Entregada:</span>
-                            <strong>{{ solicitud.fecha_salida|date:"d/m/Y H:i" }}</strong>
-                        </div>
-                        {% if solicitud.fecha_retorno %}
-                        <div class="col-md-6">
-                            <span class="text-secondary">Devuelta:</span>
-                            <strong>{{ solicitud.fecha_retorno|date:"d/m/Y H:i" }}</strong>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
-                    {% if solicitud.dias_atraso_actual > 0 %}
-                    <div class="alert alert-warning mt-3 mb-0" role="alert">
-                        {% if solicitud.fecha_retorno %}
-                        Devolución tardía: {{ solicitud.dias_atraso_actual }} día(s) después de la fecha programada.
-                        Mora registrada: ${{ solicitud.presupuesto.mora_total|floatformat:2 }}.
-                        {% if solicitud.dias_atraso > 3 %}
-                        Esta devolución cuenta como infracción grave; una segunda infracción grave suspende la cuenta por 6 meses.
-                        {% endif %}
-                        {% else %}
-                        Advertencia: llevas {{ solicitud.dias_atraso_actual }} día(s) de atraso.
-                        Mora estimada hasta hoy: ${{ solicitud.mora_estimada|floatformat:2 }}; se incrementa cada día.
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 pt-3 border-top">
-                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'inventario:maquinaria_detalle' solicitud.unidad_id %}">
-                            Ver maquinaria
-                        </a>
-                        {% if solicitud.presupuesto %}
-                        <a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">
-                            Presupuesto · ${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}
-                        </a>
-                        {% endif %}
-                        {% if es_administrador and solicitud.estado == 'Pendiente' %}
-                        <div class="d-flex gap-2">
-                            <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="decision" value="Aprobada">
-                                <button class="btn btn-sm btn-success" type="submit">Aprobar</button>
-                            </form>
-                            <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="decision" value="Rechazada">
-                                <button class="btn btn-sm btn-outline-danger" type="submit">Rechazar</button>
-                            </form>
-                        </div>
-                        {% elif solicitud.revisado_por %}
-                        <span class="small text-secondary">
-                            Revisada por {{ solicitud.revisado_por.get_full_name|default:solicitud.revisado_por.email }}
-                        </span>
-                        {% endif %}
-                    </div>
-                    {% if es_administrador and solicitud.estado == 'Aprobada' and not solicitud.fecha_salida %}
-                    <form method="post" action="{% url 'alquileres:solicitud_salida' solicitud.pk %}" class="mt-3">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-primary" type="submit">Registrar entrega de maquinaria</button>
-                    </form>
-                    {% elif es_administrador and solicitud.estado == 'Aprobada' and solicitud.fecha_salida and not solicitud.fecha_retorno %}
-                    <form method="post" action="{% url 'alquileres:solicitud_retorno' solicitud.pk %}" class="row g-2 align-items-end mt-3">
-                        {% csrf_token %}
-                        <div class="col-sm-4">
-                            <label class="form-label small fw-semibold" for="horas-{{ solicitud.pk }}">Horas actuales del horómetro</label>
-                            <input id="horas-{{ solicitud.pk }}" class="form-control form-control-sm" type="number" name="horas_uso_actualizadas" min="{{ solicitud.unidad.horas_uso }}" step="0.1" value="{{ solicitud.unidad.horas_uso }}" required>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold" for="obs-{{ solicitud.pk }}">Observaciones del retorno</label>
-                            <input id="obs-{{ solicitud.pk }}" class="form-control form-control-sm" type="text" name="observaciones_retorno" maxlength="1000">
-                        </div>
-                        <div class="col-sm-2 d-grid">
-                            <button class="btn btn-sm btn-success" type="submit">Registrar retorno</button>
-                        </div>
-                    </form>
-                    {% endif %}
+                    {% include 'alquileres/solicitud_resumen.html' %}
+                    {% include 'alquileres/solicitud_acciones.html' %}
                 </div>
             </article>
         </div>
+        {% empty %}
+        <div class="col-12"><p class="alert alert-light border" role="status">No hay solicitudes de alquiler que mostrar.{% if filtros.errors %} Revisa los filtros indicados.{% endif %}</p></div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="alert alert-light border" role="status">
-        {% if es_administrador %}
-        No hay solicitudes de alquiler para revisar.
-        {% else %}
-        Aún no has enviado solicitudes de alquiler.
-        {% endif %}
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

@@ -28,6 +28,75 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Integración local de alquileres, entregas y reportes — 9 de noviembre de 2026
+
+- Se completó el borrador de `feat/integrar-alquileres-entregas-reportes` sobre
+  `main` de Aneurys (`176312b`). El trabajo se mantiene en las aplicaciones
+  existentes `apps/alquileres/` y `apps/reportes/`.
+- Alquileres incorpora filtros administrativos combinables, detalle con fechas y
+  responsables, aislamiento de solicitudes por cliente y prevención de duplicados
+  pendientes. Conserva los planes diario/semanal/mensual, sus tarifas contratadas
+  y la creación transaccional del presupuesto original.
+- `apps/alquileres/bloqueos.py` comparte el bloqueo de unidad entre solicitud,
+  aprobación, salida, retorno y edición. Usa bloqueo de fila cuando está disponible;
+  en SQLite adquiere primero el bloqueo de escritura mediante una actualización
+  sin cambio. Si otra operación impide guardar, se informa del error y se revierte
+  la operación completa.
+- Las nuevas plantillas `solicitud_detalle.html` y `entrega_lista.html` presentan
+  detalle, pendientes, devueltas e historial completo. `solicitud_resumen.html` y
+  `solicitud_acciones.html` comparten datos y acciones entre pantallas. La bandeja
+  se enlaza en `templates/dashboard/base_dashboard.html` para administradores.
+- Los movimientos siguen tomando fecha y responsable del servidor y de la sesión;
+  no se admiten fechas manuales. Se conserva la lectura acumulada del horómetro y
+  la fórmula de mora de Aneurys. La segunda infracción suspende seis meses
+  calendario, ajustando al último día del mes cuando sea necesario. Los registros
+  con `politica_mora_aplica=False` no cobran mora ni cuentan para la suspensión.
+- La protección de unidades con entrega pendiente se aplica también en
+  `apps/inventario/models.py`, `forms.py` y `views.py`; el guardado vuelve a validar
+  bajo bloqueo para impedir que una edición antigua libere una unidad entregada.
+- Los cuatro reportes abren inicialmente con HTTP 200 y permiten consultar sin
+  filtros. Pantalla y XLSX comparten las filas filtradas. Salida y retorno se
+  exportan como fechas nativas de Excel en hora de Santo Domingo. Se conserva el
+  acceso exclusivo a superusuarios activos y la retirada de CSV.
+- `apps/alquileres/tests_integracion.py`, `tests_concurrencia.py` y
+  `apps/reportes/tests.py` cubren el flujo completo, regresiones y descargas.
+  `apps/alquileres/tests_datos.py` contiene datos ficticios compartidos y
+  `apps/__init__.py` permite descubrir las pruebas como paquetes. No se requieren
+  migraciones nuevas ni se modifican las migraciones históricas.
+
+Comprobaciones locales (SQLite temporal, independiente de la base de trabajo):
+
+```powershell
+.\.venv\Scripts\python.exe -B manage.py test --noinput
+.\.venv\Scripts\python.exe -B manage.py check
+.\.venv\Scripts\python.exe -B manage.py makemigrations --check --dry-run
+```
+
+Las pruebas de concurrencia usan conexiones separadas. Su resultado corresponde a
+SQLite; una futura instalación en SQL Server debe ejecutar allí la misma suite.
+Resultado de esta integración: **67 pruebas aprobadas, sin omisiones**, con
+Django 6.1.3 y openpyxl 3.1.5. `check` no encontró incidencias y
+`makemigrations --check --dry-run` no detectó cambios. No se aplicaron migraciones
+ni se crearon registros en la base de trabajo.
+
+### Correcciones del horómetro y los avisos del retorno
+
+- `MaquinariaIntegralForm` compara el horómetro enviado con la lectura actual de
+  la unidad, después de releerla bajo bloqueo al guardar. Rechaza valores menores
+  tanto al editar como al reactivar, por lo que un formulario abierto antes de un
+  retorno no sobrescribe las horas registradas después. Se admiten lecturas
+  iguales o superiores; el rechazo revierte también los cambios de catálogo.
+- Los avisos de mora, devolución a tiempo y suspensión se publican mediante
+  `transaction.on_commit` en `apps/alquileres/views.py`. Si falla el guardado o la
+  confirmación de la transacción, se descartan esos avisos y solo se muestra el
+  error de la operación.
+- Se añadieron seis pruebas de regresión en
+  `apps/alquileres/tests_integracion.py`, incluidos fallos al confirmar la
+  transacción y al guardar la suspensión. La suite completa aprobó **73 pruebas**
+  sobre SQLite temporal. `check` no encontró incidencias y
+  `makemigrations --check --dry-run` no detectó cambios. La base de trabajo no se
+  modificó.
+
 ### Catálogo público
 
 - Se registró la vista pública del catálogo en la ruta `/catalogo/`, que lista
@@ -36,6 +105,8 @@ puede documentar en una guía específica y enlazarla desde aquí.
   `apps/inventario/views.py` y `templates/publico/catalogo.html`.
 - Se conectaron el menú, el botón de acceso y los enlaces de categorías de la
   página principal con dicha ruta, en `templates/publico/index.html`.
+- Se ajustó el botón para volver a maquinaria en la vista de clientes, de modo
+  que facilite regresar a la lista de maquinaria.
 - Se añadió en `apps/inventario/tests.py` una prueba de integración para
   comprobar el acceso desde el inicio, la visualización de maquinaria y el
   enlace al detalle.

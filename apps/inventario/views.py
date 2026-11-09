@@ -1,6 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import DatabaseError, transaction
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, View
@@ -110,10 +110,18 @@ class MaquinariaImagenesMixin:
         if not form.instance.pk or form.maquinaria_reactivada:
             form.instance.registrada_por = self.request.user
 
-        with transaction.atomic():
-            self.object = form.save()
-            imagenes_formset.instance = self.object
-            imagenes_formset.save()
+        try:
+            with transaction.atomic():
+                self.object = form.save()
+                imagenes_formset.instance = self.object
+                imagenes_formset.save()
+        except ValidationError as error:
+            for mensaje in error.messages:
+                form.add_error(None, mensaje)
+            return self.form_invalid(form)
+        except DatabaseError:
+            form.add_error(None, 'No se pudo guardar. Actualiza el formulario e inténtalo de nuevo.')
+            return self.form_invalid(form)
 
         if getattr(form, 'maquinaria_reactivada', None):
             mensaje = 'La maquinaria y su unidad se reactivaron correctamente.'

@@ -34,13 +34,34 @@ class SolicitudAlquilerForm(forms.ModelForm):
         return cleaned_data
 
 
-class SalidaMaquinariaForm(forms.Form):
-    """Formulario administrativo para registrar la salida física del equipo a la obra."""
-    observaciones_salida = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Condiciones de entrega, accesorios incluidos, etc.'}),
-        label='Observaciones de salida'
+class SolicitudFiltroForm(forms.Form):
+    q = forms.CharField(
+        label='Buscar', required=False, max_length=200,
+        widget=forms.TextInput(attrs={
+            'type': 'search', 'class': 'form-control',
+            'placeholder': 'Cliente, maquinaria, serie o solicitud #',
+        }),
     )
+    estado = forms.ChoiceField(
+        label='Estado', required=False,
+        choices=[('', 'Todos los estados'), *SolicitudAlquiler.ESTADOS],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    desde = forms.DateField(
+        label='Desde', required=False, input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control'}),
+    )
+    hasta = forms.DateField(
+        label='Hasta', required=False, input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control'}),
+    )
+
+    def clean(self):
+        datos = super().clean()
+        desde, hasta = datos.get('desde'), datos.get('hasta')
+        if desde and hasta and hasta < desde:
+            self.add_error('hasta', 'La fecha Hasta debe ser igual o posterior a Desde.')
+        return datos
 
 
 class RetornoMaquinariaForm(forms.Form):
@@ -54,6 +75,7 @@ class RetornoMaquinariaForm(forms.Form):
     )
     observaciones_retorno = forms.CharField(
         required=False,
+        max_length=1000,
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Estado en el que regresa la máquina, daños o observaciones.'}),
         label='Observaciones de retorno'
     )

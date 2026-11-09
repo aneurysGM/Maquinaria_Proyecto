@@ -380,9 +380,15 @@
                 </a>
                 {% endif %}
                 {% if es_administrador or es_cliente %}
-                <a href="{% url 'alquileres:solicitud_lista' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'alquileres' %}active{% endif %}">
+                <a href="{% url 'alquileres:solicitud_lista' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'alquileres' and request.resolver_match.url_name != 'entrega_lista' %}active{% endif %}">
                     <i class="bi bi-file-earmark-text"></i>
-                    <span>Solicitudes de alquiler</span>
+                    <span>Alquileres</span>
+                </a>
+                {% endif %}
+                {% if es_administrador %}
+                <a href="{% url 'alquileres:entrega_lista' %}" class="mq-nav-link {% if request.resolver_match.url_name == 'entrega_lista' %}active{% endif %}">
+                    <i class="bi bi-truck"></i>
+                    <span>Salidas y retornos</span>
                 </a>
                 {% endif %}
                 {% if puede_gestionar_clientes %}
@@ -397,10 +403,12 @@
                     <span>Ventas y Presupuestos</span>
                 </a>
                 {% endif %}
+                {% if es_administrador or es_tecnico %}
                 <a href="{% url 'mantenimiento:mantenimiento_lista' %}" class="mq-nav-link {% if 'mantenimiento' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-tools"></i>
                     <span>Mantenimiento</span>
                 </a>
+                {% endif %}
                 {% if request.user.is_superuser %}
                 <a href="{% url 'reportes:indice' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'reportes' %}active{% endif %}">
                     <i class="bi bi-graph-up"></i>

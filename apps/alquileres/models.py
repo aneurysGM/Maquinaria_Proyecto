@@ -79,6 +79,19 @@ class SolicitudAlquiler(models.Model):
             return self.dias_atraso or 0
         return max((timezone.localdate() - self.fecha_fin).days, 0)
 
+    @property
+    def aviso_vencimiento(self):
+        if self.fecha_salida is None or self.fecha_retorno is not None:
+            return ''
+        dias = (self.fecha_fin - timezone.localdate()).days
+        if dias < 0:
+            return 'Vencido'
+        if dias == 0:
+            return 'Vence hoy'
+        if dias <= 3:
+            return 'Próximo a vencer'
+        return ''
+
     class Meta:
         verbose_name = 'solicitud de alquiler'
         verbose_name_plural = 'solicitudes de alquiler'

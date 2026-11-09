@@ -1,0 +1,25 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Solicitud #{{ solicitud.pk }} | MaquiRent{% endblock %}
+{% block page_name %}Detalle de solicitud{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <a class="btn btn-outline-secondary mb-3" href="{% url 'alquileres:solicitud_lista' %}">Volver a solicitudes</a>
+    <h1 class="h3 mb-4">Detalle de solicitud #{{ solicitud.pk }}</h1>
+    <article class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body p-4">
+        {% include 'alquileres/solicitud_resumen.html' %}
+        {% include 'alquileres/solicitud_acciones.html' %}
+    </div></article>
+    <section class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+        <h2 class="h5">Revisión, salida y retorno</h2>
+        <p class="small text-secondary">Fechas y horas de Santo Domingo.</p>
+        <dl class="row g-2 mb-0">
+            <dt class="col-md-3">Revisión</dt><dd class="col-md-9">{% if solicitud.fecha_revision %}{{ solicitud.fecha_revision|date:"d/m/Y H:i" }} · {{ solicitud.revisado_por.get_full_name|default:solicitud.revisado_por.email }}{% else %}Pendiente de revisión{% endif %}</dd>
+            <dt class="col-md-3">Salida</dt><dd class="col-md-9">{% if solicitud.fecha_salida %}{{ solicitud.fecha_salida|date:"d/m/Y H:i" }} · Entregada por {{ solicitud.entregado_por.get_full_name|default:solicitud.entregado_por.email }}{% else %}Sin entregar{% endif %}</dd>
+            <dt class="col-md-3">Devolución programada</dt><dd class="col-md-9">{{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
+            <dt class="col-md-3">Retorno</dt><dd class="col-md-9">{% if solicitud.fecha_retorno %}{{ solicitud.fecha_retorno|date:"d/m/Y H:i" }} · Recibida por {{ solicitud.recibido_por.get_full_name|default:solicitud.recibido_por.email }}{% else %}Sin retorno registrado{% endif %}</dd>
+            {% if solicitud.observaciones_retorno %}<dt class="col-md-3">Observaciones del retorno</dt><dd class="col-md-9">{{ solicitud.observaciones_retorno }}</dd>{% endif %}
+            <dt class="col-md-3">Horómetro actual de la unidad</dt><dd class="col-md-9">{{ solicitud.unidad.horas_uso }} h</dd>
+        </dl>
+    </div></section>
+</div>
+{% endblock %}

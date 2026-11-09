@@ -225,6 +225,12 @@ class Unidad(models.Model):
             raise ValidationError({
                 'ubicacion_actual': 'La ubicación actual es obligatoria en registros nuevos.'
             })
+        if self.pk and self.estado != 'Alquilado' and self.solicitudes_alquiler.filter(
+            fecha_salida__isnull=False, fecha_retorno__isnull=True,
+        ).exists():
+            raise ValidationError({
+                'estado': 'La unidad tiene una entrega pendiente. Registra su retorno para cambiar el estado.'
+            })
 
     # Propiedades de conveniencia heredadas de la maquinaria base
     @property

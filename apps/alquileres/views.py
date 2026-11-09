@@ -1,17 +1,24 @@
 from calendar import monthrange
 from datetime import timedelta
+from functools import partial, wraps
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
+from django.db.models import Q, Value
+from django.db.models.functions import Concat
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_safe
 
 from apps.cuentas.models import permisos_panel
 from apps.inventario.models import Unidad
 from apps.ventas.models import PresupuestoAlquiler
-from .forms import RetornoMaquinariaForm, SolicitudAlquilerForm
+from .bloqueos import bloquear_unidad
+from .forms import RetornoMaquinariaForm, SolicitudAlquilerForm, SolicitudFiltroForm
 from .models import SolicitudAlquiler
 
 
@@ -21,14 +28,85 @@ def dias_del_plan(plan, cantidad):
 
 
 def sumar_seis_meses(fecha):
-    mes = fecha.month + 5
+    mes = fecha.month + 6
     anio = fecha.year + (mes - 1) // 12
     mes = (mes - 1) % 12 + 1
     ultimo_dia = monthrange(anio, mes)[1]
     return fecha.replace(year=anio, month=mes, day=min(fecha.day, ultimo_dia))
 
 
-@login_required
+def bloquear_movimiento(solicitud_id):
+    # La subconsulta evita una lectura previa al bloqueo de escritura en SQLite.
+    referencia = SolicitudAlquiler.objects.filter(pk=solicitud_id).values('unidad_id')
+    try:
+        unidad = bloquear_unidad(pk__in=referencia)
+    except Unidad.DoesNotExist:
+        get_object_or_404(SolicitudAlquiler, pk=solicitud_id)
+        raise ValidationError('La unidad de la solicitud ya no existe.')
+    solicitud = get_object_or_404(SolicitudAlquiler.objects.select_for_update(), pk=solicitud_id)
+    if solicitud.unidad_id != unidad.pk:
+        raise ValidationError('La unidad de la solicitud cambió. Actualiza el listado.')
+    return solicitud, unidad
+
+
+def movimiento_atomico(vista):
+    """Revierte todo el movimiento antes de comunicar un error de guardado."""
+    @wraps(vista)
+    def ejecutar(request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                return vista(request, *args, **kwargs)
+        except ValidationError as error:
+            messages.error(request, ' '.join(error.messages))
+        except DatabaseError:
+            messages.error(request, 'No se pudo guardar la operación. No se guardaron cambios; actualiza e inténtalo de nuevo.')
+        return redirect('alquileres:solicitud_lista')
+    return ejecutar
+
+
+def unidad_disponible(unidad):
+    return unidad.activo and unidad.maquinaria.activo and unidad.estado == 'Disponible'
+
+
+def solicitudes_consultables(usuario):
+    permisos = permisos_panel(usuario)
+    solicitudes = SolicitudAlquiler.objects.select_related(
+        'unidad__maquinaria', 'cliente', 'revisado_por',
+        'entregado_por', 'recibido_por', 'presupuesto',
+    )
+    if permisos.get('es_administrador'):
+        return solicitudes
+    if permisos.get('es_cliente'):
+        return solicitudes.filter(cliente=usuario)
+    raise PermissionDenied('No tienes autorización para consultar solicitudes.')
+
+
+def filtrar_solicitudes(solicitudes, datos):
+    consulta = datos['q']
+    if consulta:
+        solicitudes = solicitudes.alias(
+            nombre_cliente=Concat('cliente__first_name', Value(' '), 'cliente__last_name'),
+        )
+        coincidencias = (
+            Q(cliente__email__icontains=consulta) | Q(nombre_cliente__icontains=consulta)
+            | Q(unidad__maquinaria__codigo__icontains=consulta)
+            | Q(unidad__maquinaria__nombre__icontains=consulta)
+            | Q(unidad__numero_serie__icontains=consulta)
+        )
+        numero = consulta.removeprefix('#')
+        if numero.isascii() and numero.isdecimal() and int(numero) <= 9223372036854775807:
+            coincidencias |= Q(pk=int(numero))
+        solicitudes = solicitudes.filter(coincidencias)
+    if datos['estado']:
+        solicitudes = solicitudes.filter(estado=datos['estado'])
+    if datos['desde']:
+        solicitudes = solicitudes.filter(fecha_fin__gte=datos['desde'])
+    if datos['hasta']:
+        solicitudes = solicitudes.filter(fecha_inicio__lte=datos['hasta'])
+    return solicitudes
+
+
+@login_required(login_url='cuentas:login')
 def solicitud_registrar(request, unidad_id):
     """Permite solicitar el alquiler de una unidad con un plan y duración."""
     permisos = permisos_panel(request.user)
@@ -37,12 +115,16 @@ def solicitud_registrar(request, unidad_id):
             'No tienes autorización para realizar solicitudes de alquiler.'
         )
 
-    unidad = get_object_or_404(
-        Unidad.objects.select_related('maquinaria'),
-        pk=unidad_id,
-        activo=True,
-        maquinaria__activo=True,
-    )
+    try:
+        unidad = get_object_or_404(
+            Unidad.objects.select_related('maquinaria'),
+            pk=unidad_id,
+            activo=True,
+            maquinaria__activo=True,
+        )
+    except DatabaseError:
+        messages.error(request, 'No se pudo consultar la unidad. Actualiza e inténtalo de nuevo.')
+        return redirect('alquileres:solicitud_lista')
     if unidad.estado != 'Disponible':
         messages.error(
             request,
@@ -55,15 +137,19 @@ def solicitud_registrar(request, unidad_id):
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    unidad = bloquear_unidad(pk=unidad_id)
+                    if not unidad_disponible(unidad):
+                        raise ValidationError('La unidad ya no está disponible para alquilar.')
                     solicitud = form.save(commit=False)
                     solicitud.cliente = request.user
                     solicitud.unidad = unidad
                     dias_alquiler = dias_del_plan(
                         solicitud.plan, solicitud.cantidad
                     )
-                    solicitud.fecha_fin = solicitud.fecha_inicio + timedelta(
-                        days=dias_alquiler - 1
-                    )
+                    try:
+                        solicitud.fecha_fin = solicitud.fecha_inicio + timedelta(days=dias_alquiler - 1)
+                    except OverflowError as error:
+                        raise ValidationError('La duración del alquiler excede el rango de fechas.') from error
 
                     cruce = SolicitudAlquiler.objects.filter(
                         unidad=unidad,
@@ -76,6 +162,11 @@ def solicitud_registrar(request, unidad_id):
                             'Ya existe un alquiler aprobado para esta unidad '
                             'en las fechas seleccionadas.'
                         )
+                    if SolicitudAlquiler.objects.filter(
+                        unidad=unidad, cliente=request.user, estado='Pendiente',
+                        fecha_inicio=solicitud.fecha_inicio, fecha_fin=solicitud.fecha_fin,
+                    ).exists():
+                        raise ValidationError('Ya tienes una solicitud pendiente para esta unidad y estas fechas.')
 
                     solicitud.save()
                     campo_tarifa = {
@@ -117,57 +208,58 @@ def solicitud_registrar(request, unidad_id):
     )
 
 
-@login_required
+@login_required(login_url='cuentas:login')
+@require_safe
 def solicitud_lista(request):
     """Clientes ven sus solicitudes; administradores ven todas."""
-    permisos = permisos_panel(request.user)
-    if not (permisos.get('es_administrador') or permisos.get('es_cliente')):
-        raise PermissionDenied(
-            'No tienes autorización para consultar solicitudes.'
-        )
-
-    solicitudes = SolicitudAlquiler.objects.select_related(
-        'unidad__maquinaria',
-        'cliente',
-        'revisado_por',
-        'presupuesto',
-    )
-    if permisos.get('es_cliente'):
-        solicitudes = solicitudes.filter(cliente=request.user)
-
-    for solicitud in solicitudes:
-        solicitud.mora_estimada = (
-            solicitud.presupuesto.calcular_mora(solicitud.dias_atraso_actual)
-            if solicitud.politica_mora_aplica
-            and solicitud.dias_atraso_actual
-            and hasattr(solicitud, 'presupuesto')
-            else 0
-        )
+    solicitudes = solicitudes_consultables(request.user)
+    filtros = None
+    if request.user.es_administrador:
+        filtros = SolicitudFiltroForm(request.GET)
+        solicitudes = filtrar_solicitudes(solicitudes, filtros.cleaned_data) if filtros.is_valid() else solicitudes.none()
 
     return render(
         request,
         'alquileres/solicitud_lista.html',
-        {'solicitudes': solicitudes},
+        {'solicitudes': solicitudes, 'filtros': filtros},
     )
 
 
-@login_required
-@transaction.atomic
+@login_required(login_url='cuentas:login')
+@require_safe
+def solicitud_detalle(request, solicitud_id):
+    solicitud = get_object_or_404(solicitudes_consultables(request.user), pk=solicitud_id)
+    return render(request, 'alquileres/solicitud_detalle.html', {'solicitud': solicitud})
+
+
+@login_required(login_url='cuentas:login')
+@require_safe
+def entrega_lista(request):
+    if not permisos_panel(request.user).get('es_administrador'):
+        raise PermissionDenied
+    estado = request.GET.get('estado', 'pendientes')
+    if estado not in ('pendientes', 'devueltas', 'todas'):
+        return HttpResponseBadRequest('Filtro de entregas inválido.')
+    entregas = solicitudes_consultables(request.user).filter(
+        fecha_salida__isnull=False,
+    ).order_by('-fecha_salida', '-id')
+    if estado != 'todas':
+        entregas = entregas.filter(fecha_retorno__isnull=estado == 'pendientes')
+    return render(request, 'alquileres/entrega_lista.html', {'entregas': entregas, 'estado': estado})
+
+
+@login_required(login_url='cuentas:login')
+@movimiento_atomico
 def solicitud_resolver(request, solicitud_id):
     """Permite al administrador aprobar o rechazar una solicitud pendiente."""
-    if not request.user.es_administrador:
+    if not permisos_panel(request.user).get('es_administrador'):
         raise PermissionDenied(
             'Solo los administradores pueden resolver solicitudes.'
         )
     if request.method != 'POST':
         return redirect('alquileres:solicitud_lista')
 
-    solicitud = get_object_or_404(
-        SolicitudAlquiler.objects.select_for_update().select_related(
-            'unidad__maquinaria'
-        ),
-        pk=solicitud_id,
-    )
+    solicitud, unidad = bloquear_movimiento(solicitud_id)
     if solicitud.estado != 'Pendiente':
         messages.warning(
             request,
@@ -186,12 +278,7 @@ def solicitud_resolver(request, solicitud_id):
                 raise ValidationError(
                     'No se puede aprobar una solicitud cuya fecha de inicio ya pasó.'
                 )
-            unidad = solicitud.unidad
-            if (
-                not unidad.activo
-                or not unidad.maquinaria.activo
-                or unidad.estado != 'Disponible'
-            ):
+            if not unidad_disponible(unidad):
                 raise ValidationError(
                     'La unidad física ya no está disponible para aprobación.'
                 )
@@ -224,43 +311,37 @@ def solicitud_resolver(request, solicitud_id):
     return redirect('alquileres:solicitud_lista')
 
 
-@login_required
-@transaction.atomic
+@login_required(login_url='cuentas:login')
+@movimiento_atomico
 def solicitud_registrar_salida(request, solicitud_id):
-    if not request.user.es_administrador:
+    if not permisos_panel(request.user).get('es_administrador'):
         raise PermissionDenied('Solo los administradores pueden registrar entregas.')
     if request.method != 'POST':
         return redirect('alquileres:solicitud_lista')
 
-    solicitud = get_object_or_404(
-        SolicitudAlquiler.objects.select_for_update().select_related('unidad'),
-        pk=solicitud_id,
-    )
+    solicitud, unidad = bloquear_movimiento(solicitud_id)
     if solicitud.estado != 'Aprobada' or solicitud.fecha_salida:
         messages.error(
             request,
             'Esta solicitud no está disponible para registrar una salida.',
         )
         return redirect('alquileres:solicitud_lista')
-    if solicitud.fecha_inicio > timezone.localdate():
+    # Las fechas proceden del servidor, como en el flujo original de Aneurys.
+    fecha_salida = timezone.now()
+    if solicitud.fecha_inicio > timezone.localdate(fecha_salida):
         messages.error(
             request,
             'No se puede entregar la maquinaria antes de la fecha programada.',
         )
         return redirect('alquileres:solicitud_lista')
 
-    unidad = Unidad.objects.select_for_update().select_related(
-        'maquinaria'
-    ).get(pk=solicitud.unidad_id)
-    if (
-        not unidad.activo
-        or not unidad.maquinaria.activo
-        or unidad.estado != 'Disponible'
-    ):
+    if not unidad_disponible(unidad) or SolicitudAlquiler.objects.filter(
+        unidad=unidad, fecha_salida__isnull=False, fecha_retorno__isnull=True,
+    ).exists():
         messages.error(request, 'La unidad ya no está disponible para entregar.')
         return redirect('alquileres:solicitud_lista')
 
-    solicitud.fecha_salida = timezone.now()
+    solicitud.fecha_salida = fecha_salida
     solicitud.entregado_por = request.user
     solicitud.save(update_fields=['fecha_salida', 'entregado_por'])
     unidad.estado = 'Alquilado'
@@ -272,26 +353,22 @@ def solicitud_registrar_salida(request, solicitud_id):
     return redirect('alquileres:solicitud_lista')
 
 
-@login_required
-@transaction.atomic
+@login_required(login_url='cuentas:login')
+@movimiento_atomico
 def solicitud_registrar_retorno(request, solicitud_id):
-    if not request.user.es_administrador:
+    if not permisos_panel(request.user).get('es_administrador'):
         raise PermissionDenied(
             'Solo los administradores pueden registrar devoluciones.'
         )
     if request.method != 'POST':
         return redirect('alquileres:solicitud_lista')
 
-    solicitud = get_object_or_404(
-        SolicitudAlquiler.objects.select_for_update().select_related(
-            'cliente', 'unidad__maquinaria'
-        ),
-        pk=solicitud_id,
-    )
+    solicitud, unidad = bloquear_movimiento(solicitud_id)
     if (
         solicitud.estado != 'Aprobada'
         or not solicitud.fecha_salida
         or solicitud.fecha_retorno
+        or unidad.estado != 'Alquilado'
     ):
         messages.error(
             request,
@@ -303,11 +380,10 @@ def solicitud_registrar_retorno(request, solicitud_id):
     if not form.is_valid():
         messages.error(
             request,
-            'Indica correctamente las horas de uso para registrar el retorno.',
+            ' '.join(error for errores in form.errors.values() for error in errores),
         )
         return redirect('alquileres:solicitud_lista')
 
-    unidad = Unidad.objects.select_for_update().get(pk=solicitud.unidad_id)
     horas_actualizadas = form.cleaned_data['horas_uso_actualizadas']
     if horas_actualizadas < unidad.horas_uso:
         messages.error(
@@ -317,10 +393,17 @@ def solicitud_registrar_retorno(request, solicitud_id):
         return redirect('alquileres:solicitud_lista')
 
     fecha_retorno = timezone.now()
+    if fecha_retorno < solicitud.fecha_salida:
+        messages.error(request, 'La fecha de retorno no puede ser anterior a la salida.')
+        return redirect('alquileres:solicitud_lista')
     dias_atraso = max(
         (timezone.localtime(fecha_retorno).date() - solicitud.fecha_fin).days,
         0,
     )
+    aplica_suspension = dias_atraso > 3 and solicitud.politica_mora_aplica
+    if aplica_suspension:
+        # Una segunda devolución tardía puede llegar desde otra unidad.
+        cliente = get_user_model().objects.select_for_update().get(pk=solicitud.cliente_id)
     solicitud.fecha_retorno = fecha_retorno
     solicitud.recibido_por = request.user
     solicitud.dias_atraso = dias_atraso
@@ -343,35 +426,43 @@ def solicitud_registrar_retorno(request, solicitud_id):
         presupuesto.save(update_fields=['mora_total', 'mora_actualizada_en'])
 
     if dias_atraso:
-        mora_total = presupuesto.mora_total if presupuesto else '0.00'
-        messages.warning(
+        mensaje = f'La devolución tuvo {dias_atraso} día(s) de atraso.'
+        if presupuesto and solicitud.politica_mora_aplica:
+            mensaje += f' Mora calculada: ${presupuesto.mora_total}.'
+        transaction.on_commit(partial(
+            messages.warning,
             request,
-            f'La devolución tuvo {dias_atraso} día(s) de atraso. '
-            f'Mora calculada: ${mora_total}.',
-        )
+            mensaje,
+        ))
     else:
-        messages.success(request, 'La maquinaria fue devuelta dentro del plazo.')
+        transaction.on_commit(partial(
+            messages.success, request, 'La maquinaria fue devuelta dentro del plazo.',
+        ))
 
-    infracciones_anteriores = SolicitudAlquiler.objects.filter(
-        cliente=solicitud.cliente,
+    if not aplica_suspension:
+        return redirect('alquileres:solicitud_lista')
+
+    infraccion_anterior = SolicitudAlquiler.objects.filter(
+        cliente=cliente,
         politica_mora_aplica=True,
         dias_atraso__gt=3,
-    ).exclude(pk=solicitud.pk).count()
-    if dias_atraso > 3 and infracciones_anteriores >= 1:
-        cliente = solicitud.cliente
+    ).exclude(pk=solicitud.pk).exists()
+    if infraccion_anterior:
         cliente.is_active = False
         cliente.suspension_hasta = sumar_seis_meses(timezone.localdate())
         cliente.save(update_fields=['is_active', 'suspension_hasta'])
-        messages.error(
+        transaction.on_commit(partial(
+            messages.error,
             request,
             f'La cuenta de {cliente.email} quedó suspendida hasta '
             f'{cliente.suspension_hasta:%d/%m/%Y} por su segunda devolución '
             'con más de 3 días de atraso.',
-        )
-    elif dias_atraso > 3:
-        messages.warning(
+        ))
+    else:
+        transaction.on_commit(partial(
+            messages.warning,
             request,
             'Advertencia: esta es la primera devolución con más de 3 días de atraso. '
             'Una segunda infracción de este tipo suspenderá la cuenta por 6 meses.',
-        )
+        ))
     return redirect('alquileres:solicitud_lista')
