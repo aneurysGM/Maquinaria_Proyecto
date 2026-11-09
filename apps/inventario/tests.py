@@ -8,7 +8,7 @@ from django.test import override_settings
 from django.urls import reverse
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado, permisos_panel
-from .forms import MaquinariaImagenFormSet
+from .forms import MaquinariaImagenFormSet, MaquinariaIntegralForm
 from .models import Categoria, Maquinaria, MaquinariaImagen, Unidad
 
 
@@ -131,6 +131,86 @@ class CatalogoPanelTests(TestCase):
             catalogo,
             reverse('inventario:maquinaria_detalle', args=[unidad.pk]),
         )
+
+    def test_tarifas_deben_aumentar_o_mantenerse_entre_planes(self):
+        datos = {
+            'categoria': self.categoria.pk,
+            'codigo': 'TAR-001',
+            'nombre': 'Maquinaria con tarifas válidas',
+            'descripcion': '',
+            'marca': '',
+            'modelo': '',
+            'costo_adquisicion': '10000',
+            'tarifa_diaria': '500',
+            'tarifa_semanal': '300',
+            'tarifa_mensual': '200',
+            'deposito_garantia': '0',
+            'numero_serie': 'SERIE-TAR-001',
+            'estado': 'Disponible',
+            'horas_uso': '0',
+            'fecha_adquisicion': '',
+            'anio_fabricacion': '',
+            'ubicacion_actual': 'Santo Domingo',
+        }
+
+        form = MaquinariaIntegralForm(data=datos)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('tarifa_semanal', form.errors)
+        self.assertIn('tarifa_mensual', form.errors)
+        self.assertEqual(Maquinaria.objects.filter(codigo='TAR-001').count(), 0)
+
+    def test_tarifas_iguales_se_rechazan(self):
+        datos = {
+            'categoria': self.categoria.pk,
+            'codigo': 'TAR-002',
+            'nombre': 'Maquinaria con tarifas ordenadas',
+            'descripcion': '',
+            'marca': '',
+            'modelo': '',
+            'costo_adquisicion': '10000',
+            'tarifa_diaria': '500',
+            'tarifa_semanal': '500',
+            'tarifa_mensual': '500',
+            'deposito_garantia': '0',
+            'numero_serie': 'SERIE-TAR-002',
+            'estado': 'Disponible',
+            'horas_uso': '0',
+            'fecha_adquisicion': '',
+            'anio_fabricacion': '',
+            'ubicacion_actual': 'Santo Domingo',
+        }
+
+        form = MaquinariaIntegralForm(data=datos)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('tarifa_semanal', form.errors)
+        self.assertIn('tarifa_mensual', form.errors)
+
+    def test_tarifas_estrictamente_crecientes_se_aceptan(self):
+        datos = {
+            'categoria': self.categoria.pk,
+            'codigo': 'TAR-003',
+            'nombre': 'Maquinaria con tarifas crecientes',
+            'descripcion': '',
+            'marca': '',
+            'modelo': '',
+            'costo_adquisicion': '10000',
+            'tarifa_diaria': '100',
+            'tarifa_semanal': '200',
+            'tarifa_mensual': '300',
+            'deposito_garantia': '0',
+            'numero_serie': 'SERIE-TAR-003',
+            'estado': 'Disponible',
+            'horas_uso': '0',
+            'fecha_adquisicion': '',
+            'anio_fabricacion': '',
+            'ubicacion_actual': 'Santo Domingo',
+        }
+
+        form = MaquinariaIntegralForm(data=datos)
+
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_panel_admin_muestra_solo_sus_unidades_disponibles_y_costo_interno(self):
         propia = self.crear_unidad('ADM-001', 'Excavadora propia', self.admin)

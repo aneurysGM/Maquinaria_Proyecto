@@ -149,6 +149,34 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
         return codigo
 
+    def clean(self):
+        cleaned_data = super().clean()
+        tarifa_diaria = cleaned_data.get('tarifa_diaria')
+        tarifa_semanal = cleaned_data.get('tarifa_semanal')
+        tarifa_mensual = cleaned_data.get('tarifa_mensual')
+
+        if (
+            tarifa_diaria is not None
+            and tarifa_semanal is not None
+            and tarifa_diaria >= tarifa_semanal
+        ):
+            self.add_error(
+                'tarifa_semanal',
+                'La tarifa semanal debe ser mayor que la tarifa diaria.',
+            )
+
+        if (
+            tarifa_semanal is not None
+            and tarifa_mensual is not None
+            and tarifa_semanal >= tarifa_mensual
+        ):
+            self.add_error(
+                'tarifa_mensual',
+                'La tarifa mensual debe ser mayor que la tarifa semanal.',
+            )
+
+        return cleaned_data
+
     @transaction.atomic
     def save(self, commit=True):
         if self.maquinaria_reactivada:
