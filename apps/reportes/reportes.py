@@ -52,7 +52,7 @@ def nombre_unidad(unidad):
 
 
 def fecha_movimiento(fecha):
-    return timezone.localtime(fecha, ZONA).strftime('%Y-%m-%d %H:%M:%S') if fecha else ''
+    return timezone.localtime(fecha, ZONA) if fecha else None
 
 
 def construir_reporte(tipo, datos):
@@ -162,4 +162,4 @@ def reporte(request, tipo):
         'form': formulario, 'filtrado_valido': valido, 'encabezados': encabezados, 'filas': filas,
         'total_costo': total, 'csv_retirado': csv_retirado, 'volver_url': volver_url,
         'exportar_excel_url': request.path+'?'+parametros.urlencode(),
-    }, status=410 if csv_retirado else (200 if valido else 400))
+    }, status=410 if csv_retirado else (400 if consultado and not valido else 200))

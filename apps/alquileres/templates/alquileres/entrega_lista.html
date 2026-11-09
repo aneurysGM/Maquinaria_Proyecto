@@ -1,0 +1,27 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Salidas y retornos | MaquiRent{% endblock %}
+{% block page_name %}Salidas y retornos{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div><h1 class="h3">Salidas y retornos</h1><p class="text-secondary mb-0">Fechas, responsables y devoluciones programadas. Hora de Santo Domingo.</p></div>
+        <a class="btn btn-outline-primary align-self-start" href="{% url 'alquileres:solicitud_lista' %}">Solicitudes de alquiler</a>
+    </div>
+    <nav class="nav nav-pills flex-wrap gap-2 mb-4" aria-label="Filtrar entregas">
+        <a class="nav-link {% if estado == 'pendientes' %}active{% endif %}" {% if estado == 'pendientes' %}aria-current="page"{% endif %} href="?estado=pendientes">Pendientes de devolución</a>
+        <a class="nav-link {% if estado == 'devueltas' %}active{% endif %}" {% if estado == 'devueltas' %}aria-current="page"{% endif %} href="?estado=devueltas">Devueltas</a>
+        <a class="nav-link {% if estado == 'todas' %}active{% endif %}" {% if estado == 'todas' %}aria-current="page"{% endif %} href="?estado=todas">Historial completo</a>
+    </nav>
+    {% for solicitud in entregas %}
+    <article class="card border-0 shadow-sm rounded-4 mb-3"><div class="card-body p-4">
+        {% include 'alquileres/solicitud_resumen.html' %}
+        <dl class="row small g-2 mt-3 mb-0">
+            <dt class="col-md-3">Salida</dt><dd class="col-md-9">{{ solicitud.fecha_salida|date:"d/m/Y H:i" }} · Entregada por {{ solicitud.entregado_por.get_full_name|default:solicitud.entregado_por.email }}</dd>
+            <dt class="col-md-3">Devolución programada</dt><dd class="col-md-9">{{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
+            <dt class="col-md-3">Retorno</dt><dd class="col-md-9">{% if solicitud.fecha_retorno %}{{ solicitud.fecha_retorno|date:"d/m/Y H:i" }} · Recibida por {{ solicitud.recibido_por.get_full_name|default:solicitud.recibido_por.email }}{% else %}Pendiente de devolución{% endif %}</dd>
+        </dl>
+        {% include 'alquileres/solicitud_acciones.html' %}
+    </div></article>
+    {% empty %}<p class="alert alert-light border" role="status">No hay entregas en esta vista.</p>{% endfor %}
+</div>
+{% endblock %}

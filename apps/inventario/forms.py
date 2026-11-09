@@ -2,6 +2,7 @@ from django import forms
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
+from apps.alquileres.bloqueos import bloquear_unidad
 from .models import (
     Categoria,
     Maquinaria,
@@ -151,6 +152,11 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if self.unidad_instancia and cleaned_data.get('estado') not in (None, 'Alquilado'):
+            if self.unidad_instancia.solicitudes_alquiler.filter(
+                fecha_salida__isnull=False, fecha_retorno__isnull=True,
+            ).exists():
+                self.add_error('estado', 'La unidad tiene una entrega pendiente. Registra su retorno para cambiar el estado.')
         tarifa_diaria = cleaned_data.get('tarifa_diaria')
         tarifa_semanal = cleaned_data.get('tarifa_semanal')
         tarifa_mensual = cleaned_data.get('tarifa_mensual')
@@ -179,6 +185,11 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
     @transaction.atomic
     def save(self, commit=True):
+        unidad_bloqueada = None
+        if commit and self.unidad_instancia:
+            unidad_bloqueada = bloquear_unidad(pk=self.unidad_instancia.pk)
+            unidad_bloqueada.estado = self.cleaned_data['estado']
+            unidad_bloqueada.clean()
         if self.maquinaria_reactivada:
             self.instance.activo = True
 
@@ -188,7 +199,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
         if commit:
             # Crear o actualizar la Unidad física
             if self.unidad_instancia:
-                unidad = self.unidad_instancia
+                unidad = unidad_bloqueada
                 unidad.numero_serie = self.cleaned_data['numero_serie']
                 unidad.estado = self.cleaned_data['estado']
                 unidad.horas_uso = self.cleaned_data['horas_uso']
@@ -202,12 +213,14 @@ class MaquinariaIntegralForm(forms.ModelForm):
                     numero_serie__iexact=self.cleaned_data['numero_serie'],
                 ).first()
                 if unidad:
+                    unidad = bloquear_unidad(pk=unidad.pk)
                     unidad.activo = True
                     unidad.estado = self.cleaned_data['estado']
                     unidad.horas_uso = self.cleaned_data['horas_uso']
                     unidad.fecha_adquisicion = self.cleaned_data['fecha_adquisicion']
                     unidad.anio_fabricacion = self.cleaned_data['anio_fabricacion']
                     unidad.ubicacion_actual = self.cleaned_data['ubicacion_actual']
+                    unidad.clean()
                     unidad.save()
                 else:
                     Unidad.objects.create(
