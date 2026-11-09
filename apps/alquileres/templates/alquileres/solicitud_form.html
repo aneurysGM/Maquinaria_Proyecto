@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static l10n %}
 
 {% block title %}Solicitar alquiler | MaquiRent{% endblock %}
 {% block page_name %}Solicitar alquiler{% endblock %}
@@ -8,7 +9,7 @@
     <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">Solicitar alquiler</h1>
-            <p class="text-secondary mb-0">Elige las fechas y envía la solicitud para revisión administrativa.</p>
+            <p class="text-secondary mb-0">Elige la fecha de inicio, el plan y el tiempo que necesitas la maquinaria.</p>
         </div>
         <a class="btn btn-outline-secondary" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">
             <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver al equipo
@@ -46,11 +47,15 @@
         <div class="col-lg-7">
             <section class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
-                    <h2 class="h5 fw-bold mb-3">Fechas de alquiler</h2>
+                    <h2 class="h5 fw-bold mb-3">Plan de alquiler</h2>
                     <div class="alert alert-info" role="note">
-                        Enviar esta solicitud no confirma el alquiler. Un administrador revisará las fechas y disponibilidad.
+                        El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisará la disponibilidad.
                     </div>
-                    <form method="post" novalidate>
+                    <form method="post" id="solicitud-alquiler-form" novalidate
+                        data-tarifa-diaria="{{ unidad.maquinaria.tarifa_diaria|unlocalize }}"
+                        data-tarifa-semanal="{{ unidad.maquinaria.tarifa_semanal|unlocalize }}"
+                        data-tarifa-mensual="{{ unidad.maquinaria.tarifa_mensual|unlocalize }}"
+                        data-deposito="{{ unidad.maquinaria.deposito_garantia|unlocalize }}">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
@@ -65,9 +70,16 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" for="{{ form.fecha_fin.id_for_label }}">{{ form.fecha_fin.label }}</label>
-                            {{ form.fecha_fin }}
-                            {% if form.fecha_fin.errors %}<div class="text-danger small mt-1">{{ form.fecha_fin.errors }}</div>{% endif %}
+                            <label class="form-label fw-semibold" for="{{ form.plan.id_for_label }}">Plan</label>
+                            {{ form.plan }}
+                            {% if form.plan.errors %}<div class="text-danger small mt-1">{{ form.plan.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.cantidad.id_for_label }}">Cantidad de planes</label>
+                            {{ form.cantidad }}
+                            <div class="form-text">Una semana equivale a 7 días; un mes, a 30 días.</div>
+                            {% if form.cantidad.errors %}<div class="text-danger small mt-1">{{ form.cantidad.errors }}</div>{% endif %}
                         </div>
 
                         <div class="mb-4">
@@ -75,6 +87,27 @@
                             {{ form.comentario }}
                             {% if form.comentario.errors %}<div class="text-danger small mt-1">{{ form.comentario.errors }}</div>{% endif %}
                         </div>
+
+                        <section class="rounded-3 border bg-light p-3 mb-4" aria-live="polite">
+                            <h3 class="h6 fw-bold">Presupuesto estimado</h3>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>Duración</span><strong id="presupuesto-duracion">—</strong>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>Devolución programada</span><strong id="presupuesto-fecha-fin">—</strong>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>Renta</span><strong id="presupuesto-renta">—</strong>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>Depósito reembolsable</span><strong id="presupuesto-deposito">—</strong>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">—</strong>
+                            </div>
+                            <p class="small text-muted mb-0 mt-2">La mora, si aplica por atraso, se calcula aparte al devolver el equipo.</p>
+                        </section>
 
                         <button class="btn btn-warning fw-bold" type="submit">
                             <i class="bi bi-send me-1" aria-hidden="true"></i>Enviar solicitud
@@ -85,4 +118,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'ventas/animations/presupuesto.js' %}" defer></script>
 {% endblock %}

@@ -5,10 +5,13 @@ from .models import SolicitudAlquiler
 class SolicitudAlquilerForm(forms.ModelForm):
     class Meta:
         model = SolicitudAlquiler
-        fields = ['fecha_inicio', 'fecha_fin', 'comentario']
+        fields = ['fecha_inicio', 'plan', 'cantidad', 'comentario']
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'plan': forms.Select(attrs={'class': 'form-select'}),
+            'cantidad': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': '1', 'step': '1'
+            }),
             'comentario': forms.Textarea(attrs={
                 'class': 'form-control', 
                 'rows': 3, 
@@ -19,14 +22,14 @@ class SolicitudAlquilerForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         fecha_inicio = cleaned_data.get('fecha_inicio')
-        fecha_fin = cleaned_data.get('fecha_fin')
+        cantidad = cleaned_data.get('cantidad')
         hoy = timezone.localdate()
 
         if fecha_inicio and fecha_inicio < hoy:
             raise forms.ValidationError('La fecha de inicio no puede ser en el pasado.')
 
-        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
-            raise forms.ValidationError('La fecha de fin no puede ser anterior a la fecha de inicio.')
+        if cantidad is not None and cantidad < 1:
+            self.add_error('cantidad', 'La cantidad debe ser al menos 1.')
 
         return cleaned_data
 

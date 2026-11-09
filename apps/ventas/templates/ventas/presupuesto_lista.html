@@ -1,0 +1,52 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block title %}Ventas y presupuestos{% endblock %}
+{% block page_name %}Ventas y presupuestos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <p class="text-uppercase text-muted small fw-semibold mb-1">Gestión de negocio</p>
+        <h1 class="h2 mb-1">Ventas y presupuestos</h1>
+        <p class="text-muted mb-0">Consulta los alquileres aprobados, los pagos registrados y los saldos pendientes.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Cliente / maquinaria</th>
+                        <th>Período</th>
+                        <th>Presupuesto</th>
+                        <th>Pagado</th>
+                        <th>Saldo</th>
+                        <th class="text-end pe-3">Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for presupuesto in presupuestos %}
+                    <tr>
+                        <td class="ps-3">
+                            <span class="d-block fw-semibold">{{ presupuesto.solicitud.cliente.get_full_name|default:presupuesto.solicitud.cliente.email }}</span>
+                            <span class="small text-muted">{{ presupuesto.solicitud.unidad.maquinaria.nombre }} · #{{ presupuesto.solicitud_id }}</span>
+                        </td>
+                        <td>{{ presupuesto.solicitud.fecha_inicio|date:"d/m/Y" }} – {{ presupuesto.solicitud.fecha_fin|date:"d/m/Y" }}</td>
+                        <td>${{ presupuesto.importe_total_actual|floatformat:2 }}</td>
+                        <td>${{ presupuesto.total_pagado|floatformat:2 }}</td>
+                        <td class="fw-semibold">${{ presupuesto.saldo_pendiente_actual|floatformat:2 }}</td>
+                        <td class="text-end pe-3">
+                            <a class="btn btn-sm btn-outline-dark" href="{% url 'ventas:presupuesto_detalle' presupuesto.pk %}">Ver presupuesto</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">Todavía no hay presupuestos registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block title %}Presupuesto de alquiler{% endblock %}
+{% block page_name %}Presupuesto de alquiler{% endblock %}
+
+{% block content %}
+{% with solicitud=presupuesto.solicitud %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            {% if request.user.es_administrador %}
+            <a href="{% url 'ventas:presupuesto_lista' %}" class="link-secondary text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Volver a ventas
+            </a>
+            {% else %}
+            <a href="{% url 'alquileres:solicitud_lista' %}" class="link-secondary text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Volver a mis solicitudes
+            </a>
+            {% endif %}
+            <h1 class="h2 mt-2 mb-1">Presupuesto #{{ solicitud.pk }}</h1>
+            <p class="text-muted mb-0">{{ solicitud.unidad.maquinaria.nombre }} · Serie {{ solicitud.unidad.numero_serie }}</p>
+        </div>
+        <span class="badge {% if solicitud.estado == 'Aprobada' %}text-bg-success{% elif solicitud.estado == 'Rechazada' %}text-bg-danger{% else %}text-bg-warning{% endif %} fs-6">{{ solicitud.estado }}</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h2 class="h5 mb-0">Detalle del alquiler</h2>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6">Plan</dt>
+                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} período(s)</dd>
+                        <dt class="col-sm-6">Fecha de entrega programada</dt>
+                        <dd class="col-sm-6">{{ solicitud.fecha_inicio|date:"d/m/Y" }}</dd>
+                        <dt class="col-sm-6">Devolución programada</dt>
+                        <dd class="col-sm-6">{{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
+                        <dt class="col-sm-6">Tarifa por plan</dt>
+                        <dd class="col-sm-6">${{ presupuesto.tarifa_periodo|floatformat:2 }}</dd>
+                        {% if solicitud.comentario %}
+                        <dt class="col-sm-6">Obra / comentario</dt>
+                        <dd class="col-sm-6">{{ solicitud.comentario }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </section>
+
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h2 class="h5 mb-0">Pagos registrados</h2>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th class="ps-3">Fecha</th><th>Concepto</th><th>Método</th><th>Referencia</th><th class="text-end pe-3">Monto</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for pago in presupuesto.pagos.all %}
+                            <tr>
+                                <td class="ps-3">{{ pago.creado_en|date:"d/m/Y H:i" }}</td>
+                                <td>{{ pago.get_concepto_display }}</td>
+                                <td>{{ pago.get_metodo_display }}</td>
+                                <td>{{ pago.referencia|default:"—" }}</td>
+                                <td class="text-end pe-3">${{ pago.monto|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">No se han registrado pagos.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-5">
+            <section class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h2 class="h5 mb-0">Resumen del presupuesto</h2>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Renta ({{ solicitud.cantidad }} × ${{ presupuesto.tarifa_periodo|floatformat:2 }})</span>
+                        <strong>${{ presupuesto.importe_renta|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Depósito reembolsable</span>
+                        <strong>${{ presupuesto.deposito_garantia|floatformat:2 }}</strong>
+                    </div>
+                    {% if solicitud.fecha_retorno %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Mora por {{ solicitud.dias_atraso }} día(s) de atraso</span>
+                        <strong>${{ presupuesto.mora_total|floatformat:2 }}</strong>
+                    </div>
+                    {% elif solicitud.dias_atraso_actual %}
+                    <div class="alert alert-warning small mt-3 mb-2" role="alert">
+                        Tienes {{ solicitud.dias_atraso_actual }} día(s) de atraso. Se generó una advertencia.
+                        La mora estimada hasta hoy es ${{ mora_estimada|floatformat:2 }} y aumenta cada día.
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Total a pagar</span>
+                        <strong>${{ presupuesto.importe_total_actual|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Pagado</span>
+                        <strong>${{ presupuesto.total_pagado|floatformat:2 }}</strong>
+                    </div>
+                    {% if presupuesto.deposito_reembolsado %}
+                    <div class="d-flex justify-content-between mb-2 text-secondary">
+                        <span>Depósito reembolsado</span>
+                        <strong>−${{ presupuesto.deposito_reembolsado|floatformat:2 }}</strong>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between fs-5 border-top pt-3">
+                        <span class="fw-bold">Saldo pendiente</span>
+                        <strong class="text-danger">${{ presupuesto.saldo_pendiente_actual|floatformat:2 }}</strong>
+                    </div>
+                    <p class="small text-muted mt-3 mb-0">El depósito es una garantía reembolsable. El presupuesto no incluye costos internos de adquisición de la maquinaria.</p>
+                </div>
+            </section>
+
+            <section class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso del depósito</h2></div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between small mb-2">
+                        <span>Depósito recibido</span><strong>${{ presupuesto.deposito_pagado|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-2">
+                        <span>Reembolsado</span><strong>${{ presupuesto.deposito_reembolsado|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Disponible para devolver</span><strong>${{ presupuesto.deposito_por_reembolsar|floatformat:2 }}</strong>
+                    </div>
+                    {% if presupuesto.reembolsos_deposito.all %}
+                    <hr>
+                    <ul class="list-unstyled small mb-0">
+                        {% for reembolso in presupuesto.reembolsos_deposito.all %}
+                        <li class="d-flex justify-content-between gap-2">
+                            <span>{{ reembolso.creado_en|date:"d/m/Y" }} · {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} · {{ reembolso.referencia }}{% endif %}</span>
+                            <strong>${{ reembolso.monto|floatformat:2 }}</strong>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% if request.user.es_administrador and solicitud.fecha_retorno and presupuesto.deposito_por_reembolsar > 0 %}
+                    <hr>
+                    <form method="post" action="{% url 'ventas:reembolso_registrar' presupuesto.pk %}">
+                        {% csrf_token %}
+                        {% for field in reembolso_form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                        <button class="btn btn-outline-success fw-semibold" type="submit">Registrar reembolso</button>
+                    </form>
+                    {% elif not solicitud.fecha_retorno %}
+                    <p class="small text-muted mt-3 mb-0">El depósito recibido podrá devolverse después de registrar el retorno de la maquinaria.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            {% if request.user.es_administrador and solicitud.estado == 'Aprobada' and presupuesto.saldo_pendiente_actual > 0 %}
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Registrar pago recibido</h2></div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'ventas:pago_registrar' presupuesto.pk %}">
+                        {% csrf_token %}
+                        {% for field in pago_form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                        <button class="btn btn-warning fw-semibold" type="submit">Guardar pago</button>
+                    </form>
+                </div>
+            </section>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}

@@ -1,6 +1,8 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
+from django.utils import timezone
 from .models import UsuarioPersonalizado
 
 
@@ -13,6 +15,26 @@ class CorreoAuthenticationForm(AuthenticationForm):
             'placeholder': 'nombre@correo.com',
         }),
     )
+
+    def clean(self):
+        try:
+            return super().clean()
+        except ValidationError:
+            email = self.cleaned_data.get('username')
+            password = self.cleaned_data.get('password')
+            usuario = UsuarioPersonalizado.objects.filter(email=email).first()
+            if (
+                usuario
+                and password
+                and usuario.check_password(password)
+                and usuario.suspension_hasta
+                and usuario.suspension_hasta > timezone.localdate()
+            ):
+                raise ValidationError(
+                    f'Tu cuenta está suspendida hasta '
+                    f'{usuario.suspension_hasta:%d/%m/%Y} por devoluciones tardías.'
+                )
+            raise
 
 
 class RegistroClienteForm(UserCreationForm):

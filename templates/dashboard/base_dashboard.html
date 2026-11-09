@@ -391,10 +391,12 @@
                     <span>Clientes</span>
                 </a>
                 {% endif %}
-                <a href="#" class="mq-nav-link">
+                {% if es_administrador %}
+                <a href="{% url 'ventas:presupuesto_lista' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'ventas' %}active{% endif %}">
                     <i class="bi bi-cart-check"></i>
                     <span>Ventas y Presupuestos</span>
                 </a>
+                {% endif %}
                 <a href="{% url 'mantenimiento:mantenimiento_lista' %}" class="mq-nav-link {% if 'mantenimiento' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-tools"></i>
                     <span>Mantenimiento</span>
@@ -485,6 +487,7 @@
             });
         }
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 
 </html>

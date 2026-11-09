@@ -1,10 +1,16 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 from apps.inventario.models import Unidad
 
 
 class SolicitudAlquiler(models.Model):
+    PLANES = [
+        ('diario', 'Diario'),
+        ('semanal', 'Semanal'),
+        ('mensual', 'Mensual'),
+    ]
     ESTADOS = [
         ('Pendiente', 'Pendiente'), 
         ('Aprobada', 'Aprobada'), 
@@ -25,7 +31,18 @@ class SolicitudAlquiler(models.Model):
     )
     fecha_inicio = models.DateField(verbose_name='Fecha de inicio')
     fecha_fin = models.DateField(verbose_name='Fecha de fin')
+    plan = models.CharField(
+        max_length=10, choices=PLANES, default='diario', verbose_name='Plan de alquiler'
+    )
+    cantidad = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name='Cantidad de planes',
+    )
     comentario = models.CharField(max_length=500, blank=True, verbose_name='Comentario / Obra')
+    politica_mora_aplica = models.BooleanField(default=True, editable=False)
+    dias_atraso = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    observaciones_retorno = models.CharField(max_length=1000, blank=True, editable=False)
     
     estado = models.CharField(max_length=10, choices=ESTADOS, default='Pendiente', editable=False)
     fecha_creacion = models.DateTimeField(default=timezone.now, editable=False)
@@ -53,6 +70,14 @@ class SolicitudAlquiler(models.Model):
         if self.fecha_retorno is not None:
             return 'Devuelta'
         return 'Pendiente de devolución' if self.fecha_salida is not None else 'Sin entregar'
+
+    @property
+    def dias_atraso_actual(self):
+        if not self.fecha_salida:
+            return 0
+        if self.fecha_retorno:
+            return self.dias_atraso or 0
+        return max((timezone.localdate() - self.fecha_fin).days, 0)
 
     class Meta:
         verbose_name = 'solicitud de alquiler'

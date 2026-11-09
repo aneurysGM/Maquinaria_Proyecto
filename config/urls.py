@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='publico/index.html'), name='index'),
     path('catalogo/', CatalogoPublicoView.as_view(), name='catalogo'),
+    path('ventas/', include('apps.ventas.urls')),
     # Rutas de la app cuentas (prefijo /cuentas/ o directamente en la raíz)
     path('auth/', include('apps.cuentas.urls')),
     path('inventario/', include('apps.inventario.urls')),

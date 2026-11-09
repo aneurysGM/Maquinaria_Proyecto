@@ -66,6 +66,11 @@
                             {% else %}
                             <span class="badge rounded-pill text-bg-secondary">Inactiva</span>
                             {% endif %}
+                            {% if cliente.devoluciones_tardias or cliente.alquileres_vencidos %}
+                            <span class="badge rounded-pill text-bg-warning ms-1" title="Tiene devoluciones tardías o alquileres vencidos">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Warning
+                            </span>
+                            {% endif %}
                         </td>
                         <td class="text-end pe-3">
                             <a class="btn btn-sm btn-outline-dark"

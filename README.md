@@ -65,6 +65,45 @@ puede documentar en una guía específica y enlazarla desde aquí.
   (5 pruebas aprobadas), prueba específica del enlace del panel (aprobada) y
   `manage.py check` (sin incidencias).
 
+### Planes de alquiler, presupuestos y mora
+
+- Se reemplazó la selección de fecha final por fecha de inicio, plan (diario,
+  semanal o mensual) y cantidad. La duración se calcula como 1, 7 o 30 días por
+  período, respectivamente, y la fecha final es inclusiva. El formulario está
+  en `apps/alquileres/templates/alquileres/solicitud_form.html`; la vista
+  previa del presupuesto usa
+  `apps/ventas/static/ventas/animations/presupuesto.js`.
+- Se implementó `apps/ventas/` para conservar en cada presupuesto la tarifa del
+  plan elegida al solicitar, el importe de renta y el depósito reembolsable.
+  Los costos internos de adquisición no se muestran al cliente. El cliente
+  consulta su presupuesto y el administrador tiene una lista de ventas en
+  `/ventas/`; las páginas están en `apps/ventas/templates/ventas/`.
+- El administrador puede registrar pagos manuales separados por concepto
+  (renta, depósito o mora), método y referencia. El sistema calcula lo pagado y
+  el saldo, y valida que no se registre más de lo adeudado por concepto.
+  Después del retorno de la maquinaria se permiten reembolsos parciales o
+  completos, limitados al depósito efectivamente recibido. No se integra una
+  pasarela de pago.
+- Se añadieron acciones administrativas para registrar salida y retorno de la
+  unidad. El warning aparece desde el primer día posterior a la fecha
+  programada. La mora se calcula sobre la tarifa diaria equivalente: 10% por
+  cada uno de los días 1–3 y 20% por cada día posterior. La segunda devolución
+  con más de 3 días de atraso inactiva la cuenta durante 6 meses.
+- La cuenta suspendida se reactiva automáticamente al vencer el plazo cuando
+  el cliente intenta iniciar sesión o cuando el administrador abre el listado
+  de clientes. Las desactivaciones sin fecha de suspensión no se reactivan por
+  este mecanismo. El historial de clientes muestra fechas programadas y reales,
+  atrasos, warnings, presupuestos y saldos.
+- Se añadieron migraciones en `apps/alquileres/migrations/`,
+  `apps/cuentas/migrations/` y `apps/ventas/migrations/`. Los registros
+  anteriores conservan sus fechas; la migración deriva la cantidad histórica
+  desde el período guardado y excluye esos alquileres de la nueva política de
+  mora, pues no se conoce qué tarifa contrataron.
+- Comprobaciones ejecutadas: migraciones aplicadas a la base local,
+  `manage.py check`, `manage.py makemigrations --check --dry-run`, validación
+  sintáctica y detección estática del JavaScript, y 18 pruebas de alquileres,
+  ventas, cuentas y clientes aprobadas.
+
 Actualización del 30 de octubre de 2026: las migraciones `0008`–`0010`
 conservan el trabajo local de roles y solicitudes; `0011` completa la retirada
 física de operadores, con respaldo SQL Server verificado antes del borrado.

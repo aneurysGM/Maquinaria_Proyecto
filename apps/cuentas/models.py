@@ -58,6 +58,12 @@ class UsuarioPersonalizado(AbstractUser):
         verbose_name='Teléfono',
         db_column='Telefono'
     )
+    suspension_hasta = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Suspensión hasta',
+        db_column='SuspensionHasta',
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

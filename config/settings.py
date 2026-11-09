@@ -112,6 +112,7 @@ DATABASES = {
 
 # Configuración del modelo de autenticación personalizado
 AUTH_USER_MODEL = 'cuentas.UsuarioPersonalizado'
+AUTHENTICATION_BACKENDS = ['apps.cuentas.backends.SuspensionBackend']
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators

@@ -20,6 +20,21 @@
         {% endif %}
     </div>
 
+    {% if not cliente.is_active and cliente.suspension_hasta %}
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-person-lock me-1"></i>
+        Cuenta suspendida por devoluciones tardías hasta el {{ cliente.suspension_hasta|date:"d/m/Y" }}.
+    </div>
+    {% endif %}
+    {% if devoluciones_tardias or alquileres_vencidos %}
+    <div class="alert alert-warning" role="alert">
+        <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Warning en la cuenta.</strong>
+        {{ devoluciones_tardias }} devolución(es) tardía(s) registrada(s) y
+        {{ alquileres_vencidos }} alquiler(es) actualmente vencido(s).
+        {{ infracciones_graves }} devolución(es) superaron los 3 días; la segunda infracción grave suspende la cuenta por 6 meses.
+    </div>
+    {% endif %}
+
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm h-100">
@@ -65,9 +80,10 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col" class="ps-3">Maquinaria</th>
-                        <th scope="col">Período solicitado</th>
+                        <th scope="col">Plan y fecha programada</th>
                         <th scope="col">Solicitud</th>
-                        <th scope="col">Entrega y retorno</th>
+                        <th scope="col">Entrega / devolución real</th>
+                        <th scope="col">Presupuesto / mora</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,7 +96,9 @@
                             </span>
                         </td>
                         <td>
-                            <span class="d-block">{{ solicitud.fecha_inicio|date:"d/m/Y" }} – {{ solicitud.fecha_fin|date:"d/m/Y" }}</span>
+                            <span class="d-block">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} período(s)</span>
+                            <span class="d-block small">Entrega: {{ solicitud.fecha_inicio|date:"d/m/Y" }}</span>
+                            <span class="d-block small">Devolución estimada: {{ solicitud.fecha_fin|date:"d/m/Y" }}</span>
                             <span class="small text-muted">Solicitada {{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</span>
                         </td>
                         <td>
@@ -100,20 +118,42 @@
                         </td>
                         <td>
                             {% if solicitud.fecha_salida %}
-                            <span class="d-block small">Salida: {{ solicitud.fecha_salida|date:"d/m/Y H:i" }}</span>
+                            <span class="d-block small">Entregada: {{ solicitud.fecha_salida|date:"d/m/Y H:i" }}</span>
                             {% else %}
                             <span class="d-block small text-muted">Sin entregar</span>
                             {% endif %}
                             {% if solicitud.fecha_retorno %}
-                            <span class="d-block small">Retorno: {{ solicitud.fecha_retorno|date:"d/m/Y H:i" }}</span>
+                            <span class="d-block small">Devuelta: {{ solicitud.fecha_retorno|date:"d/m/Y H:i" }}</span>
+                            {% if solicitud.dias_atraso > 0 %}
+                            <span class="badge text-bg-warning mt-1">{{ solicitud.dias_atraso }} día(s) tarde</span>
+                            {% else %}
+                            <span class="badge text-bg-success mt-1">A tiempo</span>
+                            {% endif %}
                             {% elif solicitud.fecha_salida %}
                             <span class="d-block small text-muted">Retorno pendiente</span>
+                            {% if solicitud.dias_atraso_actual > 0 %}
+                            <span class="badge text-bg-warning mt-1">Warning · {{ solicitud.dias_atraso_actual }} día(s) tarde</span>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if solicitud.presupuesto %}
+                            <span class="d-block small">Total: ${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}</span>
+                            <span class="d-block small">Saldo: ${{ solicitud.presupuesto.saldo_pendiente_actual|floatformat:2 }}</span>
+                            {% if solicitud.dias_atraso_actual and not solicitud.fecha_retorno %}
+                            <span class="d-block small text-warning-emphasis">Mora estimada: ${{ solicitud.mora_estimada|floatformat:2 }}</span>
+                            {% elif solicitud.fecha_retorno and solicitud.dias_atraso %}
+                            <span class="d-block small">Mora: ${{ solicitud.presupuesto.mora_total|floatformat:2 }}</span>
+                            {% endif %}
+                            <a class="d-block small mt-1" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto</a>
+                            {% else %}
+                            <span class="small text-muted">Sin presupuesto histórico</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-5">
+                        <td colspan="5" class="text-center py-5">
                             <i class="bi bi-clock-history display-6 text-muted d-block mb-2"></i>
                             <span class="fw-semibold">Este cliente todavía no tiene solicitudes de alquiler.</span>
                         </td>
