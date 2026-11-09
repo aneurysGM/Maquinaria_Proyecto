@@ -76,6 +76,22 @@ class SolicitudesAlquilerTests(TestCase):
         self.assertContains(respuesta, 'Obra de prueba')
         self.assertContains(respuesta, 'Pendiente')
         self.assertContains(respuesta, 'Presupuesto')
+        self.assertContains(
+            respuesta,
+            f'href="{reverse("inventario:maquinaria_lista")}"',
+        )
+        self.assertContains(respuesta, 'Volver a maquinarias')
+
+    def test_cliente_puede_ir_a_maquinarias_desde_sus_solicitudes(self):
+        self.client.force_login(self.cliente)
+
+        respuesta = self.client.get(reverse('alquileres:solicitud_lista'))
+
+        self.assertContains(respuesta, 'Ver maquinaria disponible')
+        self.assertContains(
+            respuesta,
+            f'href="{reverse("inventario:maquinaria_lista")}"',
+        )
 
     def test_tecnico_no_puede_consultar_bandeja_de_solicitudes(self):
         self.client.force_login(self.tecnico)

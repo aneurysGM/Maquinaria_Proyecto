@@ -42,6 +42,17 @@ puede documentar en una guía específica y enlazarla desde aquí.
 - Comprobaciones ejecutadas: `manage.py test apps.inventario.tests`
   (10 pruebas aprobadas) y `manage.py check` (sin incidencias).
 
+### Validación de tarifas de maquinaria
+
+- Se ajustó `MaquinariaIntegralForm` en `apps/inventario/forms.py` para exigir
+  un orden estrictamente creciente: la tarifa diaria debe ser menor que la
+  semanal, y la semanal menor que la mensual. También se rechazan importes
+  iguales; no se exige una proporción específica entre los planes.
+- Se actualizaron las pruebas en `apps/inventario/tests.py` para comprobar el
+  rechazo de tarifas iguales y el uso de importes estrictamente crecientes.
+- Comprobaciones ejecutadas: 3 pruebas específicas aprobadas y
+  `manage.py check` (sin incidencias).
+
 ### Gestión de clientes
 
 - Se creó la aplicación `apps/clientes/` para que el administrador consulte los
