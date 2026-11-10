@@ -1,0 +1,31 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Configuraciones{% endblock %}
+{% block page_name %}Configuraciones{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <h1 class="h3 fw-bold text-dark mb-1">Configuraciones</h1>
+        <p class="text-secondary mb-0">Administra las opciones de tu cuenta.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-xl-4">
+            <article class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="rounded-circle bg-warning-subtle d-grid mb-3"
+                        style="width: 3rem; height: 3rem; place-items: center;" aria-hidden="true">
+                        <i class="bi bi-key fs-5"></i>
+                    </div>
+                    <h2 class="h5 fw-bold">Cambiar contraseña</h2>
+                    <p class="text-secondary">Actualiza la contraseña de acceso a tu cuenta.</p>
+                    <a class="btn btn-outline-primary" href="{% url 'configuraciones:cambiar_contrasena' %}">
+                        Cambiar contraseña
+                    </a>
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+{% endblock %}

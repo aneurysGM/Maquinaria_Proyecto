@@ -1,6 +1,5 @@
-from django.contrib.auth.views import LoginView, PasswordChangeView
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.db.models import Q
@@ -21,19 +20,6 @@ class IniciarSesionView(LoginView):
 
     def get_success_url(self):
         return reverse_lazy('cuentas:dashboard')
-
-
-class CambiarContrasenaView(LoginRequiredMixin, PasswordChangeView):
-    template_name = 'cuentas/cambiar_contrasena.html'
-
-    def get_success_url(self):
-        if self.request.user.es_tecnico:
-            return reverse_lazy('tecnico_mantenimiento:dashboard')
-        return reverse_lazy('cuentas:dashboard')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Tu contraseña se actualizó correctamente.')
-        return super().form_valid(form)
 
 
 class RegistrarClienteView(CreateView):

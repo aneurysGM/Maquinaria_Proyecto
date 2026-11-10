@@ -86,7 +86,7 @@ class GestionTecnicosTests(TestCase):
         inicio = self.client.get(reverse('cuentas:dashboard'))
         dashboard = self.client.get(reverse('tecnico_mantenimiento:dashboard'))
         cambio = self.client.post(
-            reverse('cuentas:cambiar_contrasena'),
+            reverse('configuraciones:cambiar_contrasena'),
             {
                 'old_password': 'PruebaSegura!2026',
                 'new_password1': 'Nueva!ClaveTecnica_2026',
@@ -98,7 +98,7 @@ class GestionTecnicosTests(TestCase):
         self.assertEqual(dashboard.status_code, 200)
         self.assertContains(dashboard, 'Motores diésel')
         self.assertContains(dashboard, reverse('mantenimiento:mantenimiento_lista'))
-        self.assertRedirects(cambio, reverse('tecnico_mantenimiento:dashboard'))
+        self.assertRedirects(cambio, reverse('configuraciones:indice'))
         self.tecnico.refresh_from_db()
         self.assertTrue(self.tecnico.check_password('Nueva!ClaveTecnica_2026'))
 

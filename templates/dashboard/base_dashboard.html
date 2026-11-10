@@ -419,10 +419,13 @@
                     <span>Reportes</span>
                 </a>
                 {% endif %}
-                <a href="{% url 'cuentas:cambiar_contrasena' %}" class="mq-nav-link {% if request.resolver_match.url_name == 'cambiar_contrasena' %}active{% endif %}">
-                    <i class="bi bi-key"></i>
-                    <span>Cambiar contraseña</span>
+                {% if es_administrador or es_cliente or es_tecnico %}
+                <div class="mq-nav-group">Cuenta</div>
+                <a href="{% url 'configuraciones:indice' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'configuraciones' %}active{% endif %}">
+                    <i class="bi bi-gear"></i>
+                    <span>Configuraciones</span>
                 </a>
+                {% endif %}
             </nav>
 
             <div class="mq-sidebar-user">

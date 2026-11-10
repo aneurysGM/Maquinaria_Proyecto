@@ -28,6 +28,37 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Gestión de técnicos de mantenimiento — 10 de noviembre de 2026
+
+- Se creó `apps/tecnico_mantenimiento/` para gestionar cuentas técnicas desde el
+  panel. Solo administradores pueden crear y consultar técnicos; el formulario
+  solicita nombre, correo, teléfono, especialidad y una contraseña definida por
+  el administrador. El registro público sigue creando cuentas de Cliente.
+- El perfil de usuario incorpora la especialidad técnica mediante
+  `apps/cuentas/migrations/0003_usuariopersonalizado_especialidad.py`. El técnico
+  accede a un dashboard propio con enlaces a maquinaria y mantenimiento; puede
+  consultar estados sin ver el costo de adquisición.
+- Se probaron creación y permisos, el rechazo de asignar el rol técnico desde el
+  registro público, el dashboard y el cambio de contraseña. Las suites de
+  técnicos, cuentas, mantenimiento e inventario aprobaron **25 pruebas**;
+  `manage.py check` y `makemigrations --check --dry-run` finalizaron sin errores.
+  La migración de especialidad se aplicó a la base SQLite local.
+
+### Configuraciones de cuenta — 10 de noviembre de 2026
+
+- Se creó `apps/configuraciones/` como espacio para opciones de cuenta de
+  Administrador, Cliente y Técnico. El enlace **Configuraciones** aparece al
+  final del menú del panel para esos roles.
+- Por ahora incluye **Cambiar contraseña**: solicita la contraseña actual, la
+  nueva y su confirmación. Si la contraseña actual no coincide o la nueva no se
+  confirma correctamente, no se guarda; al completar el cambio se muestra un
+  mensaje de éxito.
+- `apps/configuraciones/tests.py` cubre acceso por rol, autenticación, cambio
+  válido y contraseñas incorrectas o no coincidentes. Las suites de
+  configuraciones, técnicos y cuentas aprobaron **13 pruebas**; `manage.py check`
+  y `makemigrations --check --dry-run` finalizaron sin errores. Esta función no
+  requiere migraciones.
+
 ### Solicitudes pendientes compartidas — 10 de noviembre de 2026
 
 - Las solicitudes pendientes ya no cambian el estado de la unidad ni la ocultan
