@@ -1,6 +1,8 @@
-from django.contrib.auth.views import LoginView
-from django.urls import reverse_lazy
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
 from django.db.models import Q
 from django.views.generic import CreateView,TemplateView
 from apps.inventario.models import Unidad
@@ -21,6 +23,19 @@ class IniciarSesionView(LoginView):
         return reverse_lazy('cuentas:dashboard')
 
 
+class CambiarContrasenaView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'cuentas/cambiar_contrasena.html'
+
+    def get_success_url(self):
+        if self.request.user.es_tecnico:
+            return reverse_lazy('tecnico_mantenimiento:dashboard')
+        return reverse_lazy('cuentas:dashboard')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Tu contraseña se actualizó correctamente.')
+        return super().form_valid(form)
+
+
 class RegistrarClienteView(CreateView):
     """
     Vista encargada del registro público de nuevos clientes.
@@ -38,6 +53,11 @@ class RegistrarClienteView(CreateView):
 class DashboardAdminView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/admin_index.html'
     login_url = 'cuentas:login'
+
+    def get(self, request, *args, **kwargs):
+        if request.user.es_tecnico and not request.user.es_administrador:
+            return redirect('tecnico_mantenimiento:dashboard')
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

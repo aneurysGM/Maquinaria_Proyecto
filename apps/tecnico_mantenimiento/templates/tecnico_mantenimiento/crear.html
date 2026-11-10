@@ -1,0 +1,42 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Crear Técnico{% endblock %}
+{% block page_name %}Crear técnico{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <h1 class="h3 fw-bold text-dark mb-1">Crear Nuevo Técnico</h1>
+        <p class="text-secondary mb-0">Completa los datos y define una contraseña inicial para la cuenta.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-lg-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="row g-3">
+                    {% for field in form %}
+                    <div class="{% if field.name == 'password1' or field.name == 'password2' %}col-md-6{% else %}col-12{% endif %}">
+                        <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text|safe }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button class="btn btn-warning fw-semibold" type="submit">Crear cuenta técnica</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'tecnico_mantenimiento:lista' %}">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

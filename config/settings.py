@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'apps.ventas',
     'apps.alquileres',
     'apps.mantenimiento',
+    'apps.tecnico_mantenimiento',
     'apps.reportes',
     'apps.clientes',
 ]

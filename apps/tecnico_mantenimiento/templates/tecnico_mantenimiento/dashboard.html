@@ -1,0 +1,46 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Panel Técnico | MaquiRent{% endblock %}
+{% block page_name %}Panel técnico{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <section class="p-4 p-lg-5 bg-white border rounded-4 shadow-sm mb-4">
+        <p class="text-muted small text-uppercase fw-bold mb-1">Área técnica</p>
+        <h1 class="h3 fw-bold text-dark">Bienvenido, {{ request.user.get_full_name|default:request.user.email }}</h1>
+        <p class="text-secondary mb-0">
+            Consulta el estado de la flota y registra o revisa los trabajos de mantenimiento.
+        </p>
+        {% if request.user.especialidad %}
+        <span class="badge text-bg-light border mt-3">Especialidad: {{ request.user.especialidad }}</span>
+        {% endif %}
+    </section>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <article class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <span class="text-muted small text-uppercase fw-bold">Flota</span>
+                    <h2 class="h4 fw-bold mt-2">Estado de equipos</h2>
+                    <p class="text-secondary">{{ cantidad_unidades }} unidades activas; {{ unidades_mantenimiento }} en mantenimiento.</p>
+                    <a class="btn btn-outline-primary" href="{% url 'inventario:maquinaria_lista' %}">
+                        Consultar maquinaria
+                    </a>
+                </div>
+            </article>
+        </div>
+        <div class="col-md-6">
+            <article class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <span class="text-muted small text-uppercase fw-bold">Servicio</span>
+                    <h2 class="h4 fw-bold mt-2">Mantenimiento</h2>
+                    <p class="text-secondary">Registra intervenciones y consulta el historial técnico de cada unidad.</p>
+                    <a class="btn btn-warning" href="{% url 'mantenimiento:mantenimiento_lista' %}">
+                        Ir a mantenimiento
+                    </a>
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+{% endblock %}

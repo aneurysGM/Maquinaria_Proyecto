@@ -58,6 +58,12 @@ class UsuarioPersonalizado(AbstractUser):
         verbose_name='Teléfono',
         db_column='Telefono'
     )
+    especialidad = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Especialidad técnica',
+        db_column='Especialidad',
+    )
     suspension_hasta = models.DateField(
         null=True,
         blank=True,
