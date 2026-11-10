@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -14,8 +16,10 @@ class SolicitudAlquiler(models.Model):
     ESTADOS = [
         ('Pendiente', 'Pendiente'), 
         ('Aprobada', 'Aprobada'), 
-        ('Rechazada', 'Rechazada')
+        ('Rechazada', 'Rechazada'),
+        ('Vencida', 'Vencida'),
     ]
+    PLAZO_PAGO_DIAS = 5
     
     cliente = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -72,6 +76,12 @@ class SolicitudAlquiler(models.Model):
         return 'Pendiente de devolución' if self.fecha_salida is not None else 'Sin entregar'
 
     @property
+    def fecha_limite_pago(self):
+        if self.fecha_revision is None:
+            return None
+        return self.fecha_revision + timedelta(days=self.PLAZO_PAGO_DIAS)
+
+    @property
     def dias_atraso_actual(self):
         if not self.fecha_salida:
             return 0
@@ -103,7 +113,9 @@ class SolicitudAlquiler(models.Model):
                 name='CK_Solicitud_Fechas'
             ),
             models.CheckConstraint(
-                condition=models.Q(estado__in=['Pendiente', 'Aprobada', 'Rechazada']), 
+                condition=models.Q(
+                    estado__in=['Pendiente', 'Aprobada', 'Rechazada', 'Vencida']
+                ),
                 name='CK_Solicitud_Estado'
             ),
             models.CheckConstraint(

@@ -20,6 +20,10 @@ from apps.ventas.models import PresupuestoAlquiler
 from .bloqueos import bloquear_unidad
 from .forms import RetornoMaquinariaForm, SolicitudAlquilerForm, SolicitudFiltroForm
 from .models import SolicitudAlquiler
+from .reservas import (
+    liberar_unidad_si_no_reservada,
+    puede_aprobar_reserva,
+)
 
 
 def dias_del_plan(plan, cantidad):
@@ -181,6 +185,8 @@ def solicitud_registrar(request, unidad_id):
                         importe_renta=tarifa_periodo * solicitud.cantidad,
                         deposito_garantia=unidad.maquinaria.deposito_garantia,
                     )
+                    unidad.estado = 'Alquilado'
+                    unidad.save(update_fields=['estado'])
             except ValidationError as error:
                 for mensaje in error.messages:
                     form.add_error(None, mensaje)
@@ -278,7 +284,7 @@ def solicitud_resolver(request, solicitud_id):
                 raise ValidationError(
                     'No se puede aprobar una solicitud cuya fecha de inicio ya pasó.'
                 )
-            if not unidad_disponible(unidad):
+            if not puede_aprobar_reserva(solicitud, unidad):
                 raise ValidationError(
                     'La unidad física ya no está disponible para aprobación.'
                 )
@@ -299,6 +305,11 @@ def solicitud_resolver(request, solicitud_id):
         solicitud.save(update_fields=[
             'estado', 'revisado_por', 'fecha_revision'
         ])
+        if decision == 'Aprobada':
+            unidad.estado = 'Alquilado'
+            unidad.save(update_fields=['estado'])
+        else:
+            liberar_unidad_si_no_reservada(unidad, solicitud.pk)
         messages.success(
             request,
             f'La solicitud #{solicitud.pk} ha sido {decision.lower()} correctamente.',
@@ -335,9 +346,14 @@ def solicitud_registrar_salida(request, solicitud_id):
         )
         return redirect('alquileres:solicitud_lista')
 
-    if not unidad_disponible(unidad) or SolicitudAlquiler.objects.filter(
-        unidad=unidad, fecha_salida__isnull=False, fecha_retorno__isnull=True,
-    ).exists():
+    if (
+        not unidad.activo
+        or not unidad.maquinaria.activo
+        or unidad.estado not in ('Disponible', 'Alquilado')
+        or SolicitudAlquiler.objects.filter(
+            unidad=unidad, fecha_salida__isnull=False, fecha_retorno__isnull=True,
+        ).exclude(pk=solicitud.pk).exists()
+    ):
         messages.error(request, 'La unidad ya no está disponible para entregar.')
         return redirect('alquileres:solicitud_lista')
 
@@ -415,9 +431,9 @@ def solicitud_registrar_retorno(request, solicitud_id):
         'observaciones_retorno',
     ])
 
-    unidad.estado = 'Disponible'
+    liberar_unidad_si_no_reservada(unidad, solicitud.pk)
     unidad.horas_uso = horas_actualizadas
-    unidad.save(update_fields=['estado', 'horas_uso'])
+    unidad.save(update_fields=['horas_uso'])
 
     presupuesto = getattr(solicitud, 'presupuesto', None)
     if presupuesto and solicitud.politica_mora_aplica:

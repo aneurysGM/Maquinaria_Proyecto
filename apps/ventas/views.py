@@ -6,6 +6,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import DetailView, ListView
 
+from apps.alquileres.reservas import expirar_solicitud_si_corresponde
 from .forms import PagoAlquilerForm, ReembolsoDepositoForm
 from .models import PresupuestoAlquiler, ReembolsoDeposito
 
@@ -66,12 +67,22 @@ def pago_registrar(request, presupuesto_id):
     if request.method != 'POST':
         return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto_id)
 
+    solicitud_id = PresupuestoAlquiler.objects.filter(
+        pk=presupuesto_id,
+    ).values_list('solicitud_id', flat=True).first()
+    if solicitud_id is None:
+        get_object_or_404(PresupuestoAlquiler, pk=presupuesto_id)
+
+    expirar_solicitud_si_corresponde(solicitud_id)
     presupuesto = get_object_or_404(
         PresupuestoAlquiler.objects.select_for_update().select_related('solicitud'),
         pk=presupuesto_id,
     )
     if presupuesto.solicitud.estado != 'Aprobada':
-        messages.error(request, 'Solo se pueden registrar pagos de alquileres aprobados.')
+        messages.error(
+            request,
+            'Solo se pueden registrar pagos de solicitudes aprobadas y vigentes.',
+        )
         return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto.pk)
 
     form = PagoAlquilerForm(request.POST)

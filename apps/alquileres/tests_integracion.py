@@ -29,13 +29,38 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
             'cantidad': 2, 'comentario': 'Obra integración',
         }, follow=True)
         self.assertEqual(respuesta.status_code, 200)
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.estado, 'Alquilado')
         solicitud = SolicitudAlquiler.objects.get()
+        self.assertEqual(solicitud.estado, 'Pendiente')
+        self.assertNotContains(
+            self.client.get(reverse('catalogo')),
+            self.maquinaria.nombre,
+        )
+        self.assertNotContains(
+            self.client.get(reverse('cuentas:dashboard')),
+            self.maquinaria.nombre,
+        )
+        self.assertNotContains(
+            self.client.get(reverse('alquileres:solicitud_lista')),
+            reverse('inventario:maquinaria_detalle', args=[self.unidad.pk]),
+        )
         self.assertEqual(solicitud.fecha_fin, timezone.localdate() + timedelta(days=13))
         self.assertEqual(solicitud.presupuesto.importe_renta, Decimal('9000.00'))
         self.assertEqual(solicitud.presupuesto.importe_total, Decimal('12000.00'))
         self.assertContains(self.client.get(reverse('alquileres:solicitud_detalle', args=[solicitud.pk])), 'Obra integración')
         self.client.force_login(self.admin)
         self.client.post(reverse('alquileres:solicitud_resolver', args=[solicitud.pk]), {'decision': 'Aprobada'})
+        solicitud.refresh_from_db()
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+        self.assertEqual(
+            solicitud.fecha_limite_pago,
+            solicitud.fecha_revision + timedelta(days=5),
+        )
+        self.assertContains(
+            self.client.get(reverse('alquileres:solicitud_lista')),
+            'Fecha límite del pago inicial',
+        )
         self.client.post(reverse('alquileres:solicitud_salida', args=[solicitud.pk]))
         solicitud.refresh_from_db()
         self.assertEqual(solicitud.revisado_por, self.admin)
@@ -65,9 +90,20 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
 
     def test_tres_planes_y_tarifas_contratadas_no_cambian(self):
         self.client.force_login(self.cliente)
-        for plan, dias, tarifa in [('diario', 2, 750), ('semanal', 14, 4500), ('mensual', 60, 15000)]:
+        for indice, (plan, dias, tarifa) in enumerate(
+            [('diario', 2, 750), ('semanal', 14, 4500), ('mensual', 60, 15000)]
+        ):
             with self.subTest(plan=plan):
-                self.client.post(reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]), {
+                if indice:
+                    unidad = Unidad.objects.create(
+                        maquinaria=self.maquinaria,
+                        numero_serie=f'000045{indice}',
+                        ubicacion_actual='Santo Domingo',
+                        horas_uso=Decimal('10.5'),
+                    )
+                else:
+                    unidad = self.unidad
+                self.client.post(reverse('alquileres:solicitud_registrar', args=[unidad.pk]), {
                     'fecha_inicio': timezone.localdate().isoformat(), 'plan': plan, 'cantidad': 2,
                 })
                 solicitud = SolicitudAlquiler.objects.latest('pk')
@@ -83,9 +119,40 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         datos = {'fecha_inicio': timezone.localdate().isoformat(), 'plan': 'diario', 'cantidad': 1}
         url = reverse('alquileres:solicitud_registrar', args=[self.unidad.pk])
         self.client.post(url, datos)
-        self.assertContains(self.client.post(url, datos), 'Ya tienes una solicitud pendiente')
+        self.client.post(url, datos)
         self.assertEqual(SolicitudAlquiler.objects.count(), 1)
         self.assertEqual(PresupuestoAlquiler.objects.count(), 1)
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+
+    def test_formulario_no_puede_liberar_unidad_con_solicitud_activa(self):
+        self.crear_solicitud()
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+        datos = {
+            'categoria': self.maquinaria.categoria_id,
+            'codigo': self.maquinaria.codigo,
+            'nombre': self.maquinaria.nombre,
+            'descripcion': self.maquinaria.descripcion,
+            'marca': self.maquinaria.marca or '',
+            'modelo': self.maquinaria.modelo or '',
+            'costo_adquisicion': self.maquinaria.costo_adquisicion,
+            'tarifa_diaria': self.maquinaria.tarifa_diaria,
+            'tarifa_semanal': self.maquinaria.tarifa_semanal,
+            'tarifa_mensual': self.maquinaria.tarifa_mensual,
+            'deposito_garantia': self.maquinaria.deposito_garantia,
+            'numero_serie': self.unidad.numero_serie,
+            'estado': 'Disponible',
+            'horas_uso': self.unidad.horas_uso,
+            'fecha_adquisicion': '',
+            'anio_fabricacion': '',
+            'ubicacion_actual': self.unidad.ubicacion_actual,
+        }
+
+        form = MaquinariaIntegralForm(data=datos, unidad=self.unidad)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('estado', form.errors)
 
     def test_solicitud_y_presupuesto_se_revierten_juntos(self):
         self.client.force_login(self.cliente)
@@ -103,6 +170,45 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
                 'fecha_inicio': timezone.localdate().isoformat(), 'plan': 'mensual', 'cantidad': cantidad,
             })
         self.assertFalse(SolicitudAlquiler.objects.exists())
+
+    def test_unidades_no_disponibles_no_admiten_nuevas_solicitudes(self):
+        url = reverse('alquileres:solicitud_registrar', args=[self.unidad.pk])
+        datos = {
+            'fecha_inicio': timezone.localdate().isoformat(),
+            'plan': 'diario',
+            'cantidad': 1,
+        }
+        for usuario in (self.cliente, self.admin):
+            self.client.force_login(usuario)
+            for estado in ('Alquilado', 'Mantenimiento', 'Baja'):
+                with self.subTest(usuario=usuario.rol, estado=estado):
+                    Unidad.objects.filter(pk=self.unidad.pk).update(estado=estado)
+                    respuesta = self.client.post(url, datos)
+                    self.assertEqual(respuesta.status_code, 302)
+                    self.assertFalse(SolicitudAlquiler.objects.exists())
+        Unidad.objects.filter(pk=self.unidad.pk).update(estado='Disponible')
+
+    def test_rechazar_solicitud_pendiente_libera_la_unidad_reservada(self):
+        self.client.force_login(self.cliente)
+        self.client.post(reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]), {
+            'fecha_inicio': timezone.localdate().isoformat(),
+            'plan': 'diario',
+            'cantidad': 1,
+        })
+        solicitud = SolicitudAlquiler.objects.get()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('alquileres:solicitud_resolver', args=[solicitud.pk]),
+            {'decision': 'Rechazada'},
+        )
+
+        solicitud.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'Rechazada')
+        self.assertEqual(self.unidad.estado, 'Disponible')
 
     def test_cliente_solo_ve_sus_solicitudes_y_detalles(self):
         propia = self.crear_solicitud(comentario='Comentario propio')

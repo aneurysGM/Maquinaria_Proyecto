@@ -1,6 +1,8 @@
 from datetime import timedelta
 from decimal import Decimal
+from io import StringIO
 
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -130,6 +132,105 @@ class PresupuestosAlquilerTests(TestCase):
         )
 
         self.assertEqual(respuesta.status_code, 403)
+        self.assertEqual(PagoAlquiler.objects.count(), 0)
+
+    def test_comando_expirado_vence_solicitud_y_libera_unidad_sin_pago_completo(self):
+        self.solicitud.fecha_revision = timezone.now() - timedelta(days=5, seconds=1)
+        self.solicitud.save(update_fields=['fecha_revision'])
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+        PagoAlquiler.objects.create(
+            presupuesto=self.presupuesto,
+            concepto='renta',
+            monto=Decimal('699.99'),
+            metodo='transferencia',
+            registrado_por=self.admin,
+        )
+
+        call_command('expirado', stdout=StringIO())
+
+        self.solicitud.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, 'Vencida')
+        self.assertEqual(self.unidad.estado, 'Disponible')
+
+    def test_comando_expirado_conserva_solicitud_pagada_completamente(self):
+        self.solicitud.fecha_revision = timezone.now() - timedelta(days=6)
+        self.solicitud.save(update_fields=['fecha_revision'])
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+        for concepto, monto in (
+            ('renta', self.presupuesto.importe_renta),
+            ('deposito', self.presupuesto.deposito_garantia),
+        ):
+            PagoAlquiler.objects.create(
+                presupuesto=self.presupuesto,
+                concepto=concepto,
+                monto=monto,
+                metodo='transferencia',
+                registrado_por=self.admin,
+            )
+
+        call_command('expirado', stdout=StringIO())
+
+        self.solicitud.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, 'Aprobada')
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+
+    def test_comando_expirado_no_caduca_antes_de_los_cinco_dias(self):
+        self.solicitud.fecha_revision = timezone.now() - timedelta(days=5) + timedelta(seconds=1)
+        self.solicitud.save(update_fields=['fecha_revision'])
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+
+        call_command('expirado', stdout=StringIO())
+
+        self.solicitud.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, 'Aprobada')
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+
+    def test_comando_expirado_no_caduca_una_solicitud_ya_entregada(self):
+        self.solicitud.fecha_revision = timezone.now() - timedelta(days=6)
+        self.solicitud.fecha_salida = timezone.now() - timedelta(days=1)
+        self.solicitud.entregado_por = self.admin
+        self.solicitud.save(update_fields=[
+            'fecha_revision',
+            'fecha_salida',
+            'entregado_por',
+        ])
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+
+        call_command('expirado', stdout=StringIO())
+
+        self.solicitud.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, 'Aprobada')
+        self.assertEqual(self.unidad.estado, 'Alquilado')
+
+    def test_pago_fuera_de_plazo_expira_solicitud_y_no_guarda_el_pago(self):
+        self.solicitud.fecha_revision = timezone.now() - timedelta(days=6)
+        self.solicitud.save(update_fields=['fecha_revision'])
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+        self.client.force_login(self.admin)
+
+        self.client.post(
+            reverse('ventas:pago_registrar', args=[self.presupuesto.pk]),
+            {
+                'concepto': 'renta',
+                'monto': '700.00',
+                'metodo': 'transferencia',
+                'referencia': 'TR-EXPIRADO',
+            },
+        )
+
+        self.solicitud.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, 'Vencida')
+        self.assertEqual(self.unidad.estado, 'Disponible')
         self.assertEqual(PagoAlquiler.objects.count(), 0)
 
     def test_mora_usa_porcentaje_diario_equivalente_y_aumenta_desde_el_dia_4(self):

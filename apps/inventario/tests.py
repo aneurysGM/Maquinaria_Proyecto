@@ -142,14 +142,26 @@ class CatalogoPanelTests(TestCase):
         unidad = self.crear_unidad(
             'PUB-001', 'Excavadora pública', self.admin
         )
+        self.crear_unidad(
+            'PUB-002', 'Excavadora en mantenimiento', self.admin,
+            estado='Mantenimiento',
+        )
+        self.crear_unidad(
+            'PUB-003', 'Excavadora fuera de servicio', self.admin,
+            estado='Baja',
+        )
 
         inicio = self.client.get(reverse('index'))
         self.assertEqual(inicio.status_code, 200)
         self.assertContains(inicio, reverse('catalogo'))
+        self.assertNotContains(inicio, 'Excavadora en mantenimiento')
+        self.assertNotContains(inicio, 'Excavadora fuera de servicio')
 
         catalogo = self.client.get(reverse('catalogo'))
         self.assertEqual(catalogo.status_code, 200)
         self.assertContains(catalogo, unidad.maquinaria.nombre)
+        self.assertNotContains(catalogo, 'Excavadora en mantenimiento')
+        self.assertNotContains(catalogo, 'Excavadora fuera de servicio')
         self.assertContains(
             catalogo,
             reverse('inventario:maquinaria_detalle', args=[unidad.pk]),
@@ -235,12 +247,51 @@ class CatalogoPanelTests(TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_administrador_puede_cambiar_estado_desde_formulario_integral(self):
+        unidad = self.crear_unidad(
+            'EST-004', 'Excavadora editable', self.admin,
+        )
+        datos = {
+            'categoria': self.categoria.pk,
+            'codigo': unidad.maquinaria.codigo,
+            'nombre': unidad.maquinaria.nombre,
+            'descripcion': unidad.maquinaria.descripcion,
+            'marca': unidad.maquinaria.marca or '',
+            'modelo': unidad.maquinaria.modelo or '',
+            'costo_adquisicion': unidad.maquinaria.costo_adquisicion,
+            'tarifa_diaria': unidad.maquinaria.tarifa_diaria,
+            'tarifa_semanal': unidad.maquinaria.tarifa_semanal,
+            'tarifa_mensual': unidad.maquinaria.tarifa_mensual,
+            'deposito_garantia': unidad.maquinaria.deposito_garantia,
+            'numero_serie': unidad.numero_serie,
+            'estado': 'Mantenimiento',
+            'horas_uso': unidad.horas_uso,
+            'fecha_adquisicion': '',
+            'anio_fabricacion': '',
+            'ubicacion_actual': unidad.ubicacion_actual,
+        }
+
+        form = MaquinariaIntegralForm(data=datos, unidad=unidad)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        unidad.refresh_from_db()
+        self.assertEqual(unidad.estado, 'Mantenimiento')
+
     def test_panel_admin_muestra_solo_sus_unidades_disponibles_y_costo_interno(self):
         propia = self.crear_unidad('ADM-001', 'Excavadora propia', self.admin)
         self.crear_unidad('ADM-002', 'Excavadora ajena', self.cliente)
         historica = self.crear_unidad('ADM-005', 'Excavadora histórica', None)
         self.crear_unidad(
             'ADM-003', 'Excavadora alquilada', self.admin, estado='Alquilado'
+        )
+        self.crear_unidad(
+            'ADM-006', 'Excavadora en mantenimiento', self.admin,
+            estado='Mantenimiento',
+        )
+        self.crear_unidad(
+            'ADM-007', 'Excavadora fuera de servicio', self.admin,
+            estado='Baja',
         )
         self.client.force_login(self.admin)
 
@@ -251,6 +302,45 @@ class CatalogoPanelTests(TestCase):
         self.assertContains(respuesta, '$99000,00')
         self.assertNotContains(respuesta, 'Excavadora ajena')
         self.assertNotContains(respuesta, 'Excavadora alquilada')
+        self.assertNotContains(respuesta, 'Excavadora en mantenimiento')
+        self.assertNotContains(respuesta, 'Excavadora fuera de servicio')
+
+    def test_inventario_muestra_estados_a_admin_y_solo_disponibles_al_cliente(self):
+        disponible = self.crear_unidad(
+            'EST-001', 'Excavadora disponible', self.admin,
+        )
+        mantenimiento = self.crear_unidad(
+            'EST-002', 'Excavadora en taller', self.admin,
+            estado='Mantenimiento',
+        )
+        baja = self.crear_unidad(
+            'EST-003', 'Excavadora retirada', self.admin,
+            estado='Baja',
+        )
+
+        self.client.force_login(self.admin)
+        respuesta_admin = self.client.get(reverse('inventario:maquinaria_lista'))
+
+        self.assertContains(respuesta_admin, disponible.maquinaria.nombre)
+        self.assertContains(respuesta_admin, mantenimiento.maquinaria.nombre)
+        self.assertContains(respuesta_admin, 'En mantenimiento')
+        self.assertContains(respuesta_admin, baja.maquinaria.nombre)
+        self.assertContains(respuesta_admin, 'Fuera de servicio')
+
+        self.client.force_login(self.cliente)
+        respuesta_cliente = self.client.get(reverse('inventario:maquinaria_lista'))
+
+        self.assertContains(respuesta_cliente, disponible.maquinaria.nombre)
+        self.assertNotContains(respuesta_cliente, mantenimiento.maquinaria.nombre)
+        self.assertNotContains(respuesta_cliente, baja.maquinaria.nombre)
+        for unidad in (mantenimiento, baja):
+            with self.subTest(estado=unidad.estado):
+                self.assertEqual(
+                    self.client.get(
+                        reverse('inventario:maquinaria_detalle', args=[unidad.pk])
+                    ).status_code,
+                    404,
+                )
 
     def test_cliente_ve_tarifas_y_deposito_pero_no_costo_adquisicion(self):
         unidad = self.crear_unidad('CLI-001', 'Excavadora para alquilar', self.admin)

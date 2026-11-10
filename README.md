@@ -113,6 +113,72 @@ ni se crearon registros en la base de trabajo.
 - Comprobaciones ejecutadas: `manage.py test apps.inventario.tests`
   (10 pruebas aprobadas) y `manage.py check` (sin incidencias).
 
+### Permisos de gestión del inventario
+
+- Los botones **Gestionar Categorías** y **Registrar Maquinaria** solo aparecen
+  para administradores en la lista de maquinaria.
+- El acceso a listar y crear categorías requiere permiso administrativo también
+  desde las rutas directas. El registro de maquinaria conserva su restricción
+  administrativa existente.
+- Se ampliaron las pruebas en `apps/inventario/tests.py` para verificar que el
+  cliente no ve esos botones y recibe HTTP 403 al acceder directamente a las
+  rutas de gestión, mientras el administrador conserva el acceso.
+- Comprobación ejecutada: `manage.py test
+  apps.inventario.tests.PermisosMaquinariaTests --noinput` (5 pruebas aprobadas).
+
+### Estado y disponibilidad de unidades
+
+- Se conservó el cambio de estado de la unidad en el formulario integral de
+  maquinaria. El administrador puede cambiarlo; el listado administrativo
+  muestra unidades activas en todos sus estados con la etiqueta correspondiente.
+- Los clientes solo ven unidades disponibles en inventario y no pueden abrir
+  directamente el detalle de una unidad en otro estado. El catálogo público y
+  el panel de inicio solo muestran unidades disponibles; la portada pública no
+  lista unidades.
+- La lista de mantenimiento refleja todos los estados de las unidades activas.
+  La opción de registrar mantenimiento solo se muestra para unidades disponibles
+  o que ya están en mantenimiento.
+- Alquileres impide nuevas solicitudes de unidades alquiladas, en mantenimiento
+  o fuera de servicio para clientes y administradores. Se conservan las
+  solicitudes existentes y su historial.
+- Comprobaciones ejecutadas: **14 pruebas aprobadas** para inventario, alquileres
+  y mantenimiento; luego se repitió la prueba de inicio y catálogo con las
+  nuevas verificaciones (aprobada). `manage.py check` sin incidencias.
+
+### Reserva al solicitar y vencimiento por falta de pago
+
+- Al enviar la primera solicitud, la unidad pasa inmediatamente a `Alquilado` y
+  deja de aparecer en el inventario del cliente, el catálogo público y el panel
+  de inicio. Si se rechaza, vuelve a estar disponible cuando no hay otra reserva.
+- La migración reserva también las unidades disponibles que ya tenían solicitudes
+  pendientes o aprobadas sin entrega al momento de actualizar el sistema.
+- Al aprobarla, se inicia un plazo de cinco días calendario para registrar el
+  pago inicial completo: renta más depósito. El sistema considera los pagos
+  registrados por administración; no tiene cobro directo en línea para el cliente.
+- `apps/alquileres/reservas.py` valida el pago, aplica el vencimiento con bloqueo
+  transaccional y libera la unidad solo si no existe otra reserva ni una entrega
+  física activa. Las solicitudes vencidas conservan su historial con estado
+  `Vencida`; una solicitud ya entregada no vence por falta de pago.
+- `apps/ventas/management/commands/expirado.py` implementa el comando
+  `manage.py expirado`. Para ejecutar manualmente:
+
+  ```powershell
+  .\.venv\Scripts\python.exe manage.py expirado
+  ```
+
+- Para que el vencimiento ocurra sin esperar a que alguien use la aplicación,
+  crea una tarea en el Programador de tareas de Windows que ejecute el comando
+  cada hora. En **Programa o script**, indica la ruta absoluta a
+  `.venv\Scripts\python.exe`; en **Agregar argumentos**, `manage.py expirado`;
+  y en **Iniciar en**, la carpeta raíz del proyecto. La demora máxima normal
+  será de una hora después de cumplirse el plazo.
+- La migración `apps/alquileres/migrations/0003_estado_solicitud_vencida.py`
+  agrega `Vencida` a los estados permitidos. Aplicar con
+  `.\.venv\Scripts\python.exe manage.py migrate`.
+- La suite de alquileres, ventas/pagos, inventario y mantenimiento aprobó
+  **69 pruebas**. `manage.py check` y `makemigrations --check --dry-run` no
+  detectaron incidencias ni migraciones pendientes.
+
 ### Validación de tarifas de maquinaria
 
 - Se ajustó `MaquinariaIntegralForm` en `apps/inventario/forms.py` para exigir

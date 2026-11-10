@@ -110,7 +110,7 @@
                                 {% elif unidad.estado == 'Alquilado' %}
                                 <span class="badge bg-primary-subtle text-primary">Alquilado</span>
                                 {% else %}
-                                <span class="badge bg-warning-subtle text-warning">{{ unidad.estado }}</span>
+                                <span class="badge bg-warning-subtle text-warning">{{ unidad.get_estado_display }}</span>
                                 {% endif %}
                             </td>
                             <td class="text-end pe-4">

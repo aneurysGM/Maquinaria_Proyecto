@@ -157,6 +157,8 @@ class MaquinariaListaView(LoginRequiredMixin, InventarioConsultaRequiredMixin, L
             activo=True,
             maquinaria__activo=True,
         )
+        if self.request.user.es_cliente:
+            queryset = queryset.filter(estado='Disponible')
         
         # Capturar parámetros de la URL (GET)
         q = self.request.GET.get('q', '').strip()
@@ -247,16 +249,18 @@ class MaquinariaDetalleView(LoginRequiredMixin, InventarioConsultaRequiredMixin,
 
     def get_object(self, queryset=None):
         # Optimizamos trayendo la unidad, su maquinaria y la categoría en una sola consulta
-        return get_object_or_404(
-            Unidad.objects.select_related('maquinaria__categoria').prefetch_related(
-                'maquinaria__imagenes',
-                'maquinaria__comentarios__cliente',
-            ).filter(
-                activo=True,
-                maquinaria__activo=True,
-            ),
-            pk=self.kwargs.get(self.pk_url_kwarg),
+        unidades = Unidad.objects.select_related(
+            'maquinaria__categoria',
+        ).prefetch_related(
+            'maquinaria__imagenes',
+            'maquinaria__comentarios__cliente',
+        ).filter(
+            activo=True,
+            maquinaria__activo=True,
         )
+        if self.request.user.es_cliente:
+            unidades = unidades.filter(estado='Disponible')
+        return get_object_or_404(unidades, pk=self.kwargs.get(self.pk_url_kwarg))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

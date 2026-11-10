@@ -152,6 +152,20 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if self.unidad_instancia:
+            reserva_activa = self.unidad_instancia.solicitudes_alquiler.filter(
+                estado__in=('Pendiente', 'Aprobada'),
+                fecha_salida__isnull=True,
+            ).exists()
+            if (
+                reserva_activa
+                and cleaned_data.get('estado') != self.unidad_instancia.estado
+            ):
+                self.add_error(
+                    'estado',
+                    'No se puede cambiar el estado mientras haya una solicitud '
+                    'pendiente o aprobada sin entregar.',
+                )
         if self.unidad_instancia and cleaned_data.get('estado') not in (None, 'Alquilado'):
             if self.unidad_instancia.solicitudes_alquiler.filter(
                 fecha_salida__isnull=False, fecha_retorno__isnull=True,
