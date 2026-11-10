@@ -10,6 +10,7 @@
             <h1 class="h3 fw-bold text-dark mb-1">Flota de Maquinaria</h1>
             <p class="text-secondary mb-0">Consulta y administra los equipos registrados en el sistema.</p>
         </div>
+        {% if es_administrador %}
         <div class="d-flex gap-2">
             <a href="{% url 'inventario:categoria_lista' %}" class="btn btn-outline-secondary fw-semibold">
                 <i class="bi bi-tags"></i> Gestionar Categorías
@@ -19,6 +20,7 @@
                 <i class="bi bi-plus-lg"></i> Registrar Maquinaria
             </a>
         </div>
+        {% endif %}
     </div>
 
     <!-- TARJETA DE FILTROS Y BÚSQUEDA -->

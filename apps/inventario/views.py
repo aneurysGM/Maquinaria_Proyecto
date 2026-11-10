@@ -133,7 +133,7 @@ class MaquinariaImagenesMixin:
         return HttpResponseRedirect(self.get_success_url())
 
 # --- Vistas de Categorías ---
-class CategoriaListaView(LoginRequiredMixin, InventarioConsultaRequiredMixin, ListView):
+class CategoriaListaView(LoginRequiredMixin, InventarioRegistroRequiredMixin, ListView):
     model = Categoria
     template_name = 'inventario/categoria_lista.html'
     context_object_name = 'categorias'

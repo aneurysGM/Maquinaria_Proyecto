@@ -62,13 +62,36 @@ class PermisosMaquinariaTests(TestCase):
         cliente = self.crear_usuario('cliente@example.com', RolUsuario.CLIENTE)
         self.client.force_login(cliente)
 
-        self.assertEqual(
-            self.client.get(reverse('inventario:maquinaria_lista')).status_code,
-            200,
+        respuesta_lista = self.client.get(reverse('inventario:maquinaria_lista'))
+        self.assertEqual(respuesta_lista.status_code, 200)
+        self.assertNotContains(respuesta_lista, 'Gestionar Categorías')
+        self.assertNotContains(respuesta_lista, 'Registrar Maquinaria')
+
+        for ruta in (
+            'inventario:categoria_lista',
+            'inventario:categoria_crear',
+            'inventario:maquinaria_crear',
+        ):
+            with self.subTest(ruta=ruta):
+                self.assertEqual(
+                    self.client.get(reverse(ruta)).status_code,
+                    403,
+                )
+
+    def test_solo_administrador_ve_enlaces_de_gestion_y_accede_a_categorias(self):
+        administrador = self.crear_usuario(
+            'admin@example.com', RolUsuario.ADMINISTRADOR
         )
+        self.client.force_login(administrador)
+
+        respuesta_lista = self.client.get(reverse('inventario:maquinaria_lista'))
+
+        self.assertEqual(respuesta_lista.status_code, 200)
+        self.assertContains(respuesta_lista, 'Gestionar Categorías')
+        self.assertContains(respuesta_lista, 'Registrar Maquinaria')
         self.assertEqual(
-            self.client.get(reverse('inventario:maquinaria_crear')).status_code,
-            403,
+            self.client.get(reverse('inventario:categoria_lista')).status_code,
+            200,
         )
 
     def test_cuenta_sin_rol_no_puede_consultar_inventario(self):
