@@ -28,6 +28,26 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Solicitudes pendientes compartidas — 10 de noviembre de 2026
+
+- Las solicitudes pendientes ya no cambian el estado de la unidad ni la ocultan
+  del catálogo; distintos clientes pueden solicitar la misma unidad mientras
+  ninguna solicitud haya sido aprobada. Cada cliente consulta únicamente sus
+  propias solicitudes y el administrador puede consultar todas.
+- Al aprobar una solicitud, la unidad pasa a **Alquilado** y las demás
+  solicitudes pendientes para esa unidad se marcan **Rechazada**. La aprobación
+  y el rechazo de solicitudes competidoras se realizan en la misma operación.
+- `apps/alquileres/migrations/0004_pendientes_no_reservan_unidad.py` libera las
+  unidades que quedaron alquiladas por solicitudes pendientes del comportamiento
+  anterior, sin cambiar las que tienen una solicitud aprobada activa.
+- Se actualizaron las pruebas de integración y concurrencia en
+  `apps/alquileres/tests_integracion.py` y
+  `apps/alquileres/tests_concurrencia.py`. Comprobaciones: las suites de
+  alquileres, ventas, inventario y mantenimiento aprobaron **71 pruebas**;
+  `manage.py check` no encontró incidencias y
+  `makemigrations --check --dry-run` no detectó cambios. La base de trabajo no
+  se modificó.
+
 ### Integración local de alquileres, entregas y reportes — 9 de noviembre de 2026
 
 - Se completó el borrador de `feat/integrar-alquileres-entregas-reportes` sobre
