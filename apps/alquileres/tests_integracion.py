@@ -254,6 +254,44 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         pendiente.refresh_from_db()
         self.assertEqual(pendiente.estado, 'Rechazada')
 
+    def test_solicitud_y_aprobacion_no_se_bloquean_por_alquiler_aprobado_devuelto(self):
+        hoy = timezone.localdate()
+        anterior = self.crear_solicitud(
+            estado='Aprobada',
+            fecha_inicio=hoy,
+            fecha_fin=hoy + timedelta(days=7),
+            fecha_salida=timezone.now() - timedelta(days=2),
+            entregado_por=self.admin,
+            fecha_retorno=timezone.now() - timedelta(days=1),
+            recibido_por=self.admin,
+        )
+        self.unidad.estado = 'Disponible'
+        self.unidad.save(update_fields=['estado'])
+        self.client.force_login(self.cliente)
+
+        respuesta = self.client.post(
+            reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]),
+            {
+                'fecha_inicio': hoy.isoformat(),
+                'plan': 'semanal',
+                'cantidad': 1,
+            },
+        )
+
+        nueva = SolicitudAlquiler.objects.exclude(pk=anterior.pk).get()
+        self.assertEqual(nueva.estado, 'Pendiente')
+        self.assertRedirects(
+            respuesta,
+            reverse('ventas:presupuesto_detalle', args=[nueva.presupuesto.pk]),
+        )
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('alquileres:solicitud_resolver', args=[nueva.pk]),
+            {'decision': 'Aprobada'},
+        )
+        nueva.refresh_from_db()
+        self.assertEqual(nueva.estado, 'Aprobada')
+
     def test_roles_csrf_get_y_campos_extra_no_autorizan_movimientos(self):
         solicitud = self.crear_solicitud(estado='Aprobada')
         for usuario in (self.cliente, self.tecnico):

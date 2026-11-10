@@ -158,6 +158,7 @@ def solicitud_registrar(request, unidad_id):
                     cruce = SolicitudAlquiler.objects.filter(
                         unidad=unidad,
                         estado='Aprobada',
+                        fecha_retorno__isnull=True,
                         fecha_inicio__lte=solicitud.fecha_fin,
                         fecha_fin__gte=solicitud.fecha_inicio,
                     ).exists()
@@ -291,6 +292,7 @@ def solicitud_resolver(request, solicitud_id):
             cruce = SolicitudAlquiler.objects.filter(
                 unidad=unidad,
                 estado='Aprobada',
+                fecha_retorno__isnull=True,
                 fecha_inicio__lte=solicitud.fecha_fin,
                 fecha_fin__gte=solicitud.fecha_inicio,
             ).exclude(pk=solicitud.pk).exists()
