@@ -44,7 +44,8 @@ class OperacionesSimultaneasTests(DatosIntegracion, TransactionTestCase):
         ])
         self.assertEqual(resultados, [302, 302])
         self.assertEqual(SolicitudAlquiler.objects.filter(estado='Aprobada').count(), 1)
-        self.assertEqual(SolicitudAlquiler.objects.filter(estado='Pendiente').count(), 1)
+        self.assertEqual(SolicitudAlquiler.objects.filter(estado='Pendiente').count(), 0)
+        self.assertEqual(SolicitudAlquiler.objects.filter(estado='Rechazada').count(), 1)
 
     def test_dos_solicitudes_duplicadas_solo_crean_un_presupuesto(self):
         datos = {'fecha_inicio': timezone.localdate().isoformat(), 'plan': 'diario', 'cantidad': 1}

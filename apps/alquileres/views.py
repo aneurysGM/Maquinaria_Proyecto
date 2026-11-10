@@ -186,8 +186,6 @@ def solicitud_registrar(request, unidad_id):
                         importe_renta=tarifa_periodo * solicitud.cantidad,
                         deposito_garantia=unidad.maquinaria.deposito_garantia,
                     )
-                    unidad.estado = 'Alquilado'
-                    unidad.save(update_fields=['estado'])
             except ValidationError as error:
                 for mensaje in error.messages:
                     form.add_error(None, mensaje)
@@ -303,13 +301,22 @@ def solicitud_resolver(request, solicitud_id):
 
         solicitud.estado = decision
         solicitud.revisado_por = request.user
-        solicitud.fecha_revision = timezone.now()
+        fecha_revision = timezone.now()
+        solicitud.fecha_revision = fecha_revision
         solicitud.save(update_fields=[
             'estado', 'revisado_por', 'fecha_revision'
         ])
         if decision == 'Aprobada':
             unidad.estado = 'Alquilado'
             unidad.save(update_fields=['estado'])
+            SolicitudAlquiler.objects.filter(
+                unidad=unidad,
+                estado='Pendiente',
+            ).exclude(pk=solicitud.pk).update(
+                estado='Rechazada',
+                revisado_por=request.user,
+                fecha_revision=fecha_revision,
+            )
         else:
             liberar_unidad_si_no_reservada(unidad, solicitud.pk)
         messages.success(

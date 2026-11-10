@@ -29,21 +29,17 @@ def pago_inicial_completo(solicitud):
 def puede_aprobar_reserva(solicitud, unidad):
     if not unidad.activo or not unidad.maquinaria.activo:
         return False
-    if unidad.estado == 'Disponible':
-        return True
-    if unidad.estado != 'Alquilado' or solicitud.fecha_salida is not None:
+    if unidad.estado not in ('Disponible', 'Alquilado'):
+        return False
+    if solicitud.fecha_salida is not None:
         return False
 
-    otras_pendientes = SolicitudAlquiler.objects.filter(
-        unidad=unidad,
-        estado='Pendiente',
-    ).exclude(pk=solicitud.pk).exists()
     otras_aprobadas = SolicitudAlquiler.objects.filter(
         unidad=unidad,
         estado='Aprobada',
         fecha_retorno__isnull=True,
     ).exclude(pk=solicitud.pk).exists()
-    return not (otras_pendientes or otras_aprobadas)
+    return not otras_aprobadas
 
 
 def liberar_unidad_si_no_reservada(unidad, solicitud_id):
@@ -53,8 +49,8 @@ def liberar_unidad_si_no_reservada(unidad, solicitud_id):
     otra_reserva = SolicitudAlquiler.objects.filter(
         unidad=unidad,
     ).exclude(pk=solicitud_id).filter(
-        Q(estado='Pendiente')
-        | Q(estado='Aprobada', fecha_retorno__isnull=True)
+        estado='Aprobada',
+        fecha_retorno__isnull=True,
     ).exists()
     if otra_reserva:
         return False
