@@ -34,7 +34,8 @@ class GestionTecnicosTests(TestCase):
         respuesta = self.client.post(
             reverse('tecnico_mantenimiento:crear'),
             {
-                'first_name': 'Ana Técnica',
+                'first_name': 'Ana',
+                'last_name': 'Técnica',
                 'email': 'ana-tecnica@example.com',
                 'telefono': '809-555-0101',
                 'especialidad': 'Sistema hidráulico',
@@ -46,10 +47,58 @@ class GestionTecnicosTests(TestCase):
         self.assertRedirects(respuesta, reverse('tecnico_mantenimiento:lista'))
         tecnico = UsuarioPersonalizado.objects.get(email='ana-tecnica@example.com')
         self.assertEqual(tecnico.rol, RolUsuario.TECNICO)
+        self.assertEqual(tecnico.first_name, 'Ana')
+        self.assertEqual(tecnico.last_name, 'Técnica')
         self.assertEqual(tecnico.telefono, '809-555-0101')
         self.assertEqual(tecnico.especialidad, 'Sistema hidráulico')
         self.assertTrue(tecnico.check_password('Firme!Girasol_2026'))
         self.assertFalse(tecnico.is_staff)
+
+    def test_tarjeta_de_perfil_muestra_iniciales_nombre_y_rol_segun_corresponda(self):
+        usuarios = (
+            (
+                self.admin,
+                reverse('inventario:maquinaria_lista'),
+                'AM',
+                'Ana Martínez',
+                'Administrador',
+            ),
+            (
+                self.cliente,
+                reverse('inventario:maquinaria_lista'),
+                'CC',
+                'Carla Castillo',
+                None,
+            ),
+            (
+                self.tecnico,
+                reverse('tecnico_mantenimiento:dashboard'),
+                'TT',
+                'Tomás Torres',
+                'Técnico',
+            ),
+        )
+        self.admin.first_name = 'Ana'
+        self.admin.last_name = 'Martínez'
+        self.admin.save(update_fields=('first_name', 'last_name'))
+        self.cliente.first_name = 'Carla'
+        self.cliente.last_name = 'Castillo'
+        self.cliente.save(update_fields=('first_name', 'last_name'))
+        self.tecnico.first_name = 'Tomás'
+        self.tecnico.last_name = 'Torres'
+        self.tecnico.save(update_fields=('first_name', 'last_name'))
+
+        for usuario, url, iniciales, nombre, rol in usuarios:
+            with self.subTest(rol=usuario.rol):
+                self.client.force_login(usuario)
+                respuesta = self.client.get(url)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertContains(respuesta, f'class="mq-avatar">{iniciales}</div>')
+                self.assertContains(respuesta, nombre)
+                if rol:
+                    self.assertContains(respuesta, f'<span>{rol}</span>')
+                else:
+                    self.assertNotContains(respuesta, '<span>Cliente</span>')
 
     def test_solo_administrador_puede_listar_o_crear_tecnicos(self):
         for usuario in (self.cliente, self.tecnico):

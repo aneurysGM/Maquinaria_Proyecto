@@ -438,11 +438,12 @@
             </nav>
 
             <div class="mq-sidebar-user">
-                <div class="mq-avatar">{{ request.user.email|first|upper }}</div>
+                <div class="mq-avatar">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</div>
                 <div style="min-width:0; overflow:hidden;">
-                    <strong style="white-space:nowrap; text-overflow:ellipsis;">{{
-                        request.user.get_full_name|default:request.user.email }}</strong>
+                    <strong style="white-space:nowrap; text-overflow:ellipsis;">{{ request.user.get_full_name|default:request.user.email }}</strong>
+                    {% if es_administrador or es_tecnico %}
                     <span>{{ rol_usuario }}</span>
+                    {% endif %}
                 </div>
             </div>
         </aside>

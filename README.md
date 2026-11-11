@@ -45,6 +45,18 @@ puede documentar en una guía específica y enlazarla desde aquí.
   (12 pruebas aprobadas, incluyendo vista pública, solicitud e interfaz
   autenticada); `git diff --check` sin errores.
 
+### Tarjeta de perfil por rol — 11 de noviembre de 2026
+
+- La tarjeta del panel muestra las iniciales del nombre y apellido, y el nombre
+  completo del usuario. Solo las cuentas Administrador y Técnico muestran su
+  rol en la tarjeta; a los Clientes no se les presenta esa etiqueta.
+- El formulario de creación de técnicos ahora solicita apellido por separado
+  para construir correctamente sus iniciales y nombre. También se corrigió la
+  plantilla del perfil, que estaba mostrando literalmente la expresión del
+  nombre en vez de evaluarla.
+- Comprobaciones: `manage.py test apps.tecnico_mantenimiento.tests.GestionTecnicosTests`
+  (7 pruebas aprobadas).
+
 ### Gestión de técnicos de mantenimiento — 10 de noviembre de 2026
 
 - Se creó `apps/tecnico_mantenimiento/` para gestionar cuentas técnicas desde el

@@ -10,6 +10,11 @@ class TecnicoCreacionForm(UserCreationForm):
         max_length=150,
         widget=forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'name'}),
     )
+    last_name = forms.CharField(
+        label='Apellido',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'family-name'}),
+    )
     email = forms.EmailField(
         label='Correo electrónico',
         widget=forms.EmailInput(attrs={'class': 'form-control', 'autocomplete': 'email'}),
@@ -27,7 +32,7 @@ class TecnicoCreacionForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = UsuarioPersonalizado
-        fields = ('first_name', 'email', 'telefono', 'especialidad')
+        fields = ('first_name', 'last_name', 'email', 'telefono', 'especialidad')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
