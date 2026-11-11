@@ -28,6 +28,23 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Catálogo público y detalle de maquinaria — 11 de noviembre de 2026
+
+- Los visitantes pueden abrir los detalles de unidades disponibles desde el
+  catálogo sin iniciar sesión. La información pública conserva las tarifas y
+  descripción, pero no expone el costo de adquisición; las unidades que no
+  están disponibles no se muestran en este acceso público.
+- La vista pública del detalle usa el ancho completo, sin la barra lateral del
+  panel ni el botón **Cerrar sesión**. Incluye enlaces para volver al catálogo
+  e iniciar sesión. Los usuarios autenticados mantienen la navegación normal
+  del panel.
+- El visitante puede elegir **Iniciar sesión para solicitar**. La solicitud
+  continúa requiriendo autenticación y, después de ingresar, se respeta el
+  destino de solicitud original.
+- Comprobaciones: `manage.py test apps.inventario.tests.CatalogoPanelTests`
+  (12 pruebas aprobadas, incluyendo vista pública, solicitud e interfaz
+  autenticada); `git diff --check` sin errores.
+
 ### Gestión de técnicos de mantenimiento — 10 de noviembre de 2026
 
 - Se creó `apps/tecnico_mantenimiento/` para gestionar cuentas técnicas desde el
