@@ -19,7 +19,7 @@ class IniciarSesionView(LoginView):
     redirect_authenticated_user = True
 
     def get_success_url(self):
-        return reverse_lazy('cuentas:dashboard')
+        return self.get_redirect_url() or reverse_lazy('cuentas:dashboard')
 
 
 class RegistrarClienteView(CreateView):

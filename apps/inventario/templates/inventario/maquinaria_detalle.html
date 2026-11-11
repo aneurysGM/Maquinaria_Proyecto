@@ -24,9 +24,15 @@
             <p class="text-secondary mb-0">Código: <strong class="text-dark">{{ unidad.maquinaria.codigo }}</strong> | N° Serie: <strong class="text-dark">{{ unidad.numero_serie }}</strong></p>
         </div>
         <div class="d-flex gap-2">
+            {% if request.user.is_authenticated %}
             <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-outline-secondary fw-semibold">
-                <i class="bi bi-arrow-left"></i> Volver a la Flota
+                <i class="bi bi-arrow-left"></i> Volver a maquinarias
             </a>
+            {% else %}
+            <a href="{% url 'catalogo' %}" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-arrow-left"></i> Volver al catálogo
+            </a>
+            {% endif %}
             {% if puede_registrar_maquinaria %}
             <a href="{% url 'inventario:maquinaria_editar' unidad.id %}" class="btn btn-warning fw-bold text-dark"
                 style="background-color: var(--mq-amber); border: none;">
@@ -162,9 +168,10 @@
     {% endif %}
 
     <div class="d-flex flex-wrap align-items-center gap-3 mt-4">
-        {% if es_cliente and unidad.estado == 'Disponible' %}
+        {% if puede_solicitar_alquiler %}
         <a class="btn btn-warning fw-bold" href="{% url 'alquileres:solicitud_registrar' unidad.id %}">
-            <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>Solicitar alquiler
+            <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>
+            {% if request.user.is_authenticated %}Solicitar alquiler{% else %}Iniciar sesión para solicitar{% endif %}
         </a>
         <span class="small text-secondary">La solicitud será revisada por un administrador.</span>
         {% endif %}

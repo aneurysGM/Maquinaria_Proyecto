@@ -78,6 +78,14 @@
             min-width: 0;
         }
 
+        .mq-main-wrap-public {
+            margin-left: 0;
+        }
+
+        .mq-content-public {
+            padding: 2rem clamp(1rem, 5vw, 5rem);
+        }
+
         .mq-brand {
             display: flex;
             align-items: center;
@@ -355,6 +363,7 @@
 <body>
 
     <div class="mq-app">
+        {% if request.user.is_authenticated %}
         <aside class="mq-sidebar" id="sidebar">
             <a class="mq-brand" href="{% url 'index' %}">
                 <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
@@ -439,10 +448,12 @@
         </aside>
 
         <div class="mq-overlay" id="sidebarOverlay"></div>
+        {% endif %}
 
-        <div class="mq-main-wrap">
+        <div class="mq-main-wrap{% if not request.user.is_authenticated %} mq-main-wrap-public{% endif %}">
             <header class="mq-topbar">
                 <div class="mq-topbar-left">
+                    {% if request.user.is_authenticated %}
                     <button type="button" class="mq-menu-toggle" id="sidebarToggle" aria-label="Menú">
                         <i class="bi bi-list"></i>
                     </button>
@@ -450,9 +461,16 @@
                         <span>Panel</span> <i class="bi bi-chevron-right"></i>
                         <strong>{% block page_name %}Dashboard{% endblock %}</strong>
                     </div>
+                    {% else %}
+                    <div class="mq-crumb">
+                        <strong>MaquiRent</strong>
+                        <span class="ms-2">Detalle de maquinaria</span>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="mq-topbar-right">
+                    {% if request.user.is_authenticated %}
                     <a href="{% url 'index' %}" class="mq-topbar-btn" title="Ir al sitio público">
                         <i class="bi bi-globe"></i>
                         <span>Ver Sitio Web</span>
@@ -465,10 +483,14 @@
                             <span>Cerrar sesión</span>
                         </button>
                     </form>
+                    {% else %}
+                    <a href="{% url 'catalogo' %}" class="mq-topbar-btn">Volver al catálogo</a>
+                    <a href="{% url 'cuentas:login' %}" class="mq-topbar-btn">Iniciar sesión</a>
+                    {% endif %}
                 </div>
             </header>
 
-            <main class="mq-content">
+            <main class="mq-content{% if not request.user.is_authenticated %} mq-content-public{% endif %}">
                 {% if messages %}
                 <div class="mq-messages">
                     {% for message in messages %}

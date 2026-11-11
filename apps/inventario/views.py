@@ -241,7 +241,7 @@ class MaquinariaEditarView(
         context['unidad'] = self.object
         return context
 
-class MaquinariaDetalleView(LoginRequiredMixin, InventarioConsultaRequiredMixin, DetailView):
+class MaquinariaDetalleView(DetailView):
     model = Unidad
     template_name = 'inventario/maquinaria_detalle.html'
     context_object_name = 'unidad'
@@ -258,21 +258,33 @@ class MaquinariaDetalleView(LoginRequiredMixin, InventarioConsultaRequiredMixin,
             activo=True,
             maquinaria__activo=True,
         )
-        if self.request.user.es_cliente:
+        usuario = self.request.user
+        if not (
+            usuario.is_authenticated
+            and usuario.puede_consultar_maquinaria
+            and not usuario.es_cliente
+        ):
             unidades = unidades.filter(estado='Disponible')
         return get_object_or_404(unidades, pk=self.kwargs.get(self.pk_url_kwarg))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        usuario = self.request.user
         context['comentario_form'] = kwargs.get(
             'comentario_form', MaquinariaComentarioForm()
         )
-        context['puede_comentar'] = self.request.user.es_cliente
+        context['puede_comentar'] = (
+            usuario.is_authenticated and usuario.es_cliente
+        )
+        context['puede_solicitar_alquiler'] = (
+            self.object.estado == 'Disponible'
+            and (not usuario.is_authenticated or usuario.es_cliente)
+        )
         return context
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        if not request.user.es_cliente:
+        if not request.user.is_authenticated or not request.user.es_cliente:
             raise PermissionDenied(
                 'Solo los clientes pueden comentar sobre la maquinaria.'
             )

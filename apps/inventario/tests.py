@@ -1,5 +1,6 @@
 from io import BytesIO
 import tempfile
+from urllib.parse import parse_qs, urlparse
 
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -165,6 +166,52 @@ class CatalogoPanelTests(TestCase):
         self.assertContains(
             catalogo,
             reverse('inventario:maquinaria_detalle', args=[unidad.pk]),
+        )
+
+    def test_visitante_puede_ver_detalle_y_debe_iniciar_sesion_para_solicitar(self):
+        unidad = self.crear_unidad(
+            'PUB-DET-001', 'Excavadora pública con detalle', self.admin
+        )
+        unidad_en_mantenimiento = self.crear_unidad(
+            'PUB-DET-002', 'Excavadora en mantenimiento', self.admin,
+            estado='Mantenimiento',
+        )
+        detalle_url = reverse(
+            'inventario:maquinaria_detalle', args=[unidad.pk]
+        )
+
+        detalle = self.client.get(detalle_url)
+
+        self.assertEqual(detalle.status_code, 200)
+        self.assertContains(detalle, unidad.maquinaria.nombre)
+        self.assertContains(detalle, 'Equipo para trabajos de excavación.')
+        self.assertContains(detalle, 'Iniciar sesión para solicitar')
+        self.assertNotContains(detalle, 'id="sidebar"')
+        self.assertNotContains(detalle, 'Cerrar sesión')
+        self.assertNotContains(detalle, '$99000,00')
+        self.assertEqual(
+            self.client.get(
+                reverse(
+                    'inventario:maquinaria_detalle',
+                    args=[unidad_en_mantenimiento.pk],
+                )
+            ).status_code,
+            404,
+        )
+
+        solicitud_url = reverse(
+            'alquileres:solicitud_registrar', args=[unidad.pk]
+        )
+        respuesta_solicitud = self.client.get(solicitud_url)
+
+        self.assertEqual(respuesta_solicitud.status_code, 302)
+        self.assertEqual(
+            respuesta_solicitud.url.split('?')[0],
+            reverse('cuentas:login'),
+        )
+        self.assertEqual(
+            parse_qs(urlparse(respuesta_solicitud.url).query)['next'],
+            [solicitud_url],
         )
 
     def test_tarifas_deben_aumentar_o_mantenerse_entre_planes(self):
@@ -350,6 +397,8 @@ class CatalogoPanelTests(TestCase):
             reverse('inventario:maquinaria_detalle', args=[unidad.pk])
         )
 
+        self.assertContains(respuesta, 'id="sidebar"')
+        self.assertContains(respuesta, 'Cerrar sesión')
         self.assertContains(respuesta, '$750,00')
         self.assertContains(respuesta, '$3000,00')
         self.assertNotContains(respuesta, '$99000,00')
