@@ -16,7 +16,19 @@
     {% endif %}
 </dl>
 {% if solicitud.comentario %}<p class="mt-2 mb-0"><strong>Comentario:</strong> {{ solicitud.comentario }}</p>{% endif %}
-{% if solicitud.aviso_vencimiento %}<p class="alert {% if solicitud.aviso_vencimiento == 'Vencido' %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0" role="status">{{ solicitud.aviso_vencimiento }} · Devolución programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.</p>{% endif %}
+{% if solicitud.aviso_vencimiento %}
+<p class="alert {% if solicitud.aviso_vencimiento == 'Vencido' %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0" role="{% if solicitud.aviso_vencimiento == 'Vencido' %}alert{% else %}status{% endif %}">
+    {% if solicitud.aviso_vencimiento == 'Vencido' %}
+        {% if request.user.es_cliente %}
+        Tienes atrasada la devolución de <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong>. La fecha estimada era el {{ solicitud.fecha_fin|date:"d/m/Y" }}; llevas {{ solicitud.dias_atraso_actual }} día(s) de atraso.
+        {% else %}
+        <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong> sigue con {{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}. Debía devolverse el {{ solicitud.fecha_fin|date:"d/m/Y" }} y lleva {{ solicitud.dias_atraso_actual }} día(s) de atraso.
+        {% endif %}
+    {% else %}
+        {{ solicitud.aviso_vencimiento }} · Devolución programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.
+    {% endif %}
+</p>
+{% endif %}
 {% if solicitud.dias_atraso_actual > 0 %}
 <div class="alert alert-warning mt-3 mb-0" role="alert">
     {{ solicitud.dias_atraso_actual }} día(s) de atraso.

@@ -243,14 +243,32 @@ def entrega_lista(request):
     if not permisos_panel(request.user).get('es_administrador'):
         raise PermissionDenied
     estado = request.GET.get('estado', 'pendientes')
-    if estado not in ('pendientes', 'devueltas', 'todas'):
+    if estado not in ('pendientes', 'atrasadas', 'devueltas', 'todas'):
         return HttpResponseBadRequest('Filtro de entregas inválido.')
-    entregas = solicitudes_consultables(request.user).filter(
+    entregas_base = solicitudes_consultables(request.user).filter(
         fecha_salida__isnull=False,
-    ).order_by('-fecha_salida', '-id')
-    if estado != 'todas':
-        entregas = entregas.filter(fecha_retorno__isnull=estado == 'pendientes')
-    return render(request, 'alquileres/entrega_lista.html', {'entregas': entregas, 'estado': estado})
+    )
+    entregas_atrasadas = entregas_base.filter(
+        fecha_retorno__isnull=True,
+        fecha_fin__lt=timezone.localdate(),
+    )
+    if estado == 'atrasadas':
+        entregas = entregas_atrasadas
+    elif estado == 'pendientes':
+        entregas = entregas_base.filter(fecha_retorno__isnull=True)
+    elif estado == 'devueltas':
+        entregas = entregas_base.filter(fecha_retorno__isnull=False)
+    else:
+        entregas = entregas_base
+    return render(
+        request,
+        'alquileres/entrega_lista.html',
+        {
+            'entregas': entregas.order_by('-fecha_salida', '-id'),
+            'estado': estado,
+            'entregas_atrasadas_count': entregas_atrasadas.count(),
+        },
+    )
 
 
 @login_required(login_url='cuentas:login')

@@ -7,8 +7,22 @@
         <div><h1 class="h3">Salidas y retornos</h1><p class="text-secondary mb-0">Fechas, responsables y devoluciones programadas. Hora de Santo Domingo.</p></div>
         <a class="btn btn-outline-primary align-self-start" href="{% url 'alquileres:solicitud_lista' %}">Solicitudes de alquiler</a>
     </div>
+    {% if entregas_atrasadas_count %}
+    <div class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2" role="alert">
+        <span>
+            <strong>Alerta:</strong>
+            {% if entregas_atrasadas_count == 1 %}
+            Hay 1 maquinaria con devolución atrasada.
+            {% else %}
+            Hay {{ entregas_atrasadas_count }} maquinarias con devoluciones atrasadas.
+            {% endif %}
+        </span>
+        <a class="alert-link" href="?estado=atrasadas">Ver devoluciones atrasadas</a>
+    </div>
+    {% endif %}
     <nav class="nav nav-pills flex-wrap gap-2 mb-4" aria-label="Filtrar entregas">
         <a class="nav-link {% if estado == 'pendientes' %}active{% endif %}" {% if estado == 'pendientes' %}aria-current="page"{% endif %} href="?estado=pendientes">Pendientes de devolución</a>
+        <a class="nav-link {% if estado == 'atrasadas' %}active{% endif %}" {% if estado == 'atrasadas' %}aria-current="page"{% endif %} href="?estado=atrasadas">Atrasadas{% if entregas_atrasadas_count %} <span class="badge text-bg-danger">{{ entregas_atrasadas_count }}</span>{% endif %}</a>
         <a class="nav-link {% if estado == 'devueltas' %}active{% endif %}" {% if estado == 'devueltas' %}aria-current="page"{% endif %} href="?estado=devueltas">Devueltas</a>
         <a class="nav-link {% if estado == 'todas' %}active{% endif %}" {% if estado == 'todas' %}aria-current="page"{% endif %} href="?estado=todas">Historial completo</a>
     </nav>

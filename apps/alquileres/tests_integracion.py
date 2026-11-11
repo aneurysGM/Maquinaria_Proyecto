@@ -97,6 +97,30 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         self.assertContains(detalle, self.admin.email)
         self.assertNotContains(detalle, 'Registrar retorno')
 
+    def test_devolucion_atrasada_tiene_filtro_admin_y_aviso_para_cliente(self):
+        entrega = self.crear_entrega(atraso=2)
+
+        self.client.force_login(self.admin)
+        pendientes = self.client.get(reverse('alquileres:entrega_lista'))
+        self.assertContains(pendientes, 'Hay 1 maquinaria con devolución atrasada.')
+        self.assertContains(pendientes, 'Ver devoluciones atrasadas')
+        self.assertEqual(pendientes.context['entregas_atrasadas_count'], 1)
+        atrasadas = self.client.get(
+            reverse('alquileres:entrega_lista'),
+            {'estado': 'atrasadas'},
+        )
+        self.assertEqual(list(atrasadas.context['entregas']), [entrega])
+        self.assertContains(atrasadas, 'Excavadora integración')
+        self.assertContains(atrasadas, '2 día(s) de atraso')
+
+        self.client.force_login(self.cliente)
+        solicitudes = self.client.get(reverse('alquileres:solicitud_lista'))
+        self.assertContains(
+            solicitudes,
+            'Tienes atrasada la devolución de <strong>Excavadora integración</strong>',
+        )
+        self.assertContains(solicitudes, 'La fecha estimada era el')
+
     def test_tres_planes_y_tarifas_contratadas_no_cambian(self):
         self.client.force_login(self.cliente)
         for indice, (plan, dias, tarifa) in enumerate(

@@ -28,6 +28,17 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Alertas de devolución atrasada — 11 de noviembre de 2026
+
+- En **Salidas y retornos**, el administrador puede filtrar las maquinarias
+  entregadas que aún no han sido devueltas después de su fecha estimada. Una
+  alerta y un contador hacen visible el apartado de devoluciones atrasadas.
+- En sus solicitudes, el cliente ve qué maquinaria tiene atrasada, la fecha
+  estimada de devolución y los días transcurridos desde esa fecha. El atraso
+  empieza el día siguiente a la fecha estimada.
+- Comprobaciones: `manage.py test apps.alquileres --noinput` (44 pruebas
+  aprobadas); `git diff --check` sin errores.
+
 ### Catálogo público y detalle de maquinaria — 11 de noviembre de 2026
 
 - Los visitantes pueden abrir los detalles de unidades disponibles desde el
