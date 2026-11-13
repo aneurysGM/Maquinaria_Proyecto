@@ -53,6 +53,71 @@ class GestionTecnicosTests(TestCase):
         self.assertEqual(tecnico.especialidad, 'Sistema hidráulico')
         self.assertTrue(tecnico.check_password('Firme!Girasol_2026'))
         self.assertFalse(tecnico.is_staff)
+        self.assertTrue(tecnico.primer_inicio_sesion)
+
+    def test_tecnico_debe_cambiar_contrasena_antes_de_acceder_al_sistema(self):
+        tecnico = UsuarioPersonalizado.objects.create_user(
+            email='tecnico-temporal@example.com',
+            password='Temporal!Clave_2026',
+            rol=RolUsuario.TECNICO,
+            primer_inicio_sesion=True,
+        )
+
+        respuesta_login = self.client.post(
+            reverse('cuentas:login'),
+            {
+                'username': tecnico.email,
+                'password': 'Temporal!Clave_2026',
+                'next': reverse('tecnico_mantenimiento:dashboard'),
+            },
+        )
+        self.assertRedirects(
+            respuesta_login,
+            reverse('configuraciones:cambiar_contrasena'),
+        )
+
+        respuesta_dashboard = self.client.get(
+            reverse('tecnico_mantenimiento:dashboard'),
+        )
+        self.assertRedirects(
+            respuesta_dashboard,
+            reverse('configuraciones:cambiar_contrasena'),
+        )
+
+        respuesta_cambio = self.client.post(
+            reverse('configuraciones:cambiar_contrasena'),
+            {
+                'old_password': 'Temporal!Clave_2026',
+                'new_password1': 'Nueva!ClaveTecnica_2026',
+                'new_password2': 'Nueva!ClaveTecnica_2026',
+            },
+        )
+
+        self.assertRedirects(
+            respuesta_cambio,
+            reverse('tecnico_mantenimiento:dashboard'),
+        )
+        tecnico.refresh_from_db()
+        self.assertFalse(tecnico.primer_inicio_sesion)
+        self.assertTrue(tecnico.check_password('Nueva!ClaveTecnica_2026'))
+        self.assertEqual(
+            self.client.get(reverse('tecnico_mantenimiento:dashboard')).status_code,
+            200,
+        )
+
+    def test_tecnico_temporal_puede_cerrar_sesion_sin_cambiar_contrasena(self):
+        tecnico = UsuarioPersonalizado.objects.create_user(
+            email='tecnico-cierre@example.com',
+            password='Temporal!Clave_2026',
+            rol=RolUsuario.TECNICO,
+            primer_inicio_sesion=True,
+        )
+        self.client.force_login(tecnico)
+
+        respuesta = self.client.post(reverse('cuentas:logout'))
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertNotIn('_auth_user_id', self.client.session)
 
     def test_tarjeta_de_perfil_muestra_iniciales_nombre_y_rol_segun_corresponda(self):
         usuarios = (

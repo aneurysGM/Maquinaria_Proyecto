@@ -36,9 +36,19 @@ class CambiarContrasenaView(ConfiguracionesRequiredMixin, PasswordChangeView):
     form_class = CambioContrasenaForm
     success_url = reverse_lazy('configuraciones:indice')
 
+    def get_success_url(self):
+        if self.request.user.primer_inicio_sesion:
+            return reverse_lazy('tecnico_mantenimiento:dashboard')
+        return super().get_success_url()
+
     def form_valid(self, form):
+        respuesta = super().form_valid(form)
+        usuario = self.request.user
+        if usuario.primer_inicio_sesion:
+            usuario.primer_inicio_sesion = False
+            usuario.save(update_fields=['primer_inicio_sesion'])
         messages.success(self.request, 'Tu contraseña se cambió correctamente.')
-        return super().form_valid(form)
+        return respuesta
 
 
 indice = IndiceConfiguracionesView.as_view()

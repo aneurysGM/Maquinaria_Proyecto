@@ -70,6 +70,11 @@ class UsuarioPersonalizado(AbstractUser):
         verbose_name='Suspensión hasta',
         db_column='SuspensionHasta',
     )
+    primer_inicio_sesion = models.BooleanField(
+        default=False,
+        verbose_name='Debe cambiar la contraseña en su primer inicio de sesión',
+        db_column='PrimerInicioSesion',
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

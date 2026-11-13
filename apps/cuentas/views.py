@@ -19,6 +19,8 @@ class IniciarSesionView(LoginView):
     redirect_authenticated_user = True
 
     def get_success_url(self):
+        if self.request.user.is_authenticated and self.request.user.primer_inicio_sesion:
+            return reverse_lazy('configuraciones:cambiar_contrasena')
         return self.get_redirect_url() or reverse_lazy('cuentas:dashboard')
 
 

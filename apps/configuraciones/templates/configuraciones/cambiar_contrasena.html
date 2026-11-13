@@ -7,7 +7,11 @@
 <div class="container-fluid px-0">
     <div class="mb-4">
         <h1 class="h3 fw-bold text-dark mb-1">Cambiar contraseña</h1>
+        {% if request.user.primer_inicio_sesion %}
+        <p class="text-secondary mb-0">Por seguridad, debes establecer y confirmar una nueva contraseña antes de continuar.</p>
+        {% else %}
         <p class="text-secondary mb-0">Escribe tu contraseña actual y confirma la nueva.</p>
+        {% endif %}
     </div>
 
     <div class="card border-0 shadow-sm rounded-4">
@@ -27,7 +31,9 @@
                 {% endfor %}
                 <div class="d-flex flex-wrap gap-2 mt-4">
                     <button class="btn btn-warning fw-semibold" type="submit">Guardar contraseña</button>
+                    {% if not request.user.primer_inicio_sesion %}
                     <a class="btn btn-outline-secondary" href="{% url 'configuraciones:indice' %}">Cancelar</a>
+                    {% endif %}
                 </div>
             </form>
         </div>

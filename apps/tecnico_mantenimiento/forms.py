@@ -42,6 +42,7 @@ class TecnicoCreacionForm(UserCreationForm):
     def save(self, commit=True):
         tecnico = super().save(commit=False)
         tecnico.rol = RolUsuario.TECNICO
+        tecnico.primer_inicio_sesion = True
         if commit:
             tecnico.save()
         return tecnico
