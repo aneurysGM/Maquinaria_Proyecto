@@ -19,6 +19,9 @@ from django.urls import path, include
 from django.views.generic import TemplateView
 from apps.inventario.views import CatalogoPublicoView
 
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='publico/index.html'), name='index'),
@@ -34,3 +37,5 @@ urlpatterns = [
     path('reportes/', include('apps.reportes.urls')),
     path('clientes/', include('apps.clientes.urls')),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
