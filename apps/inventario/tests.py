@@ -214,6 +214,29 @@ class CatalogoPanelTests(TestCase):
             [solicitud_url],
         )
 
+    def test_detalle_desde_catalogo_no_muestra_panel_lateral_a_ningun_rol(self):
+        unidad = self.crear_unidad(
+            'PUB-ROLES-001', 'Excavadora para todos los roles', self.admin
+        )
+        tecnico = UsuarioPersonalizado.objects.create_user(
+            email='tecnico-catalogo@example.com',
+            password='test-password',
+            rol=RolUsuario.TECNICO,
+        )
+        detalle_url = reverse(
+            'inventario:maquinaria_detalle', args=[unidad.pk]
+        )
+
+        for usuario in (self.admin, tecnico, self.cliente):
+            with self.subTest(rol=usuario.rol):
+                self.client.force_login(usuario)
+                detalle = self.client.get(detalle_url)
+
+                self.assertEqual(detalle.status_code, 200)
+                self.assertContains(detalle, unidad.maquinaria.nombre)
+                self.assertNotContains(detalle, 'id="sidebar"')
+                self.assertNotContains(detalle, 'id="sidebarToggle"')
+
     def test_tarifas_deben_aumentar_o_mantenerse_entre_planes(self):
         datos = {
             'categoria': self.categoria.pk,
@@ -397,8 +420,9 @@ class CatalogoPanelTests(TestCase):
             reverse('inventario:maquinaria_detalle', args=[unidad.pk])
         )
 
-        self.assertContains(respuesta, 'id="sidebar"')
+        self.assertNotContains(respuesta, 'id="sidebar"')
         self.assertContains(respuesta, 'Cerrar sesión')
+        self.assertContains(respuesta, reverse('catalogo'))
         self.assertContains(respuesta, '$750,00')
         self.assertContains(respuesta, '$3000,00')
         self.assertNotContains(respuesta, '$99000,00')

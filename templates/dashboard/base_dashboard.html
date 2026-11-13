@@ -363,7 +363,7 @@
 <body>
 
     <div class="mq-app">
-        {% if request.user.is_authenticated %}
+        {% if request.user.is_authenticated and request.resolver_match.url_name != 'maquinaria_detalle' %}
         <aside class="mq-sidebar" id="sidebar">
             <a class="mq-brand" href="{% url 'index' %}">
                 <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
@@ -451,10 +451,10 @@
         <div class="mq-overlay" id="sidebarOverlay"></div>
         {% endif %}
 
-        <div class="mq-main-wrap{% if not request.user.is_authenticated %} mq-main-wrap-public{% endif %}">
+        <div class="mq-main-wrap{% if not request.user.is_authenticated or request.resolver_match.url_name == 'maquinaria_detalle' %} mq-main-wrap-public{% endif %}">
             <header class="mq-topbar">
                 <div class="mq-topbar-left">
-                    {% if request.user.is_authenticated %}
+                    {% if request.user.is_authenticated and request.resolver_match.url_name != 'maquinaria_detalle' %}
                     <button type="button" class="mq-menu-toggle" id="sidebarToggle" aria-label="Menú">
                         <i class="bi bi-list"></i>
                     </button>
@@ -491,7 +491,7 @@
                 </div>
             </header>
 
-            <main class="mq-content{% if not request.user.is_authenticated %} mq-content-public{% endif %}">
+            <main class="mq-content{% if not request.user.is_authenticated or request.resolver_match.url_name == 'maquinaria_detalle' %} mq-content-public{% endif %}">
                 {% if messages %}
                 <div class="mq-messages">
                     {% for message in messages %}
