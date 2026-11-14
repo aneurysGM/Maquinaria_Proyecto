@@ -143,6 +143,11 @@ class CatalogoPanelTests(TestCase):
         unidad = self.crear_unidad(
             'PUB-001', 'Excavadora pública', self.admin
         )
+        MaquinariaImagen.objects.create(
+            maquinaria=unidad.maquinaria,
+            imagen='maquinaria/principal.png',
+            texto_alternativo='Imagen de la excavadora',
+        )
         self.crear_unidad(
             'PUB-002', 'Excavadora en mantenimiento', self.admin,
             estado='Mantenimiento',
@@ -155,8 +160,20 @@ class CatalogoPanelTests(TestCase):
         inicio = self.client.get(reverse('index'))
         self.assertEqual(inicio.status_code, 200)
         self.assertContains(inicio, reverse('catalogo'))
+        self.assertContains(inicio, unidad.maquinaria.nombre)
+        self.assertContains(inicio, '/media/maquinaria/principal.png')
         self.assertNotContains(inicio, 'Excavadora en mantenimiento')
         self.assertNotContains(inicio, 'Excavadora fuera de servicio')
+
+        self.client.force_login(self.admin)
+        inicio_admin = self.client.get(reverse('cuentas:dashboard'))
+        self.assertContains(inicio_admin, '/media/maquinaria/principal.png')
+
+        self.client.force_login(self.cliente)
+        inicio_cliente = self.client.get(reverse('index'))
+        panel_cliente = self.client.get(reverse('cuentas:dashboard'))
+        self.assertContains(inicio_cliente, '/media/maquinaria/principal.png')
+        self.assertContains(panel_cliente, '/media/maquinaria/principal.png')
 
         catalogo = self.client.get(reverse('catalogo'))
         self.assertEqual(catalogo.status_code, 200)

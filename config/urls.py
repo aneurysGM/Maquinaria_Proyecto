@@ -16,15 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import TemplateView
-from apps.inventario.views import CatalogoPublicoView
+from apps.inventario.views import CatalogoPublicoView, InicioPublicoView
 
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', TemplateView.as_view(template_name='publico/index.html'), name='index'),
+    path('', InicioPublicoView.as_view(), name='index'),
     path('catalogo/', CatalogoPublicoView.as_view(), name='catalogo'),
     path('ventas/', include('apps.ventas.urls')),
     # Rutas de la app cuentas (prefijo /cuentas/ o directamente en la raíz)

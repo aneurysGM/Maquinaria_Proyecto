@@ -3,7 +3,14 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Q
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DetailView, View
+from django.views.generic import (
+    CreateView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+    View,
+)
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.http import HttpResponseRedirect
@@ -14,6 +21,25 @@ from .forms import (
     MaquinariaImagenFormSet,
     MaquinariaIntegralForm,
 )
+
+
+class InicioPublicoView(TemplateView):
+    template_name = 'publico/index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['maquinarias_destacadas'] = Unidad.objects.select_related(
+            'maquinaria__categoria',
+        ).prefetch_related(
+            'maquinaria__imagenes',
+        ).filter(
+            activo=True,
+            estado='Disponible',
+            maquinaria__activo=True,
+        ).order_by(
+            '-maquinaria__fecha_modificacion',
+        )[:6]
+        return context
 
 
 class CatalogoPublicoView(ListView):

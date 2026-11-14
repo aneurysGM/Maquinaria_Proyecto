@@ -64,11 +64,6 @@ class DashboardAdminView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.request.user
-        if usuario.es_cliente and not usuario.es_administrador:
-            from apps.alquileres.views import solicitudes_consultables
-            context['solicitudes'] = [s for s in solicitudes_consultables(usuario)
-                                      if s.estado_cliente not in ('Rechazado', 'Vencido', 'Devuelto')]
-            return context
         unidades = Unidad.objects.select_related(
             'maquinaria__categoria',
             'maquinaria__registrada_por',
@@ -77,6 +72,12 @@ class DashboardAdminView(LoginRequiredMixin, TemplateView):
             estado='Disponible',
             maquinaria__activo=True,
         )
+        if usuario.es_cliente and not usuario.es_administrador:
+            from apps.alquileres.views import solicitudes_consultables
+            context['solicitudes'] = [s for s in solicitudes_consultables(usuario)
+                                      if s.estado_cliente not in ('Rechazado', 'Vencido', 'Devuelto')]
+            context['maquinarias_disponibles'] = unidades
+            return context
 
         if usuario.es_administrador:
             unidades = unidades.filter(
