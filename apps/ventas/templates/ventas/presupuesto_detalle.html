@@ -187,11 +187,11 @@
                         <input type="hidden" name="revision_reserva" value="{{ revision_reserva }}">
                         <fieldset id="confirmacion-reserva" class="border rounded-3 p-3 mb-3">
                             <legend class="float-none w-auto h6 px-1">Confirmación de reserva</legend>
-                            <p class="small">Si este pago completa la renta y el depósito inicial, confirma la reserva y rechaza las solicitudes con fechas que se cruzan para esta misma unidad física.</p>
+                            <p class="small">Si este pago completa la renta y el depósito inicial, confirma la reserva. Las solicitudes con fechas cruzadas se mantienen y recibirán este motivo para que sus clientes decidan si aplazan o cancelan.</p>
                             {% for afectada, motivo in afectadas %}
                             <div class="mb-3">
                                 <p class="small fw-semibold mb-1">Solicitud #{{ afectada.pk }} · {{ afectada.fecha_inicio|date:"d/m/Y" }} – {{ afectada.fecha_fin|date:"d/m/Y" }}</p>
-                                <label class="form-label" for="{{ motivo.id_for_label }}">Motivo</label>
+                                <label class="form-label" for="{{ motivo.id_for_label }}">Motivo para el cliente</label>
                                 {{ motivo }}
                                 {% if motivo.errors %}<div class="text-danger small">{{ motivo.errors }}</div>{% endif %}
                             </div>

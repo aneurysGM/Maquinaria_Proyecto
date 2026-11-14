@@ -16,6 +16,16 @@
     {% endif %}
 </dl>
 {% include 'alquileres/proximo_paso.html' %}
+{% if solicitud.fecha_aviso_disponibilidad %}
+<div class="alert {% if es_administrador %}alert-secondary{% else %}alert-warning{% endif %} mt-3 mb-0" role="status">
+    <strong>{% if es_administrador %}Aviso enviado al cliente{% else %}Mensaje del administrador{% endif %}</strong>
+    <p class="mb-1">{{ solicitud.motivo_disponibilidad|linebreaksbr }}</p>
+    {% if es_administrador %}
+        {% if solicitud.aplazada %}<small>El cliente aceptó aplazar la solicitud.</small>
+        {% else %}<small>Esperando la respuesta del cliente.</small>{% endif %}
+    {% endif %}
+</div>
+{% endif %}
 {% if solicitud.comentario %}<p class="mt-2 mb-0"><strong>Comentario:</strong> {{ solicitud.comentario }}</p>{% endif %}
 {% if solicitud.aviso_vencimiento %}
 <p class="alert {% if solicitud.aviso_vencimiento == 'Vencido' %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0" role="{% if solicitud.aviso_vencimiento == 'Vencido' %}alert{% else %}status{% endif %}">

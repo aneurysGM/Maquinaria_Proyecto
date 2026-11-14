@@ -1,3 +1,5 @@
+from functools import partial
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -12,6 +14,7 @@ from django.views.generic import DetailView, ListView
 from apps.alquileres.reservas import expirar_solicitud_si_corresponde, puede_aprobar_reserva, solicitudes_afectadas
 from apps.alquileres.bloqueos import bloquear_unidad
 from apps.alquileres.models import SolicitudAlquiler
+from apps.alquileres.notificaciones import notificar_indisponibilidad
 from apps.inventario.models import Unidad
 from .forms import PagoAlquilerForm, ReembolsoDepositoForm, MotivosReservaForm
 from .models import PresupuestoAlquiler, ReembolsoDeposito
@@ -146,12 +149,23 @@ def pago_registrar(request, presupuesto_id):
                 unidad.estado = 'Alquilado'
                 unidad.save(update_fields=['estado'])
                 for afectada in afectadas:
-                    afectada.estado = 'Rechazada'
-                    afectada.motivo_rechazo = motivos.cleaned_data[f'motivo_{afectada.pk}']
+                    motivo = motivos.cleaned_data[f'motivo_{afectada.pk}'].strip()
+                    afectada.motivo_disponibilidad = motivo
+                    afectada.fecha_aviso_disponibilidad = ahora
+                    afectada.aplazada = False
                     afectada.revisado_por = request.user
                     afectada.fecha_revision = ahora
-                    afectada.save(update_fields=['estado', 'motivo_rechazo', 'revisado_por', 'fecha_revision'])
-        messages.success(request, 'El pago y la reserva se confirmaron correctamente.' if confirma else 'El pago se registró correctamente.')
+                    afectada.save(update_fields=[
+                        'motivo_disponibilidad', 'fecha_aviso_disponibilidad',
+                        'aplazada', 'revisado_por', 'fecha_revision',
+                    ])
+                    transaction.on_commit(partial(
+                        notificar_indisponibilidad, afectada, motivo, request=request,
+                    ))
+        mensaje = 'El pago y la reserva se confirmaron correctamente.' if confirma else 'El pago se registró correctamente.'
+        if confirma and afectadas:
+            mensaje += ' Las solicitudes afectadas siguen vigentes y se notificaron a sus clientes.'
+        messages.success(request, mensaje)
         return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto_id)
     except ValidationError as error:
         for mensaje in error.messages:

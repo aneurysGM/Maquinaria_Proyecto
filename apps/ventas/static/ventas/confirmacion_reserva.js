@@ -2,6 +2,7 @@
     const form = document.getElementById('pago-recibido-form');
     const revision = document.getElementById('confirmacion-reserva');
     if (!form || !revision) return;
+    const enviaAvisos = revision.querySelectorAll('textarea').length > 0;
     const centavos = value => Math.round(Number(value) * 100);
     function actualizar() {
         const concepto = form.elements.concepto.value;
@@ -15,7 +16,9 @@
             campo.required = confirma;
             campo.disabled = !confirma;
         });
-        document.getElementById('guardar-pago').textContent = confirma ? 'Confirmar pago y reserva' : 'Guardar pago';
+        document.getElementById('guardar-pago').textContent = confirma
+            ? (enviaAvisos ? 'Confirmar pago y enviar avisos' : 'Confirmar pago y reserva')
+            : 'Guardar pago';
     }
     form.addEventListener('input', actualizar);
     form.addEventListener('change', actualizar);

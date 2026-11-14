@@ -9,7 +9,7 @@ class MotivosReservaForm(forms.Form):
         super().__init__(*args, **kwargs)
         for solicitud in afectadas:
             self.fields[f'motivo_{solicitud.pk}'] = forms.CharField(
-                label='Motivo', max_length=1000,
+                label='Motivo para el cliente', max_length=1000,
                 widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             )
 

@@ -48,6 +48,7 @@ def solicitudes_afectadas(solicitud):
         Q(estado='Pendiente') | Q(estado='Aprobada', fecha_revision__gt=limite)
         | Q(estado='Aprobada', fecha_revision__isnull=True),
         unidad_id=solicitud.unidad_id,
+        fecha_aviso_disponibilidad__isnull=True,
         fecha_retorno__isnull=True, fecha_inicio__lte=solicitud.fecha_fin,
         fecha_fin__gte=solicitud.fecha_inicio,
     ).exclude(pk=solicitud.pk).exclude(pk__in=reservas_confirmadas().values('pk')).order_by('pk')
@@ -82,6 +83,50 @@ def liberar_unidad_si_no_reservada(unidad, solicitud_id):
     return True
 
 
+def programar_siguiente_solicitud_aplazada(unidad, fecha_disponible, *, actor=None, request=None):
+    solicitud = SolicitudAlquiler.objects.select_for_update().filter(
+        unidad=unidad,
+        estado='Pendiente',
+        aplazada=True,
+        fecha_aviso_disponibilidad__isnull=False,
+        fecha_retorno__isnull=True,
+        cliente__is_active=True,
+    ).order_by('fecha_aviso_disponibilidad', 'fecha_creacion', 'pk').first()
+    if solicitud is None:
+        return None
+
+    fecha_base = timezone.localdate(fecha_disponible) + timedelta(
+        days=SolicitudAlquiler.PLAZO_PAGO_DIAS + 1,
+    )
+    duracion = solicitud.fecha_fin - solicitud.fecha_inicio
+    fecha_inicio = fecha_base
+    while True:
+        fecha_fin = fecha_inicio + duracion
+        conflicto = cruces_confirmados(unidad.pk, fecha_inicio, fecha_fin).order_by(
+            'fecha_fin', 'pk',
+        ).first()
+        if conflicto is None:
+            break
+        fecha_inicio = conflicto.fecha_fin + timedelta(days=1)
+
+    ahora = timezone.now()
+    solicitud.fecha_inicio = fecha_inicio
+    solicitud.fecha_fin = fecha_fin
+    solicitud.estado = 'Aprobada'
+    solicitud.fecha_revision = ahora
+    solicitud.revisado_por = actor
+    solicitud.motivo_disponibilidad = ''
+    solicitud.fecha_aviso_disponibilidad = None
+    solicitud.save(update_fields=[
+        'fecha_inicio', 'fecha_fin', 'estado', 'fecha_revision',
+        'revisado_por', 'motivo_disponibilidad', 'fecha_aviso_disponibilidad',
+    ])
+
+    from .notificaciones import notificar_reprogramacion
+    transaction.on_commit(lambda: notificar_reprogramacion(solicitud, request=request))
+    return solicitud
+
+
 def expirar_solicitud_si_corresponde(solicitud_id, *, ahora=None):
     ahora = ahora or timezone.now()
     unidad_id = SolicitudAlquiler.objects.filter(
@@ -109,6 +154,7 @@ def expirar_solicitud_si_corresponde(solicitud_id, *, ahora=None):
         solicitud.estado = 'Vencida'
         solicitud.save(update_fields=['estado'])
         liberar_unidad_si_no_reservada(unidad, solicitud.pk)
+        programar_siguiente_solicitud_aplazada(unidad, ahora)
         return True
 
 

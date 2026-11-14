@@ -78,7 +78,7 @@ function probarControles() {
     assert.equal(revision.hidden, false);
     assert.equal(motivo.required, true);
     assert.equal(motivo.disabled, false);
-    assert.equal(guardar.textContent, 'Confirmar pago y reserva');
+    assert.equal(guardar.textContent, 'Confirmar pago y enviar avisos');
     pago.dataset = {rentaPendiente: '500.00', depositoPendiente: '0.00'};
     pago.elements.concepto.value = 'renta';
     pago.elements.monto.value = '500.00';

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.conf import settings
 from django.db import models
@@ -18,6 +18,7 @@ class SolicitudAlquiler(models.Model):
         ('Aprobada', 'Aprobada'), 
         ('Rechazada', 'Rechazada'),
         ('Vencida', 'Vencida'),
+        ('Cancelada', 'Cancelada'),
     ]
     PLAZO_PAGO_DIAS = 5
     
@@ -45,6 +46,9 @@ class SolicitudAlquiler(models.Model):
     )
     comentario = models.CharField(max_length=500, blank=True, verbose_name='Comentario / Obra')
     motivo_rechazo = models.CharField(max_length=1000, blank=True, editable=False)
+    motivo_disponibilidad = models.CharField(max_length=1000, blank=True, editable=False)
+    fecha_aviso_disponibilidad = models.DateTimeField(null=True, blank=True, editable=False)
+    aplazada = models.BooleanField(default=False, editable=False)
     fecha_confirmacion = models.DateTimeField(null=True, blank=True, editable=False)
     politica_mora_aplica = models.BooleanField(default=True, editable=False)
     dias_atraso = models.PositiveIntegerField(null=True, blank=True, editable=False)
@@ -81,7 +85,14 @@ class SolicitudAlquiler(models.Model):
     def fecha_limite_pago(self):
         if self.fecha_revision is None:
             return None
-        return self.fecha_revision + timedelta(days=self.PLAZO_PAGO_DIAS)
+        limite = self.fecha_revision + timedelta(days=self.PLAZO_PAGO_DIAS)
+        if self.aplazada:
+            inicio = timezone.make_aware(
+                datetime.combine(self.fecha_inicio, time.min),
+                timezone.get_current_timezone(),
+            )
+            return min(limite, inicio)
+        return limite
 
     @property
     def pago_inicial_completo(self):
@@ -90,8 +101,14 @@ class SolicitudAlquiler(models.Model):
 
     @property
     def estado_cliente(self):
+        if self.estado == 'Cancelada':
+            return 'Cancelada'
         if self.estado == 'Rechazada':
             return 'Rechazado'
+        if self.fecha_aviso_disponibilidad and not self.aplazada:
+            return 'Requiere respuesta'
+        if self.fecha_aviso_disponibilidad and self.aplazada:
+            return 'Aplazada'
         if self.fecha_retorno:
             return 'Devuelto'
         if self.fecha_salida:
@@ -139,7 +156,7 @@ class SolicitudAlquiler(models.Model):
             ),
             models.CheckConstraint(
                 condition=models.Q(
-                    estado__in=['Pendiente', 'Aprobada', 'Rechazada', 'Vencida']
+                    estado__in=['Pendiente', 'Aprobada', 'Rechazada', 'Vencida', 'Cancelada']
                 ),
                 name='CK_Solicitud_Estado'
             ),

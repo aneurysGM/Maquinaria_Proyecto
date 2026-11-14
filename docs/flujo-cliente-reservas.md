@@ -13,8 +13,9 @@ Administrador mantiene acceso global.
 
 Las etiquetas se derivan del estado administrativo, el plazo de cinco días desde
 la aprobación, los pagos por concepto, la salida y el retorno: Pendiente de
-aprobación, Pendiente de pago, Pendiente de entrega, En uso, Devuelto, Rechazado y
-Vencido. Un alquiler entregado conserva En uso aunque su devolución esté atrasada;
+aprobación, Requiere respuesta, Aplazada, Pendiente de pago, Pendiente de entrega,
+En uso, Devuelto, Rechazado, Cancelada y Vencido. Un alquiler entregado conserva
+En uso aunque su devolución esté atrasada;
 el aviso de atraso sigue mostrándose aparte. El comando `expirado` continúa
 persistiendo el vencimiento; la interfaz ya lo reconoce aunque aún no se haya
 ejecutado el comando.
@@ -25,17 +26,29 @@ mientras En uso conserva el verde. Estas etiquetas se comparten entre Solicitude
 Entregas y el detalle; la pestaña Devueltas mantiene el azul.
 
 En el presupuesto, el formulario de pago muestra los cruces y exige un motivo
-individual cuando el monto completa el pago inicial. Incluye solicitudes
-pendientes de revisión y aprobadas cuyo pago inicial aún está incompleto y
-vigente. Las solicitudes vencidas y las de otras unidades o períodos se conservan.
-La lista se firma con su unidad, fechas y estados; si cambió, el pago no se guarda
-y el formulario vuelve a presentar la lista actual para revisión.
+individual dirigido al cliente cuando el monto completa el pago inicial. Incluye
+solicitudes pendientes y aprobadas cuyo pago inicial aún está incompleto y vigente.
+En lugar de rechazarlas, el sistema conserva las solicitudes y guarda el mensaje
+del administrador en Mis alquileres; también envía un correo con un saludo cordial
+y el motivo. El cliente puede aceptar el aplazamiento o cancelar. Las cancelaciones
+con pagos registrados requieren contactar al administrador para revisar el
+reembolso.
 
 La confirmación bloquea primero la unidad física, luego la solicitud y el
-presupuesto. Revalida disponibilidad y cruces y guarda pago, confirmación y motivos
-en una transacción. Usa el bloqueo común existente: de fila en los motores que lo
-soportan y de escritura en SQLite. Ante contención se informa que no se guardaron
-cambios y se pide volver a revisar. Una entrega requiere renta y depósito completos.
+presupuesto. Revalida disponibilidad y cruces y guarda pago, confirmación y avisos
+en una transacción; solo después del commit intenta enviar los correos. Usa el
+bloqueo común existente: de fila en los motores que lo soportan y de escritura en
+SQLite. Ante contención se informa que no se guardaron cambios y se pide volver a
+revisar. Una entrega requiere renta y depósito completos.
+
+Al aceptar el aplazamiento, la solicitud queda en cola hasta el retorno real de la
+unidad. Después del retorno se programa una solicitud a la vez, evitando períodos
+confirmados y conservando la duración original. El inicio se coloca al menos seis
+días después de la devolución para conservar los cinco días habituales de pago;
+el pago inicial debe completarse antes de la fecha de inicio. Se notifica la nueva
+fecha por correo y en Mis alquileres. Si una aprobación sin pago tenía pagos
+parciales y recibe un aviso, puede aplazarla, pero para cancelarla debe contactar
+al administrador.
 
 El rechazo manual también exige motivo. Los motivos se guardan en
 `motivo_rechazo`; nunca reemplazan `comentario`. Las rechazadas anteriores sin
@@ -57,6 +70,14 @@ Las unidades Alquiladas se pueden consultar desde el catálogo autenticado para
 solicitar períodos libres. El catálogo público conserva su filtro de Disponible.
 Las solicitudes pendientes y las aprobaciones sin pago no ocupan fechas.
 
+## Correo de avisos
+
+El envío usa el backend SMTP de Django. Configura en el `.env` del proyecto
+`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS` o `EMAIL_USE_SSL`,
+`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` y `DEFAULT_FROM_EMAIL`. No se incluyen
+credenciales en el repositorio. Si el servidor SMTP falla, el aviso sigue visible
+en Mis alquileres, el error queda registrado y el administrador recibe un mensaje.
+
 ## Archivos nuevos
 
 - `templates/dashboard/cliente_index.html`: inicio del Cliente con las tarjetas existentes.
@@ -64,8 +85,9 @@ Las solicitudes pendientes y las aprobaciones sin pago no ocupan fechas.
   etiqueta y orientación compartidas entre tarjetas y presupuesto.
 - `apps/alquileres/static/alquileres/disponibilidad.js`: calendario y validación del período.
 - `apps/ventas/static/ventas/confirmacion_reserva.js`: revisión de cruces y botón del pago final.
-- `apps/alquileres/migrations/0005_confirmacion_reserva_y_motivo.py`: campos nuevos,
-  sin modificar solicitudes históricas ni inventar motivos o fechas de confirmación.
+- `apps/alquileres/migrations/0006_remove_solicitudalquiler_ck_solicitud_estado_and_more.py`:
+  campos de aviso/aplazamiento y estado de cancelación.
+- `apps/alquileres/notificaciones.py`: correo para avisos de indisponibilidad y nuevas fechas.
 - `apps/alquileres/tests_flujo_cliente.py`: aceptación y regresiones del flujo.
 - `apps/alquileres/tests_controles.cjs`: comprobación aislada de controles JavaScript;
   se ejecuta con Node.js y un DOM mínimo, sin dependencias adicionales.
@@ -81,12 +103,15 @@ node apps/alquileres/tests_sugerencias_controles.cjs
 git diff --check
 ```
 
-Última ejecución de la suite Django: **150 pruebas aprobadas en SQLite temporal**.
+Validación de esta actualización: **91 pruebas aprobadas** en las aplicaciones de
+alquileres y ventas, ejecutadas en SQLite temporal.
 
 La suite cubre Ana y Luis en períodos cruzados y Carla en el siguiente período:
-aprobar a Ana no cambia las otras solicitudes; pagar confirma a Ana y rechaza a
-Luis con motivo; Carla sigue pendiente hasta su propia aprobación y puede abrir
-su presupuesto. Comprueba ambos destinos del rechazo, preselección del plan,
+aprobar a Ana no cambia las otras solicitudes; pagar confirma a Ana y conserva el
+aviso para Luis; Carla sigue pendiente hasta su propia aprobación y puede abrir su
+presupuesto. Comprueba las respuestas de aplazar y cancelar, la cola posterior al
+retorno, avisos por correo, vencimientos, permisos por URL y rol, pagos parciales,
+preselección del plan,
 períodos diarios/semanales/mensuales y disponibilidad que cambia con el formulario
 abierto, límites inclusivos, unidades distintas, vencimientos, permisos por URL y
 rol, reembolso parcial/completo sin reducir renta, falta o alteración de la firma,

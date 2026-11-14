@@ -1,6 +1,6 @@
 {% load l10n %}
 {% if es_administrador %}
-    {% if solicitud.estado == 'Pendiente' %}
+    {% if solicitud.estado == 'Pendiente' and not solicitud.fecha_aviso_disponibilidad %}
     <div class="d-flex align-items-center gap-2 mt-3 pt-3 border-top">
         <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.pk %}">
             {% csrf_token %}<input type="hidden" name="decision" value="Aprobada">
@@ -27,4 +27,21 @@
         <div class="col-md-2 d-grid"><button class="btn btn-sm btn-success" type="submit">Registrar retorno</button></div>
     </form>
     {% endif %}
+{% elif es_cliente and solicitud.fecha_aviso_disponibilidad and not solicitud.aplazada and solicitud.estado != 'Cancelada' %}
+    <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+        <form method="post" action="{% url 'alquileres:solicitud_responder_disponibilidad' solicitud.pk %}">
+            {% csrf_token %}<input type="hidden" name="accion" value="aplazar">
+            <button class="btn btn-sm btn-primary" type="submit">Aplazar hasta que esté disponible</button>
+        </form>
+        {% if solicitud.presupuesto and solicitud.presupuesto.total_pagado > 0 %}
+        <p class="small text-muted mb-0 align-self-center">Para cancelar una solicitud con pagos registrados, contacta al administrador para revisar el reembolso.</p>
+        {% else %}
+        <form method="post" action="{% url 'alquileres:solicitud_responder_disponibilidad' solicitud.pk %}">
+            {% csrf_token %}<input type="hidden" name="accion" value="cancelar">
+            <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar solicitud</button>
+        </form>
+        {% endif %}
+    </div>
+{% elif es_cliente and solicitud.fecha_aviso_disponibilidad and solicitud.aplazada %}
+    <p class="small text-info-emphasis mt-3 mb-0">Tu solicitud está en espera para ser programada cuando la maquinaria esté disponible.</p>
 {% endif %}

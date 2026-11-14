@@ -6,6 +6,7 @@ from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.messages import get_messages, ERROR
 from django.db import close_old_connections, connections, connection, DatabaseError
 from django.test import RequestFactory, TransactionTestCase
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -18,6 +19,7 @@ from .tests_datos import DatosIntegracion
 from . import views
 
 
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class OperacionesSimultaneasTests(DatosIntegracion, TransactionTestCase):
     def setUp(self):
         self.crear_datos()
@@ -70,10 +72,11 @@ class OperacionesSimultaneasTests(DatosIntegracion, TransactionTestCase):
         resultados = self.ejecutar_simultaneas(operaciones)
         self.assertTrue(all(estado in (200, 302) for estado in resultados))
         self.assertEqual(SolicitudAlquiler.objects.filter(fecha_confirmacion__isnull=False).count(), 1)
-        self.assertEqual(SolicitudAlquiler.objects.filter(estado='Rechazada').count(), 1)
+        self.assertEqual(SolicitudAlquiler.objects.filter(estado='Rechazada').count(), 0)
         self.assertEqual(PagoAlquiler.objects.filter(concepto='deposito').count(), 1)
-        rechazada = SolicitudAlquiler.objects.get(estado='Rechazada')
-        self.assertEqual(rechazada.motivo_rechazo, 'Reservada por el otro cliente')
+        avisada = SolicitudAlquiler.objects.get(fecha_aviso_disponibilidad__isnull=False)
+        self.assertEqual(avisada.estado, 'Aprobada')
+        self.assertEqual(avisada.motivo_disponibilidad, 'Reservada por el otro cliente')
 
     def test_fallo_al_confirmar_pago_no_guarda_ni_publica_exito(self):
         solicitud = self.crear_solicitud(estado='Aprobada')

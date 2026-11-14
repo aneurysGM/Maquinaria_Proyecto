@@ -1,11 +1,12 @@
 """Aceptación del flujo Cliente y confirmación administrativa por pago."""
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.core import signing
+from django.core import mail
 from django.db import DatabaseError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -18,6 +19,7 @@ from .reservas import solicitudes_afectadas
 from .tests_datos import DatosIntegracion
 
 
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class FlujoClienteTests(DatosIntegracion, TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -42,7 +44,7 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
         return self.pago(solicitud, 'deposito', str(solicitud.presupuesto.deposito_garantia),
                          revision_reserva=self.revision(solicitud), **motivos)
 
-    def test_ana_luis_carla_aprobacion_pago_rechazo_y_presupuesto(self):
+    def test_ana_luis_carla_aprobacion_pago_aviso_y_presupuesto(self):
         inicio = timezone.localdate() + timedelta(days=5)
         ana = self.crear_solicitud(fecha_inicio=inicio, fecha_fin=inicio + timedelta(days=2))
         luis = self.crear_solicitud(cliente=self.otro, plan='semanal', comentario='Comentario original de Luis',
@@ -64,25 +66,19 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
         carla.refresh_from_db()
         self.assertIsNotNone(ana.fecha_confirmacion)
         self.assertEqual(ana.estado_cliente, 'Pendiente de entrega')
-        self.assertEqual(luis.estado_cliente, 'Rechazado')
-        self.assertEqual(luis.motivo_rechazo, motivo)
+        self.assertEqual(luis.estado, 'Pendiente')
+        self.assertEqual(luis.estado_cliente, 'Requiere respuesta')
+        self.assertEqual(luis.motivo_disponibilidad, motivo)
+        self.assertIsNotNone(luis.fecha_aviso_disponibilidad)
         self.assertEqual(luis.comentario, 'Comentario original de Luis')
         self.assertEqual(carla.estado_cliente, 'Pendiente de aprobación')
         self.client.force_login(self.otro)
-        self.assertContains(self.client.get(reverse('alquileres:solicitud_lista')), 'Ver motivo')
+        self.assertContains(self.client.get(reverse('alquileres:solicitud_lista')), motivo)
         detalle = self.client.get(reverse('alquileres:solicitud_detalle', args=[luis.pk]))
         self.assertContains(detalle, motivo)
-        self.assertContains(detalle, 'Tu solicitud de alquiler fue rechazada')
-        catalogo = reverse('inventario:maquinaria_lista') + f'?categoria={self.maquinaria.categoria_id}'
-        fechas = reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]) + '?plan=semanal&cantidad=1'
-        self.assertContains(detalle, catalogo)
-        self.assertContains(detalle, fechas.replace('&', '&amp;'))
-        self.assertContains(self.client.get(catalogo), 'Limpiar filtros')
-        formulario = self.client.get(fechas)
-        self.assertEqual(formulario.context['form'].initial['plan'], 'semanal')
-        self.assertEqual(formulario.context['periodos_ocupados'], [{'inicio': ana.fecha_inicio.isoformat(), 'fin': ana.fecha_fin.isoformat()}])
-        self.assertContains(formulario, 'Disponibles para solicitar')
-        self.assertContains(formulario, 'Ocupadas')
+        self.assertContains(detalle, 'Aplazar hasta que esté disponible')
+        self.assertContains(detalle, 'Cancelar solicitud')
+        self.assertEqual(len(mail.outbox), 0)
         self.aprobar(carla)
         carla.refresh_from_db()
         self.assertEqual(carla.estado_cliente, 'Pendiente de pago')
@@ -149,7 +145,7 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
             self.assertContains(respuesta, 'Revisa el formulario')
         self.assertEqual(PagoAlquiler.objects.count(), 1)
 
-    def test_fallo_de_rechazo_revierte_pago_confirmacion_y_todos_los_rechazos(self):
+    def test_fallo_al_guardar_aviso_revierte_pago_confirmacion_y_avisos(self):
         ana = self.crear_solicitud(estado='Aprobada')
         luis = self.crear_solicitud()
         otra = self.crear_solicitud()
@@ -157,7 +153,7 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
         guardar = SolicitudAlquiler.save
         def fallar(solicitud, *args, **kwargs):
             if solicitud.pk == otra.pk:
-                raise DatabaseError('Fallo de rechazo')
+                raise DatabaseError('Fallo al guardar aviso')
             return guardar(solicitud, *args, **kwargs)
         with patch.object(SolicitudAlquiler, 'save', fallar):
             respuesta = self.confirmar(ana, **{f'motivo_{luis.pk}': 'Reservada', f'motivo_{otra.pk}': 'Reservada'})
@@ -168,6 +164,9 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
         self.assertEqual(self.unidad.estado, 'Disponible')
         self.assertEqual(PagoAlquiler.objects.count(), 1)
         self.assertFalse(SolicitudAlquiler.objects.filter(estado='Rechazada').exists())
+        self.assertFalse(SolicitudAlquiler.objects.filter(
+            fecha_aviso_disponibilidad__isnull=False,
+        ).exists())
 
     def test_confirmacion_revalida_unidad_y_reserva_confirmada(self):
         ana = self.crear_solicitud(estado='Aprobada')
@@ -196,7 +195,7 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
         self.assertEqual(ana.estado_cliente, 'Pendiente de entrega')
         self.assertIsNotNone(ana.fecha_confirmacion)
 
-    def test_rechazos_solo_afectan_misma_unidad_y_cruces_inclusivos_vigentes(self):
+    def test_avisos_solo_afectan_misma_unidad_y_cruces_inclusivos_vigentes(self):
         inicio = timezone.localdate() + timedelta(days=5)
         ana = self.crear_solicitud(estado='Aprobada', fecha_inicio=inicio, fecha_fin=inicio + timedelta(days=2))
         borde = self.crear_solicitud(fecha_inicio=ana.fecha_fin, fecha_fin=ana.fecha_fin + timedelta(days=1))
@@ -210,12 +209,124 @@ class FlujoClienteTests(DatosIntegracion, TestCase):
         self.confirmar(ana, **{f'motivo_{borde.pk}': 'Cruce inclusive', f'motivo_{aprobada.pk}': 'Reserva confirmada'})
         for s in (borde, aprobada):
             s.refresh_from_db()
-            self.assertEqual(s.estado, 'Rechazada')
+            self.assertEqual(s.estado, 'Pendiente' if s == borde else 'Aprobada')
+            self.assertEqual(s.estado_cliente, 'Requiere respuesta')
+            self.assertTrue(s.motivo_disponibilidad)
+            self.assertIsNotNone(s.fecha_aviso_disponibilidad)
         for s in (libre, otra):
             s.refresh_from_db()
             self.assertEqual(s.estado_cliente, 'Pendiente de aprobación')
         expirada.refresh_from_db()
         self.assertEqual(expirada.estado_cliente, 'Vencido')
+
+    def test_cliente_aplaza_hasta_retorno_y_recibe_fecha_con_plazo_de_pago(self):
+        hoy = timezone.localdate()
+        reserva = self.crear_solicitud(
+            estado='Aprobada', fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=2),
+        )
+        aplazada = self.crear_solicitud(
+            cliente=self.otro, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=2),
+        )
+        self.pagar_renta(reserva)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.confirmar(reserva, **{f'motivo_{aplazada.pk}': 'La reserva anterior sigue en uso.'})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.otro.email])
+        self.assertIn('Saludos cordiales', mail.outbox[0].body)
+
+        self.client.force_login(self.otro)
+        respuesta = self.client.post(
+            reverse('alquileres:solicitud_responder_disponibilidad', args=[aplazada.pk]),
+            {'accion': 'aplazar'},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        aplazada.refresh_from_db()
+        self.assertEqual(aplazada.estado, 'Pendiente')
+        self.assertTrue(aplazada.aplazada)
+        self.assertEqual(aplazada.estado_cliente, 'Aplazada')
+
+        reserva.fecha_salida = timezone.now() - timedelta(days=1)
+        reserva.entregado_por = self.admin
+        reserva.save(update_fields=['fecha_salida', 'entregado_por'])
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+        self.client.force_login(self.admin)
+        with self.captureOnCommitCallbacks(execute=True):
+            respuesta = self.client.post(
+                reverse('alquileres:solicitud_retorno', args=[reserva.pk]),
+                {'horas_uso_actualizadas': '10.5'},
+            )
+        self.assertEqual(respuesta.status_code, 302)
+        aplazada.refresh_from_db()
+        self.assertEqual(aplazada.estado, 'Aprobada')
+        self.assertEqual(aplazada.estado_cliente, 'Pendiente de pago')
+        self.assertGreaterEqual(
+            aplazada.fecha_inicio,
+            hoy + timedelta(days=SolicitudAlquiler.PLAZO_PAGO_DIAS + 1),
+        )
+        self.assertLessEqual(
+            aplazada.fecha_limite_pago,
+            timezone.make_aware(
+                datetime.combine(aplazada.fecha_inicio, time.min),
+                timezone.get_current_timezone(),
+            ),
+        )
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(mail.outbox[1].to, [self.otro.email])
+        self.assertIn(aplazada.fecha_inicio.strftime('%d/%m/%Y'), mail.outbox[1].body)
+
+    def test_cliente_no_cancela_en_linea_solicitud_con_pago_parcial(self):
+        principal = self.crear_solicitud(estado='Aprobada')
+        afectada = self.crear_solicitud(cliente=self.otro, estado='Aprobada')
+        PagoAlquiler.objects.create(
+            presupuesto=afectada.presupuesto,
+            concepto='renta',
+            monto=100,
+            metodo='efectivo',
+            registrado_por=self.admin,
+        )
+        self.pagar_renta(principal)
+        self.confirmar(principal, **{f'motivo_{afectada.pk}': 'La maquinaria ya tiene reserva.'})
+
+        self.client.force_login(self.otro)
+        respuesta = self.client.post(
+            reverse('alquileres:solicitud_responder_disponibilidad', args=[afectada.pk]),
+            {'accion': 'cancelar'},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertContains(self.client.get(respuesta.url), 'contacta al administrador')
+        afectada.refresh_from_db()
+        self.assertEqual(afectada.estado, 'Aprobada')
+        self.assertIsNotNone(afectada.fecha_aviso_disponibilidad)
+
+    def test_cliente_puede_cancelar_solicitud_avisada_sin_pagos(self):
+        solicitud = self.crear_solicitud(cliente=self.otro)
+        solicitud.motivo_disponibilidad = 'No estará disponible.'
+        solicitud.fecha_aviso_disponibilidad = timezone.now()
+        solicitud.save(update_fields=['motivo_disponibilidad', 'fecha_aviso_disponibilidad'])
+        self.client.force_login(self.otro)
+        respuesta = self.client.post(
+            reverse('alquileres:solicitud_responder_disponibilidad', args=[solicitud.pk]),
+            {'accion': 'cancelar'},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'Cancelada')
+        self.assertEqual(solicitud.estado_cliente, 'Cancelada')
+
+    def test_cliente_no_puede_responder_aviso_de_otra_cuenta(self):
+        solicitud = self.crear_solicitud(cliente=self.otro)
+        solicitud.motivo_disponibilidad = 'No disponible.'
+        solicitud.fecha_aviso_disponibilidad = timezone.now()
+        solicitud.save(update_fields=['motivo_disponibilidad', 'fecha_aviso_disponibilidad'])
+        self.client.force_login(self.cliente)
+        respuesta = self.client.post(
+            reverse('alquileres:solicitud_responder_disponibilidad', args=[solicitud.pk]),
+            {'accion': 'cancelar'},
+        )
+        self.assertEqual(respuesta.status_code, 404)
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'Pendiente')
 
     def test_sin_cruces_tambien_exige_revision_y_no_repite_pago_final(self):
         solicitud = self.crear_solicitud(estado='Aprobada')

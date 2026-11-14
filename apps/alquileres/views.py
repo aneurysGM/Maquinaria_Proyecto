@@ -9,14 +9,14 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_safe
 
 from apps.cuentas.models import permisos_panel
 from apps.inventario.models import Unidad
-from apps.ventas.models import PresupuestoAlquiler
+from apps.ventas.models import PagoAlquiler, PresupuestoAlquiler
 from .bloqueos import bloquear_unidad
 from .forms import RetornoMaquinariaForm, SolicitudAlquilerForm, SolicitudFiltroForm
 from .models import SolicitudAlquiler
@@ -317,6 +317,12 @@ def solicitud_resolver(request, solicitud_id):
             'Esta solicitud ya había sido revisada previamente.',
         )
         return redirect('alquileres:solicitud_lista')
+    if solicitud.fecha_aviso_disponibilidad is not None:
+        messages.warning(
+            request,
+            'El cliente debe responder al aviso de disponibilidad antes de resolver esta solicitud.',
+        )
+        return redirect('alquileres:solicitud_lista')
 
     decision = request.POST.get('decision')
     if decision not in ('Aprobada', 'Rechazada'):
@@ -355,6 +361,54 @@ def solicitud_resolver(request, solicitud_id):
     except ValidationError as error:
         for mensaje in error.messages:
             messages.error(request, mensaje)
+    return redirect('alquileres:solicitud_lista')
+
+
+@login_required(login_url='cuentas:login')
+@movimiento_atomico
+def solicitud_responder_disponibilidad(request, solicitud_id):
+    if not request.user.es_cliente:
+        raise PermissionDenied('Solo el cliente titular puede responder este aviso.')
+    if request.method != 'POST':
+        return redirect('alquileres:solicitud_lista')
+
+    solicitud, _unidad = bloquear_movimiento(solicitud_id)
+    if solicitud.cliente_id != request.user.pk:
+        raise Http404
+    if (
+        solicitud.estado not in ('Pendiente', 'Aprobada')
+        or solicitud.fecha_aviso_disponibilidad is None
+        or solicitud.aplazada
+    ):
+        messages.warning(request, 'Esta solicitud ya no espera una respuesta.')
+        return redirect('alquileres:solicitud_lista')
+
+    accion = request.POST.get('accion')
+    if accion == 'aplazar':
+        solicitud.aplazada = True
+        campos = ['aplazada']
+        if solicitud.estado == 'Aprobada':
+            solicitud.estado = 'Pendiente'
+            solicitud.fecha_revision = None
+            campos.extend(['estado', 'fecha_revision'])
+        solicitud.save(update_fields=campos)
+        messages.success(
+            request,
+            'Aceptaste aplazar la solicitud. Te avisaremos cuando se programe la nueva fecha.',
+        )
+    elif accion == 'cancelar':
+        if PagoAlquiler.objects.filter(presupuesto__solicitud=solicitud).exists():
+            messages.error(
+                request,
+                'No puedes cancelar en línea porque esta solicitud tiene pagos registrados. '
+                'Contacta al administrador para revisar el reembolso.',
+            )
+            return redirect('alquileres:solicitud_lista')
+        solicitud.estado = 'Cancelada'
+        solicitud.save(update_fields=['estado'])
+        messages.success(request, 'La solicitud fue cancelada.')
+    else:
+        messages.error(request, 'La respuesta seleccionada no es válida.')
     return redirect('alquileres:solicitud_lista')
 
 
@@ -473,6 +527,18 @@ def solicitud_registrar_retorno(request, solicitud_id):
     liberar_unidad_si_no_reservada(unidad, solicitud.pk)
     unidad.horas_uso = horas_actualizadas
     unidad.save(update_fields=['horas_uso'])
+
+    from .reservas import programar_siguiente_solicitud_aplazada
+    siguiente = programar_siguiente_solicitud_aplazada(
+        unidad, fecha_retorno, actor=request.user, request=request,
+    )
+    if siguiente is not None:
+        transaction.on_commit(partial(
+            messages.success,
+            request,
+            f'La solicitud #{siguiente.pk} fue programada del '
+            f'{siguiente.fecha_inicio:%d/%m/%Y} al {siguiente.fecha_fin:%d/%m/%Y}.',
+        ))
 
     presupuesto = getattr(solicitud, 'presupuesto', None)
     if presupuesto and solicitud.politica_mora_aplica:
