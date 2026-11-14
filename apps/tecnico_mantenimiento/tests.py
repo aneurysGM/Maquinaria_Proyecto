@@ -133,7 +133,7 @@ class GestionTecnicosTests(TestCase):
                 reverse('inventario:maquinaria_lista'),
                 'CC',
                 'Carla Castillo',
-                None,
+                'Cliente',
             ),
             (
                 self.tecnico,
@@ -160,10 +160,7 @@ class GestionTecnicosTests(TestCase):
                 self.assertEqual(respuesta.status_code, 200)
                 self.assertContains(respuesta, f'class="mq-avatar">{iniciales}</div>')
                 self.assertContains(respuesta, nombre)
-                if rol:
-                    self.assertContains(respuesta, f'<span>{rol}</span>')
-                else:
-                    self.assertNotContains(respuesta, '<span>Cliente</span>')
+                self.assertContains(respuesta, f'<span>{rol}</span>')
 
     def test_solo_administrador_puede_listar_o_crear_tecnicos(self):
         for usuario in (self.cliente, self.tecnico):
