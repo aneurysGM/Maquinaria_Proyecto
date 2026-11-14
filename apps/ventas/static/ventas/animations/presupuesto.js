@@ -41,6 +41,10 @@
 
         const [anio, mes, dia] = fechaInicio.value.split('-').map(Number);
         const fin = new Date(Date.UTC(anio, mes - 1, dia + dias - 1));
+        if (!Number.isFinite(fin.getTime()) || fin.getUTCFullYear() > 9999) {
+            fechaFin.textContent = 'La duración excede el rango de fechas';
+            return;
+        }
         fechaFin.textContent = new Intl.DateTimeFormat('es-DO', {
             dateStyle: 'long',
             timeZone: 'UTC',

@@ -25,7 +25,7 @@
                 {% endif %}
                 {% endwith %}
                 <div class="card-body p-4">
-                    <span class="badge text-bg-success mb-2">Disponible</span>
+                    <span class="badge text-bg-success mb-2">Consulta las fechas disponibles</span>
                     <h2 class="h4 fw-bold">{{ unidad.maquinaria.nombre }}</h2>
                     <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripción disponible."|linebreaksbr }}</p>
                     <dl class="row mb-0">
@@ -52,6 +52,7 @@
                         El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisará la disponibilidad.
                     </div>
                     <form method="post" id="solicitud-alquiler-form" novalidate
+                        data-hoy="{{ hoy }}"
                         data-tarifa-diaria="{{ unidad.maquinaria.tarifa_diaria|unlocalize }}"
                         data-tarifa-semanal="{{ unidad.maquinaria.tarifa_semanal|unlocalize }}"
                         data-tarifa-mensual="{{ unidad.maquinaria.tarifa_mensual|unlocalize }}"
@@ -68,6 +69,19 @@
                             {{ form.fecha_inicio }}
                             {% if form.fecha_inicio.errors %}<div class="text-danger small mt-1">{{ form.fecha_inicio.errors }}</div>{% endif %}
                         </div>
+
+                        <section class="border rounded-3 p-3 mb-3" aria-label="Calendario de disponibilidad">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                <button type="button" id="mes-anterior" class="btn btn-sm btn-outline-secondary" aria-label="Mes anterior">‹</button>
+                                <h3 id="calendario-mes" class="h6 mb-0">Fechas disponibles</h3>
+                                <button type="button" id="mes-siguiente" class="btn btn-sm btn-outline-secondary" aria-label="Mes siguiente">›</button>
+                            </div>
+                            <p class="small"><span class="badge text-bg-danger">Ocupadas</span> <span class="badge bg-success-subtle text-success border">Disponibles para solicitar</span></p>
+                            <div id="calendario-dias" class="d-grid gap-1" style="grid-template-columns:repeat(7,minmax(0,1fr))"></div>
+                            <div id="aviso-disponibilidad" class="small mt-2" role="status" aria-live="polite"></div>
+                            <p class="small text-muted mt-2 mb-0">El período completo del plan debe estar libre. Enviar una solicitud no reserva las fechas.</p>
+                            <noscript><p class="small">Introduce la fecha arriba. El servidor comprobará todo el período al enviar.</p></noscript>
+                        </section>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold" for="{{ form.plan.id_for_label }}">Plan</label>
@@ -122,5 +136,7 @@
 
 {% block extra_js %}
 {{ block.super }}
+{{ periodos_ocupados|json_script:"periodos-ocupados" }}
 <script src="{% static 'ventas/animations/presupuesto.js' %}" defer></script>
+<script src="{% static 'alquileres/disponibilidad.js' %}" defer></script>
 {% endblock %}

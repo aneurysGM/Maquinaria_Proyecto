@@ -1,0 +1,3 @@
+{% with estado=solicitud.estado_cliente %}
+<span class="badge {% if estado == 'Rechazado' or estado == 'Vencido' %}text-bg-danger{% elif estado == 'Pendiente de aprobación' %}text-bg-warning{% elif estado == 'Pendiente de pago' %}bg-primary-subtle text-primary-emphasis{% elif estado == 'Devuelto' %}text-white{% else %}text-bg-success{% endif %}"{% if estado == 'Devuelto' %} style="background-color: #343A40;"{% endif %}>{{ estado }}</span>
+{% endwith %}

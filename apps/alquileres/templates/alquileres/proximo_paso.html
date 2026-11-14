@@ -1,0 +1,17 @@
+{% with estado=solicitud.estado_cliente %}
+<p class="text-secondary mt-3 mb-0">
+    {% if estado == 'Pendiente de aprobación' %}Tu solicitud está en revisión.
+    {% elif estado == 'Pendiente de pago' %}Consulta cuánto te falta por pagar en <strong>Ver presupuesto</strong>.
+    {% elif estado == 'Pendiente de entrega' %}Tu reserva está confirmada. La entrega está pendiente.
+    {% elif estado == 'En uso' %}Fecha prevista de devolución: <strong>{{ solicitud.fecha_fin|date:"d/m/Y" }}</strong>.
+    {% elif estado == 'Devuelto' %}Puedes consultar el detalle de este alquiler en el historial.
+    {% elif estado == 'Rechazado' %}Consulta el motivo y las opciones para volver a solicitar.
+    {% elif estado == 'Vencido' %}Terminó el plazo para completar el pago inicial. Puedes volver a solicitar con nuevas fechas.
+    {% endif %}
+</p>
+{% if estado == 'Rechazado' %}
+<a class="btn btn-sm btn-outline-danger mt-3" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}#motivo-rechazo">Ver motivo</a>
+{% elif estado == 'Vencido' %}
+<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'alquileres:solicitud_registrar' solicitud.unidad_id %}?plan={{ solicitud.plan }}&amp;cantidad={{ solicitud.cantidad }}">Volver a solicitar</a>
+{% endif %}
+{% endwith %}

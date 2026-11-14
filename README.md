@@ -28,6 +28,146 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Estado final de las mejoras de alquiler — 13 de noviembre de 2026
+
+- La última ejecución de Django pasó **150 pruebas en SQLite temporal**. Se
+  incluyen las pruebas de reservas, rechazo manual, sugerencias de búsqueda y
+  panel administrativo, además de los controles JavaScript del calendario,
+  confirmación del pago y sugerencias de códigos.
+- El rechazo manual queda a la derecha de Aprobar, en rojo sólido, y conserva la
+  ventana de confirmación. El detalle del rechazo usa un recuadro ámbar claro.
+  Pendiente de aprobación se muestra en amarillo; Pendiente de pago, en azul
+  claro con texto azul oscuro; Devuelto, en gris carbón `#343A40` con texto blanco.
+  En uso conserva el verde y la pestaña Devueltas conserva el azul.
+- El código, la migración, las pruebas y la documentación se preparan para un
+  commit local. El archivo `.env`, SQLite, sus respaldos y los temporales quedan
+  fuera del control de versiones. La publicación de la rama se realiza aparte.
+
+### Sugerencias de códigos en solicitudes recibidas — 13 de noviembre de 2026
+
+- Buscar ofrece códigos de maquinaria mientras se escribe, sin distinguir
+  mayúsculas y minúsculas y sin repetirlos. Usa únicamente solicitudes visibles
+  que coinciden con el estado y las fechas seleccionados; no limita la cantidad
+  de coincidencias. Si se escribe un código completo, muestra solo ese código.
+- Elegir una sugerencia completa Buscar y envía el formulario con coincidencia
+  exacta por código, conservando estado y fechas. Escribir otra consulta descarta
+  la selección anterior. El botón Buscar y la búsqueda libre por cliente,
+  maquinaria, serie o número de solicitud mantienen su comportamiento.
+- `apps/alquileres/static/alquileres/sugerencias_codigos.js` controla el desplegable,
+  la selección por ratón o teclado, Escape y las peticiones canceladas. La ruta
+  `alquileres/solicitudes/sugerencias-codigos/` es de solo lectura y exclusiva del
+  Administrador. Ante un error de red sigue disponible la búsqueda normal.
+- `apps/alquileres/tests_sugerencias.py` añade siete pruebas con datos temporales
+  para códigos, filtros, coincidencia exacta, duplicados y permisos.
+  `apps/alquileres/tests_sugerencias_controles.cjs` verifica el control JavaScript
+  con Node.js y un DOM mínimo, incluidas respuestas que llegan fuera de orden.
+- Pasaron **86 pruebas de alquileres y del panel**, las comprobaciones JavaScript,
+  `manage.py check`, `makemigrations --check --dry-run` y `git diff --check`.
+  La comprobación local de solo lectura encontró la nueva solicitud de Luis #5
+  (Aprobada) al seleccionar EXC-PR-002 y verificó los filtros de estado y fechas.
+  El prefijo EXC-PR-00 devolvió EXC-PR-001 y EXC-PR-002; no había solicitudes
+  visibles para EXC-PR-003. Solicitudes, presupuestos, pagos y reembolsos intactos.
+
+### Panel del Administrador conectado a datos reales — 13 de noviembre de 2026
+
+- `/auth/dashboard/` conserva su diseño y el conteo de equipos disponibles del
+  inventario administrativo. Las solicitudes pendientes comparten consulta y
+  total entre tarjeta y pestaña; cada enlace Revisar abre su solicitud concreta.
+  Alquileres activos reutiliza `reservas_confirmadas()`, que también reconoce
+  entregas antiguas sin confirmación explícita y cuenta cada solicitud una vez.
+  En mantenimiento cuenta unidades por su estado actual, sin unir sus trabajos.
+- Ingresos del mes suma exclusivamente pagos registrados de renta y mora, desde
+  el inicio del mes hasta el inicio del siguiente en America/Santo_Domingo. Excluye
+  depósitos y muestra RD$ con dos decimales. Los contadores vacíos muestran 0.
+- Las tres pestañas muestran hasta cinco registros, el total real y un acceso al
+  listado completo cuando hay más. Mantenimientos muestra trabajos sin fecha de
+  cierre, incluidas fechas futuras, y enlaza al registro dentro del historial de
+  la unidad. El filtro `?atencion=1` permite consultar todos esos trabajos.
+- **Pagos vencidos** sustituye el marcador de facturas. Se aplica el plazo existente
+  de cinco días desde la aprobación a solicitudes aprobadas o vencidas, sin salida,
+  cuyo pago inicial siga incompleto y tenga saldo. No se inventa vencimiento para
+  la mora de equipos entregados. El filtro `?vencidos=1` en presupuestos reutiliza
+  el mismo criterio y conserva el filtro al paginar.
+- Archivos nuevos: `apps/mantenimiento/consultas.py` comparte los trabajos abiertos;
+  `apps/ventas/consultas.py` comparte los presupuestos vencidos;
+  `apps/mantenimiento/templates/mantenimiento/mantenimiento_atencion.html` muestra
+  el listado completo; `apps/cuentas/tests_dashboard.py` contiene diez pruebas del
+  panel, fechas, importes, permisos y destinos de los enlaces.
+- Pasaron **143 pruebas** en SQLite temporal, `manage.py check`,
+  `makemigrations --check --dry-run` y `git diff --check`. Se cubrieron listas
+  vacías, límite de cinco, paginación, mantenimiento sin duplicar unidades,
+  alquileres antiguos, cobros parciales, límites inclusivos del plazo y límites
+  del mes y año en la zona local, además de excluir depósitos de los ingresos.
+  No se requieren migraciones nuevas.
+- Comprobación local de solo lectura: 7 disponibles, 2 alquileres activos (#1 y
+  Ana #2), 1 pendiente (Carla #4), 0 unidades en mantenimiento y RD$15000.00 de
+  ingresos del mes. Los enlaces abren los registros correspondientes y se
+  conservaron todos los datos de solicitudes, presupuestos, pagos, reembolsos y
+  mantenimientos, incluidas Ana, Luis y Carla.
+
+### Rechazo manual en ventana de confirmación — 13 de noviembre de 2026
+
+- En la lista y el detalle, **Aprobar** conserva la acción principal. A su derecha,
+  **Rechazar solicitud** aparece en rojo sólido y abre una ventana con
+  el diseño de confirmación existente de Mantenimiento. El motivo solo aparece
+  dentro de esa ventana; Cancelar y Cerrar no envían el formulario.
+- `apps/alquileres/templates/alquileres/solicitud_rechazo_modal.html` comparte la
+  ventana entre ambas pantallas, con título por solicitud, motivo obligatorio,
+  aviso de que el cliente lo leerá en Mis alquileres y confirmación explícita.
+  Se reutiliza la validación del servidor bajo bloqueo: motivo de hasta 1000
+  caracteres y solicitud todavía pendiente. El rechazo por cruces desde el
+  presupuesto conserva su flujo.
+- `apps/alquileres/tests_rechazo_manual.py` añade seis pruebas con datos ficticios
+  en una base temporal: ventanas y controles de cancelación, motivo inválido,
+  solicitud revisada mientras la ventana estaba abierta, permisos y rechazo
+  confirmado con motivo visible para el cliente sin cambiar su comentario.
+- Pasaron **80 pruebas de alquileres y ventas**, incluidas las de rechazo por
+  cruces y confirmación concurrente, además de `manage.py check` y
+  `git diff --check`. Una comprobación local de solo lectura verificó las
+  ventanas de Luis y Carla y conservó todos los campos de las solicitudes #2,
+  #3 y #4, sus presupuestos y sus pagos: Ana aprobada; Luis y Carla pendientes.
+  No se requieren migraciones para este ajuste.
+
+### Contador de solicitudes por revisar — 13 de noviembre de 2026
+
+- El panel del Administrador calcula `kpis.solicitudes_pendientes` contando las
+  solicitudes en estado `Pendiente`. La tarjeta conserva su diseño y usa
+  `default_if_none:0` para mostrar el cero en lugar de sustituirlo por un guion.
+- Las 5 pruebas de `apps.cuentas` pasaron, incluidas las nuevas comprobaciones
+  de la tarjeta con 3 pendientes y sin pendientes en SQLite temporal. Se verificó
+  también que el panel local renderiza 3 con una conexión de solo lectura y que
+  todos los campos de las solicitudes #2, #3 y #4 permanecieron intactos.
+
+### Inicio del Cliente y confirmación por pago — 13 de noviembre de 2026
+
+- El Cliente dispone de un inicio con alquileres activos y próximo paso, además
+  de **Mis alquileres** con historial, presupuesto y estados derivados de revisión,
+  renta y depósito inicial, entrega y devolución. Los accesos por URL continúan
+  limitados al propietario de la solicitud y del presupuesto.
+- Aprobar deja la solicitud **Pendiente de pago**. El pago que completa renta y
+  depósito confirma la reserva; el Administrador revisa las solicitudes de la misma
+  unidad con períodos cruzados y escribe un motivo para cada rechazo. El servidor
+  valida una lista firmada y vuelve a comprobar disponibilidad bajo bloqueo antes
+  de guardar pago, confirmación y rechazos en una transacción.
+- Los rechazos conservan el comentario original y ofrecen catálogo por categoría
+  y una nueva solicitud del mismo equipo con el plan anterior. El calendario
+  distingue fechas ocupadas y comprueba el período completo; el servidor revalida
+  al enviar. Los reembolsos del depósito no reducen la renta pendiente.
+- Los archivos nuevos, las reglas y los pasos de comprobación están descritos en
+  [Cliente y confirmación de reservas](docs/flujo-cliente-reservas.md).
+- Verificación: **125 pruebas Django aprobadas** en SQLite temporal, incluidas
+  conexiones concurrentes, permisos, formularios desactualizados y reversión ante
+  fallos; controles JavaScript comprobados con Node.js y DOM mínimo. `check`,
+  `makemigrations --check --dry-run` y `git diff --check` sin incidencias. La revisión
+  visual quedó pendiente porque el control del navegador no estaba disponible;
+  no se comprobó SQL Server en esta sesión.
+- Se aplicó `alquileres.0005_confirmacion_reserva_y_motivo` a SQLite local con
+  respaldo verificado. También se aplicó `cuentas.0004`, que ya estaba pendiente
+  y era necesaria para cargar usuarios. Se conservaron los recuentos: 4 usuarios,
+  1 unidad, 1 solicitud, 1 presupuesto, 0 pagos y 0 reembolsos. Los respaldos
+  `respaldo_antes_cliente_20261113_205901.sqlite3` y
+  `respaldo_antes_cliente_20261113_205939.sqlite3` están excluidos de Git.
+
 ### Alertas de devolución atrasada — 11 de noviembre de 2026
 
 - En **Salidas y retornos**, el administrador puede filtrar las maquinarias

@@ -1,4 +1,5 @@
 {% extends "dashboard/base_dashboard.html" %}
+{% load static l10n %}
 
 {% block title %}Presupuesto de alquiler{% endblock %}
 {% block page_name %}Presupuesto de alquiler{% endblock %}
@@ -13,15 +14,16 @@
                 <i class="bi bi-arrow-left me-1"></i>Volver a ventas
             </a>
             {% else %}
-            <a href="{% url 'inventario:maquinaria_lista' %}" class="link-secondary text-decoration-none small">
-                <i class="bi bi-arrow-left me-1"></i>Volver a maquinarias
+            <a href="{% url 'alquileres:solicitud_lista' %}" class="link-secondary text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Volver a Mis alquileres
             </a>
             {% endif %}
             <h1 class="h2 mt-2 mb-1">Presupuesto #{{ solicitud.pk }}</h1>
             <p class="text-muted mb-0">{{ solicitud.unidad.maquinaria.nombre }} · Serie {{ solicitud.unidad.numero_serie }}</p>
         </div>
-        <span class="badge {% if solicitud.estado == 'Aprobada' %}text-bg-success{% elif solicitud.estado == 'Rechazada' %}text-bg-danger{% else %}text-bg-warning{% endif %} fs-6">{{ solicitud.estado }}</span>
+        {% include 'alquileres/estado_cliente.html' %}
     </div>
+    <div class="mb-4">{% include 'alquileres/proximo_paso.html' %}</div>
 
     <div class="row g-4">
         <div class="col-lg-7">
@@ -118,6 +120,8 @@
                         <span class="fw-bold">Saldo pendiente</span>
                         <strong class="text-danger">${{ presupuesto.saldo_pendiente_actual|floatformat:2 }}</strong>
                     </div>
+                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|floatformat:2 }}</strong> · Depósito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|floatformat:2 }}</strong>.</p>
+                    <p class="small text-muted mt-2 mb-0">Los reembolsos del depósito se registran aparte y no reducen la renta pendiente.</p>
                     <p class="small text-muted mt-3 mb-0">El depósito es una garantía reembolsable. El presupuesto no incluye costos internos de adquisición de la maquinaria.</p>
                 </div>
             </section>
@@ -168,8 +172,10 @@
             <section class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Registrar pago recibido</h2></div>
                 <div class="card-body">
-                    <form method="post" action="{% url 'ventas:pago_registrar' presupuesto.pk %}">
+                    <form method="post" id="pago-recibido-form" action="{% url 'ventas:pago_registrar' presupuesto.pk %}"
+                          data-renta-pendiente="{{ presupuesto.renta_pendiente|unlocalize }}" data-deposito-pendiente="{{ presupuesto.deposito_pendiente|unlocalize }}">
                         {% csrf_token %}
+                        {{ pago_form.non_field_errors }}
                         {% for field in pago_form %}
                         <div class="mb-3">
                             <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -177,7 +183,22 @@
                             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
                         </div>
                         {% endfor %}
-                        <button class="btn btn-warning fw-semibold" type="submit">Guardar pago</button>
+                        {% if not solicitud.pago_inicial_completo %}
+                        <input type="hidden" name="revision_reserva" value="{{ revision_reserva }}">
+                        <fieldset id="confirmacion-reserva" class="border rounded-3 p-3 mb-3">
+                            <legend class="float-none w-auto h6 px-1">Confirmación de reserva</legend>
+                            <p class="small">Si este pago completa la renta y el depósito inicial, confirma la reserva y rechaza las solicitudes con fechas que se cruzan para esta misma unidad física.</p>
+                            {% for afectada, motivo in afectadas %}
+                            <div class="mb-3">
+                                <p class="small fw-semibold mb-1">Solicitud #{{ afectada.pk }} · {{ afectada.fecha_inicio|date:"d/m/Y" }} – {{ afectada.fecha_fin|date:"d/m/Y" }}</p>
+                                <label class="form-label" for="{{ motivo.id_for_label }}">Motivo</label>
+                                {{ motivo }}
+                                {% if motivo.errors %}<div class="text-danger small">{{ motivo.errors }}</div>{% endif %}
+                            </div>
+                            {% empty %}<p class="small mb-0">No hay otras solicitudes afectadas para este período.</p>{% endfor %}
+                        </fieldset>
+                        {% endif %}
+                        <button id="guardar-pago" class="btn btn-warning fw-semibold" type="submit">Guardar pago</button>
                     </form>
                 </div>
             </section>
@@ -186,4 +207,8 @@
     </div>
 </div>
 {% endwith %}
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'ventas/confirmacion_reserva.js' %}" defer></script>
 {% endblock %}

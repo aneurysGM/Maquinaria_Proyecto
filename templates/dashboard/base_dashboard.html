@@ -391,7 +391,7 @@
                 {% if es_administrador or es_cliente %}
                 <a href="{% url 'alquileres:solicitud_lista' %}" class="mq-nav-link {% if request.resolver_match.namespace == 'alquileres' and request.resolver_match.url_name != 'entrega_lista' %}active{% endif %}">
                     <i class="bi bi-file-earmark-text"></i>
-                    <span>Alquileres</span>
+                    <span>{% if es_cliente and not es_administrador %}Mis alquileres{% else %}Alquileres{% endif %}</span>
                 </a>
                 {% endif %}
                 {% if es_administrador %}

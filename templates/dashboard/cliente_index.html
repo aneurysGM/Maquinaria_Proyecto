@@ -1,0 +1,23 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Inicio | MaquiRent{% endblock %}
+{% block page_name %}Inicio{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div><h1 class="h3 fw-bold">Mis alquileres activos</h1><p class="text-secondary mb-0">Consulta el próximo paso de tus solicitudes y reservas.</p></div>
+        <div class="d-flex gap-2 align-items-start">
+            <a class="btn btn-outline-primary" href="{% url 'alquileres:solicitud_lista' %}">Mis alquileres e historial</a>
+            <a class="btn btn-warning" href="{% url 'inventario:maquinaria_lista' %}">Ver maquinarias</a>
+        </div>
+    </div>
+    <div class="row g-3">
+        {% for solicitud in solicitudes %}
+        <div class="col-12"><article class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+            {% include 'alquileres/solicitud_resumen.html' %}
+        </div></article></div>
+        {% empty %}
+        <div class="col-12"><p class="alert alert-light border">No tienes alquileres activos. Puedes consultar tus solicitudes anteriores en Mis alquileres.</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

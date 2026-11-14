@@ -6,11 +6,19 @@ from django.utils import timezone
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Categoria, Maquinaria, Unidad
-from apps.ventas.models import PresupuestoAlquiler
+from apps.ventas.models import PagoAlquiler, PresupuestoAlquiler
 from .models import SolicitudAlquiler
 
 
 class DatosIntegracion:
+    def completar_pago_inicial(self, solicitud):
+        """Precondición de una entrega; las pruebas de confirmación usan la vista."""
+        for concepto, monto in [('renta', solicitud.presupuesto.importe_renta),
+                                 ('deposito', solicitud.presupuesto.deposito_garantia)]:
+            if monto:
+                PagoAlquiler.objects.create(presupuesto=solicitud.presupuesto, concepto=concepto,
+                                            monto=monto, metodo='efectivo', registrado_por=self.admin)
+
     @classmethod
     def crear_datos(cls):
         cls.admin = UsuarioPersonalizado.objects.create_user(

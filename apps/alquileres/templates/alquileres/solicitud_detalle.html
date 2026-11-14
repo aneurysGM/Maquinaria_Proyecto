@@ -5,6 +5,17 @@
 <div class="container-fluid px-0">
     <a class="btn btn-outline-secondary mb-3" href="{% url 'alquileres:solicitud_lista' %}">Volver a solicitudes</a>
     <h1 class="h3 mb-4">Detalle de solicitud #{{ solicitud.pk }}</h1>
+    {% if solicitud.estado == 'Rechazada' %}
+    <section id="motivo-rechazo" class="alert alert-warning text-dark" role="alert">
+        <h2 class="h5">{% if es_administrador %}Solicitud de alquiler rechazada{% else %}Tu solicitud de alquiler fue rechazada{% endif %}</h2>
+        <p><strong>Motivo:</strong><br>{{ solicitud.motivo_rechazo|default:"No se registró un motivo para esta solicitud anterior."|linebreaksbr }}</p>
+        <p>Puedes buscar otro equipo o elegir nuevas fechas para esta misma maquinaria.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-primary" href="{% url 'inventario:maquinaria_lista' %}?categoria={{ solicitud.unidad.maquinaria.categoria_id }}">Ver otras maquinarias</a>
+            <a class="btn btn-primary" href="{% url 'alquileres:solicitud_registrar' solicitud.unidad_id %}?plan={{ solicitud.plan }}&amp;cantidad={{ solicitud.cantidad }}">Ver fechas disponibles</a>
+        </div>
+    </section>
+    {% endif %}
     <article class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body p-4">
         {% include 'alquileres/solicitud_resumen.html' %}
         {% include 'alquileres/solicitud_acciones.html' %}

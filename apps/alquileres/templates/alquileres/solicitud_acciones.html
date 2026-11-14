@@ -1,17 +1,15 @@
 {% load l10n %}
 {% if es_administrador %}
     {% if solicitud.estado == 'Pendiente' %}
-    <div class="d-flex gap-2 mt-3 pt-3 border-top">
+    <div class="d-flex align-items-center gap-2 mt-3 pt-3 border-top">
         <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.pk %}">
             {% csrf_token %}<input type="hidden" name="decision" value="Aprobada">
             <button class="btn btn-sm btn-success" type="submit">Aprobar</button>
         </form>
-        <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.pk %}">
-            {% csrf_token %}<input type="hidden" name="decision" value="Rechazada">
-            <button class="btn btn-sm btn-outline-danger" type="submit">Rechazar</button>
-        </form>
+        <button class="btn btn-sm btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#rechazar-solicitud-{{ solicitud.pk }}">Rechazar solicitud</button>
     </div>
-    {% elif solicitud.estado == 'Aprobada' and not solicitud.fecha_salida %}
+    {% include 'alquileres/solicitud_rechazo_modal.html' %}
+    {% elif solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and solicitud.pago_inicial_completo %}
     <form method="post" action="{% url 'alquileres:solicitud_salida' solicitud.pk %}" class="mt-3 pt-3 border-top">
         {% csrf_token %}<button class="btn btn-sm btn-primary" type="submit">Registrar entrega de maquinaria</button>
     </form>

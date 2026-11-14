@@ -1,0 +1,23 @@
+<div class="modal fade" id="rechazar-solicitud-{{ solicitud.pk }}" tabindex="-1" aria-labelledby="rechazar-titulo-{{ solicitud.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="Rechazada">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h2 class="modal-title h5 fw-bold text-dark" id="rechazar-titulo-{{ solicitud.pk }}">Rechazar solicitud #{{ solicitud.pk }}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <label class="form-label fw-semibold" for="motivo-{{ solicitud.pk }}">Motivo:</label>
+                    <textarea class="form-control" id="motivo-{{ solicitud.pk }}" name="motivo_rechazo" maxlength="1000" rows="3" aria-describedby="motivo-ayuda-{{ solicitud.pk }}" required></textarea>
+                    <div class="form-text" id="motivo-ayuda-{{ solicitud.pk }}">El cliente podrá leer el motivo en <strong>Mis alquileres</strong>.</div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary px-3 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-3 fw-semibold">Confirmar rechazo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
