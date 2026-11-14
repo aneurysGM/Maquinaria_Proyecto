@@ -197,7 +197,7 @@ def permisos_panel(usuario):
 
     return {
         'nombre_usuario': usuario.get_full_name() or usuario.email,
-        'rol_usuario': usuario.get_rol_display(),
+        'rol_usuario': RolUsuario.ADMINISTRADOR.label if es_admin else usuario.get_rol_display(),
         'es_administrador': es_admin,
         'es_cliente': es_cli,
         'es_tecnico': es_tec,

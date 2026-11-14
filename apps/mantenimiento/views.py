@@ -9,6 +9,7 @@ from apps.inventario.models import Unidad
 from apps.cuentas.models import permisos_panel
 from .forms import MantenimientoForm
 from .models import Mantenimiento
+from .consultas import mantenimientos_abiertos
 from django.utils import timezone
 
 @login_required
@@ -17,6 +18,11 @@ def mantenimiento_lista(request):
     permisos = permisos_panel(request.user)
     if not (permisos.get('es_administrador') or permisos.get('es_tecnico')):
         raise PermissionDenied("Acceso restringido al personal autorizado.")
+
+    if request.GET.get('atencion') == '1':
+        return render(request, 'mantenimiento/mantenimiento_atencion.html', {
+            'mantenimientos': mantenimientos_abiertos(), 'hoy': timezone.localdate(),
+        })
 
     unidades = Unidad.objects.select_related('maquinaria__categoria').filter(activo=True, maquinaria__activo=True)
     consulta = request.GET.get('q', '').strip()

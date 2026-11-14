@@ -35,6 +35,7 @@ class SolicitudAlquilerForm(forms.ModelForm):
 
 
 class SolicitudFiltroForm(forms.Form):
+    codigo_exacto = forms.CharField(required=False, max_length=20, widget=forms.HiddenInput())
     q = forms.CharField(
         label='Buscar', required=False, max_length=200,
         widget=forms.TextInput(attrs={
@@ -58,6 +59,8 @@ class SolicitudFiltroForm(forms.Form):
 
     def clean(self):
         datos = super().clean()
+        if datos.get('codigo_exacto', '').casefold() != datos.get('q', '').casefold():
+            datos['codigo_exacto'] = ''
         desde, hasta = datos.get('desde'), datos.get('hasta')
         if desde and hasta and hasta < desde:
             self.add_error('hasta', 'La fecha Hasta debe ser igual o posterior a Desde.')

@@ -7,8 +7,9 @@
 <div class="container-fluid px-0">
     <div class="mb-4">
         <p class="text-uppercase text-muted small fw-semibold mb-1">Gestión de negocio</p>
-        <h1 class="h2 mb-1">Ventas y presupuestos</h1>
-        <p class="text-muted mb-0">Consulta los alquileres aprobados, los pagos registrados y los saldos pendientes.</p>
+        <h1 class="h2 mb-1">{% if request.GET.vencidos == '1' %}Pagos vencidos{% else %}Ventas y presupuestos{% endif %}</h1>
+        <p class="text-muted mb-0">{% if request.GET.vencidos == '1' %}Presupuestos con plazo de pago inicial vencido y saldo pendiente.{% else %}Consulta los alquileres aprobados, los pagos registrados y los saldos pendientes.{% endif %}</p>
+        {% if request.GET.vencidos == '1' %}<a class="btn btn-sm btn-outline-secondary mt-2" href="{% url 'ventas:presupuesto_lista' %}">Ver todos los presupuestos</a>{% endif %}
     </div>
 
     <div class="card border-0 shadow-sm">
@@ -18,6 +19,7 @@
                     <tr>
                         <th class="ps-3">Cliente / maquinaria</th>
                         <th>Período</th>
+                        {% if request.GET.vencidos == '1' %}<th>Vencimiento del pago inicial</th>{% endif %}
                         <th>Presupuesto</th>
                         <th>Pagado</th>
                         <th>Saldo</th>
@@ -32,6 +34,7 @@
                             <span class="small text-muted">{{ presupuesto.solicitud.unidad.maquinaria.nombre }} · #{{ presupuesto.solicitud_id }}</span>
                         </td>
                         <td>{{ presupuesto.solicitud.fecha_inicio|date:"d/m/Y" }} – {{ presupuesto.solicitud.fecha_fin|date:"d/m/Y" }}</td>
+                        {% if request.GET.vencidos == '1' %}<td>{{ presupuesto.solicitud.fecha_limite_pago|date:"d/m/Y H:i" }}</td>{% endif %}
                         <td>${{ presupuesto.importe_total_actual|floatformat:2 }}</td>
                         <td>${{ presupuesto.total_pagado|floatformat:2 }}</td>
                         <td class="fw-semibold">${{ presupuesto.saldo_pendiente_actual|floatformat:2 }}</td>
@@ -41,12 +44,19 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-5">Todavía no hay presupuestos registrados.</td>
+                        <td colspan="{% if request.GET.vencidos == '1' %}7{% else %}6{% endif %}" class="text-center text-muted py-5">{% if request.GET.vencidos == '1' %}No hay pagos vencidos.{% else %}Todavía no hay presupuestos registrados.{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    {% if is_paginated %}
+    <nav class="d-flex align-items-center gap-3 mt-3" aria-label="Páginas de presupuestos">
+        {% if page_obj.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?{% if request.GET.vencidos == '1' %}vencidos=1&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+        <span class="small text-secondary">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?{% if request.GET.vencidos == '1' %}vencidos=1&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>
+    {% endif %}
 </div>
 {% endblock %}

@@ -71,7 +71,7 @@
                     </thead>
                     <tbody>
                         {% for mantenimiento in mantenimientos %}
-                        <tr>
+                        <tr id="mantenimiento-{{ mantenimiento.pk }}">
                             <td class="ps-4 fw-semibold text-dark">{{ mantenimiento.fecha|date:"d/m/Y" }}</td>
                             <td>
                                 <span class="badge bg-light text-dark border">{{ mantenimiento.get_tipo_display }}</span>

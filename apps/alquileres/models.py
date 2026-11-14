@@ -44,6 +44,8 @@ class SolicitudAlquiler(models.Model):
         verbose_name='Cantidad de planes',
     )
     comentario = models.CharField(max_length=500, blank=True, verbose_name='Comentario / Obra')
+    motivo_rechazo = models.CharField(max_length=1000, blank=True, editable=False)
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True, editable=False)
     politica_mora_aplica = models.BooleanField(default=True, editable=False)
     dias_atraso = models.PositiveIntegerField(null=True, blank=True, editable=False)
     observaciones_retorno = models.CharField(max_length=1000, blank=True, editable=False)
@@ -80,6 +82,29 @@ class SolicitudAlquiler(models.Model):
         if self.fecha_revision is None:
             return None
         return self.fecha_revision + timedelta(days=self.PLAZO_PAGO_DIAS)
+
+    @property
+    def pago_inicial_completo(self):
+        from .reservas import pago_inicial_completo
+        return pago_inicial_completo(self)
+
+    @property
+    def estado_cliente(self):
+        if self.estado == 'Rechazada':
+            return 'Rechazado'
+        if self.fecha_retorno:
+            return 'Devuelto'
+        if self.fecha_salida:
+            return 'En uso'
+        if self.estado == 'Vencida':
+            return 'Vencido'
+        if self.estado == 'Pendiente':
+            return 'Pendiente de aprobación'
+        if self.pago_inicial_completo:
+            return 'Pendiente de entrega'
+        if self.fecha_limite_pago and self.fecha_limite_pago <= timezone.now():
+            return 'Vencido'
+        return 'Pendiente de pago'
 
     @property
     def dias_atraso_actual(self):

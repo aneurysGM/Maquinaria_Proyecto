@@ -53,7 +53,7 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         self.client.post(reverse('alquileres:solicitud_resolver', args=[solicitud.pk]), {'decision': 'Aprobada'})
         solicitud.refresh_from_db()
         self.unidad.refresh_from_db()
-        self.assertEqual(self.unidad.estado, 'Alquilado')
+        self.assertEqual(self.unidad.estado, 'Disponible')
         self.assertEqual(
             solicitud.fecha_limite_pago,
             solicitud.fecha_revision + timedelta(days=5),
@@ -62,6 +62,8 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
             self.client.get(reverse('alquileres:solicitud_lista')),
             'Fecha límite del pago inicial',
         )
+        self.completar_pago_inicial(solicitud)
+        Unidad.objects.filter(pk=self.unidad.pk).update(estado='Alquilado')
         self.assertNotContains(
             self.client.get(reverse('catalogo')),
             self.maquinaria.nombre,
@@ -213,7 +215,7 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         }
         for usuario in (self.cliente, self.admin):
             self.client.force_login(usuario)
-            for estado in ('Alquilado', 'Mantenimiento', 'Baja'):
+            for estado in ('Mantenimiento', 'Baja'):
                 with self.subTest(usuario=usuario.rol, estado=estado):
                     Unidad.objects.filter(pk=self.unidad.pk).update(estado=estado)
                     respuesta = self.client.post(url, datos)
@@ -235,7 +237,7 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         self.client.force_login(self.admin)
         self.client.post(
             reverse('alquileres:solicitud_resolver', args=[solicitud.pk]),
-            {'decision': 'Rechazada'},
+            {'decision': 'Rechazada', 'motivo_rechazo': 'No disponible para la obra'},
         )
 
         solicitud.refresh_from_db()
@@ -243,7 +245,7 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         self.assertEqual(solicitud.estado, 'Rechazada')
         self.assertEqual(self.unidad.estado, 'Disponible')
 
-    def test_solicitudes_pendientes_son_independientes_hasta_que_admin_aprueba_una(self):
+    def test_solicitudes_pendientes_siguen_independientes_al_aprobar_una(self):
         datos = {
             'fecha_inicio': timezone.localdate().isoformat(),
             'plan': 'diario',
@@ -290,9 +292,9 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
         self.unidad.refresh_from_db()
         solicitudes[self.cliente.pk].refresh_from_db()
         solicitudes[self.otro.pk].refresh_from_db()
-        self.assertEqual(self.unidad.estado, 'Alquilado')
+        self.assertEqual(self.unidad.estado, 'Disponible')
         self.assertEqual(solicitudes[self.cliente.pk].estado, 'Aprobada')
-        self.assertEqual(solicitudes[self.otro.pk].estado, 'Rechazada')
+        self.assertEqual(solicitudes[self.otro.pk].estado, 'Pendiente')
         self.client.force_login(self.cliente)
         solicitudes_cliente_aprobado = self.client.get(
             reverse('alquileres:solicitud_lista'),
@@ -301,8 +303,8 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
             list(solicitudes_cliente_aprobado.context['solicitudes']),
             [solicitudes[self.cliente.pk]],
         )
-        self.assertContains(solicitudes_cliente_aprobado, 'Aprobada')
-        self.assertNotContains(
+        self.assertContains(solicitudes_cliente_aprobado, 'Pendiente de pago')
+        self.assertContains(
             self.client.get(reverse('inventario:maquinaria_lista')),
             self.maquinaria.nombre,
         )
@@ -314,8 +316,8 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
             list(solicitudes_otro.context['solicitudes']),
             [solicitudes[self.otro.pk]],
         )
-        self.assertContains(solicitudes_otro, 'Rechazada')
-        self.assertNotContains(
+        self.assertContains(solicitudes_otro, 'Pendiente de aprobación')
+        self.assertContains(
             self.client.get(reverse('catalogo')),
             self.maquinaria.nombre,
         )
@@ -353,13 +355,14 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
 
     def test_aprobacion_rechaza_cruce_inclusivo_y_doble_revision(self):
         aprobada = self.crear_solicitud(estado='Aprobada', fecha_fin=timezone.localdate() + timedelta(days=5))
+        self.completar_pago_inicial(aprobada)
         pendiente = self.crear_solicitud(fecha_inicio=aprobada.fecha_fin, fecha_fin=aprobada.fecha_fin)
         self.client.force_login(self.admin)
         url = reverse('alquileres:solicitud_resolver', args=[pendiente.pk])
         self.client.post(url, {'decision': 'Aprobada'})
         pendiente.refresh_from_db()
         self.assertEqual(pendiente.estado, 'Pendiente')
-        self.client.post(url, {'decision': 'Rechazada'})
+        self.client.post(url, {'decision': 'Rechazada', 'motivo_rechazo': 'Período ocupado'})
         self.client.post(url, {'decision': 'Aprobada'})
         pendiente.refresh_from_db()
         self.assertEqual(pendiente.estado, 'Rechazada')
@@ -404,6 +407,7 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
 
     def test_roles_csrf_get_y_campos_extra_no_autorizan_movimientos(self):
         solicitud = self.crear_solicitud(estado='Aprobada')
+        self.completar_pago_inicial(solicitud)
         for usuario in (self.cliente, self.tecnico):
             self.client.force_login(usuario)
             self.assertEqual(self.client.get(reverse('alquileres:entrega_lista')).status_code, 403)
@@ -423,6 +427,7 @@ class IntegracionAlquileresTests(DatosIntegracion, TestCase):
 
     def test_no_salida_antes_del_inicio_y_no_dos_salidas(self):
         futura = self.crear_solicitud(estado='Aprobada', fecha_inicio=timezone.localdate() + timedelta(days=1), fecha_fin=timezone.localdate() + timedelta(days=1))
+        self.completar_pago_inicial(futura)
         self.client.force_login(self.admin)
         self.client.post(reverse('alquileres:solicitud_salida', args=[futura.pk]))
         futura.refresh_from_db()

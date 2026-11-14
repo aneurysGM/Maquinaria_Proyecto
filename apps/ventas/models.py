@@ -57,19 +57,28 @@ class PresupuestoAlquiler(models.Model):
 
     @property
     def saldo_pendiente(self):
-        return max(
-            self.importe_total - self.total_pagado - self.deposito_reembolsado,
-            Decimal('0.00'),
-        )
+        return (self.renta_pendiente + self.deposito_pendiente
+                + self.saldo_por_concepto('mora', actual=False))
 
     @property
     def saldo_pendiente_actual(self):
-        return max(
-            self.importe_total_actual
-            - self.total_pagado
-            - self.deposito_reembolsado,
-            Decimal('0.00'),
-        )
+        return self.renta_pendiente + self.deposito_pendiente + self.saldo_por_concepto('mora')
+
+    def pagado_por_concepto(self, concepto):
+        return sum((p.monto for p in self.pagos.all() if p.concepto == concepto), Decimal('0.00'))
+
+    def saldo_por_concepto(self, concepto, *, actual=True):
+        limite = {'renta': self.importe_renta, 'deposito': self.deposito_garantia,
+                  'mora': self.mora_aplicable if actual else self.mora_total}[concepto]
+        return max(limite - self.pagado_por_concepto(concepto), Decimal('0.00'))
+
+    @property
+    def renta_pendiente(self):
+        return self.saldo_por_concepto('renta')
+
+    @property
+    def deposito_pendiente(self):
+        return self.saldo_por_concepto('deposito')
 
     @property
     def deposito_reembolsado(self):

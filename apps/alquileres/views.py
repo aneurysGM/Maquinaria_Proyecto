@@ -9,7 +9,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_safe
@@ -23,6 +23,7 @@ from .models import SolicitudAlquiler
 from .reservas import (
     liberar_unidad_si_no_reservada,
     puede_aprobar_reserva,
+    cruces_confirmados, periodos_ocupados,
 )
 
 
@@ -69,7 +70,7 @@ def movimiento_atomico(vista):
 
 
 def unidad_disponible(unidad):
-    return unidad.activo and unidad.maquinaria.activo and unidad.estado == 'Disponible'
+    return unidad.activo and unidad.maquinaria.activo and unidad.estado in ('Disponible', 'Alquilado')
 
 
 def solicitudes_consultables(usuario):
@@ -77,7 +78,7 @@ def solicitudes_consultables(usuario):
     solicitudes = SolicitudAlquiler.objects.select_related(
         'unidad__maquinaria', 'cliente', 'revisado_por',
         'entregado_por', 'recibido_por', 'presupuesto',
-    )
+    ).prefetch_related('presupuesto__pagos')
     if permisos.get('es_administrador'):
         return solicitudes
     if permisos.get('es_cliente'):
@@ -87,7 +88,10 @@ def solicitudes_consultables(usuario):
 
 def filtrar_solicitudes(solicitudes, datos):
     consulta = datos['q']
-    if consulta:
+    codigo_exacto = datos.get('codigo_exacto', '')
+    if codigo_exacto and codigo_exacto.casefold() == consulta.casefold():
+        solicitudes = solicitudes.filter(unidad__maquinaria__codigo__iexact=codigo_exacto)
+    elif consulta:
         solicitudes = solicitudes.alias(
             nombre_cliente=Concat('cliente__first_name', Value(' '), 'cliente__last_name'),
         )
@@ -129,7 +133,7 @@ def solicitud_registrar(request, unidad_id):
     except DatabaseError:
         messages.error(request, 'No se pudo consultar la unidad. Actualiza e inténtalo de nuevo.')
         return redirect('alquileres:solicitud_lista')
-    if unidad.estado != 'Disponible':
+    if not unidad_disponible(unidad):
         messages.error(
             request,
             'Esta unidad no se encuentra disponible para alquilar en este momento.',
@@ -155,17 +159,11 @@ def solicitud_registrar(request, unidad_id):
                     except OverflowError as error:
                         raise ValidationError('La duración del alquiler excede el rango de fechas.') from error
 
-                    cruce = SolicitudAlquiler.objects.filter(
-                        unidad=unidad,
-                        estado='Aprobada',
-                        fecha_retorno__isnull=True,
-                        fecha_inicio__lte=solicitud.fecha_fin,
-                        fecha_fin__gte=solicitud.fecha_inicio,
-                    ).exists()
+                    cruce = cruces_confirmados(unidad.pk, solicitud.fecha_inicio, solicitud.fecha_fin).exists()
                     if cruce:
                         raise ValidationError(
-                            'Ya existe un alquiler aprobado para esta unidad '
-                            'en las fechas seleccionadas.'
+                            'La disponibilidad cambió o el período está ocupado por una reserva confirmada. '
+                            'Elige otras fechas para el período completo del plan.'
                         )
                     if SolicitudAlquiler.objects.filter(
                         unidad=unidad, cliente=request.user, estado='Pendiente',
@@ -204,13 +202,43 @@ def solicitud_registrar(request, unidad_id):
                     presupuesto_id=presupuesto.pk,
                 )
     else:
-        form = SolicitudAlquilerForm()
+        plan = request.GET.get('plan', 'diario')
+        if plan not in dict(SolicitudAlquiler.PLANES):
+            plan = 'diario'
+        cantidad = request.GET.get('cantidad', '1')
+        cantidad = int(cantidad) if cantidad.isdecimal() and len(cantidad) < 5 and 0 < int(cantidad) < 10000 else 1
+        form = SolicitudAlquilerForm(initial={'plan': plan, 'cantidad': cantidad})
 
     return render(
         request,
         'alquileres/solicitud_form.html',
-        {'form': form, 'unidad': unidad},
+        {'form': form, 'unidad': unidad, 'periodos_ocupados': periodos_ocupados(unidad.pk), 'hoy': timezone.localdate().isoformat()},
     )
+
+
+@login_required(login_url='cuentas:login')
+@require_safe
+def solicitud_codigos(request):
+    """Sugiere únicamente códigos con solicitudes visibles bajo los filtros actuales."""
+    if not permisos_panel(request.user).get('es_administrador'):
+        raise PermissionDenied
+    form = SolicitudFiltroForm(request.GET)
+    if not form.is_valid():
+        return JsonResponse({'codigos': []}, status=400)
+    datos = form.cleaned_data.copy()
+    consulta = datos['q']
+    if not consulta:
+        return JsonResponse({'codigos': []})
+    datos.update(q='', codigo_exacto='')
+    solicitudes = filtrar_solicitudes(solicitudes_consultables(request.user), datos)
+    codigos = solicitudes.filter(unidad__maquinaria__codigo__icontains=consulta).order_by(
+        'unidad__maquinaria__codigo',
+    ).values_list('unidad__maquinaria__codigo', flat=True).distinct()
+    unicos = {}
+    for codigo in codigos:
+        unicos.setdefault(codigo.casefold(), codigo)
+    exacto = unicos.get(consulta.casefold())
+    return JsonResponse({'codigos': [exacto] if exacto else list(unicos.values())})
 
 
 @login_required(login_url='cuentas:login')
@@ -305,47 +333,28 @@ def solicitud_resolver(request, solicitud_id):
                 raise ValidationError(
                     'La unidad física ya no está disponible para aprobación.'
                 )
-            cruce = SolicitudAlquiler.objects.filter(
-                unidad=unidad,
-                estado='Aprobada',
-                fecha_retorno__isnull=True,
-                fecha_inicio__lte=solicitud.fecha_fin,
-                fecha_fin__gte=solicitud.fecha_inicio,
-            ).exclude(pk=solicitud.pk).exists()
-            if cruce:
-                raise ValidationError(
-                    'Existe un conflicto de fechas con otra solicitud aprobada.'
-                )
+
+        motivo = request.POST.get('motivo_rechazo', '').strip()
+        if decision == 'Rechazada' and (not motivo or len(motivo) > 1000):
+            raise ValidationError('Escribe un motivo de rechazo de hasta 1000 caracteres.')
 
         solicitud.estado = decision
         solicitud.revisado_por = request.user
         fecha_revision = timezone.now()
         solicitud.fecha_revision = fecha_revision
+        solicitud.motivo_rechazo = motivo if decision == 'Rechazada' else ''
         solicitud.save(update_fields=[
-            'estado', 'revisado_por', 'fecha_revision'
+            'estado', 'revisado_por', 'fecha_revision', 'motivo_rechazo'
         ])
-        if decision == 'Aprobada':
-            unidad.estado = 'Alquilado'
-            unidad.save(update_fields=['estado'])
-            SolicitudAlquiler.objects.filter(
-                unidad=unidad,
-                estado='Pendiente',
-            ).exclude(pk=solicitud.pk).update(
-                estado='Rechazada',
-                revisado_por=request.user,
-                fecha_revision=fecha_revision,
-            )
-        else:
+        if decision == 'Rechazada':
             liberar_unidad_si_no_reservada(unidad, solicitud.pk)
-        messages.success(
-            request,
+        transaction.on_commit(partial(
+            messages.success, request,
             f'La solicitud #{solicitud.pk} ha sido {decision.lower()} correctamente.',
-        )
+        ))
     except ValidationError as error:
         for mensaje in error.messages:
             messages.error(request, mensaje)
-    except DatabaseError:
-        messages.error(request, 'Ocurrió un error al procesar la base de datos.')
     return redirect('alquileres:solicitud_lista')
 
 
@@ -363,6 +372,9 @@ def solicitud_registrar_salida(request, solicitud_id):
             request,
             'Esta solicitud no está disponible para registrar una salida.',
         )
+        return redirect('alquileres:solicitud_lista')
+    if not solicitud.pago_inicial_completo:
+        messages.error(request, 'Completa la renta y el depósito inicial para confirmar la reserva antes de entregar.')
         return redirect('alquileres:solicitud_lista')
     # Las fechas proceden del servidor, como en el flujo original de Aneurys.
     fecha_salida = timezone.now()
