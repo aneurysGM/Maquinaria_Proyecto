@@ -106,6 +106,23 @@ class MaquinariaImagenesMixin:
         if not imagenes_formset.is_valid():
             return self.form_invalid(form)
 
+        cantidad_imagenes_del_formset = sum(
+            1
+            for imagen_form in imagenes_formset.forms
+            if imagen_form.cleaned_data
+            and not imagen_form.cleaned_data.get('DELETE')
+            and imagen_form.cleaned_data.get('imagen')
+        )
+        cantidad_imagenes_nuevas = bool(
+            form.cleaned_data.get('imagen_principal')
+        ) + len(form.cleaned_data.get('imagenes_adicionales', []))
+        if cantidad_imagenes_del_formset + cantidad_imagenes_nuevas > 8:
+            form.add_error(
+                'imagenes_adicionales',
+                'Puedes cargar un máximo de 8 imágenes en total, incluida la principal.',
+            )
+            return self.form_invalid(form)
+
         es_edicion = bool(form.unidad_instancia)
         if not form.instance.pk or form.maquinaria_reactivada:
             form.instance.registrada_por = self.request.user
@@ -114,6 +131,16 @@ class MaquinariaImagenesMixin:
             with transaction.atomic():
                 self.object = form.save()
                 imagenes_formset.instance = self.object
+                imagen_principal = form.cleaned_data.get('imagen_principal')
+                if imagen_principal:
+                    self.object.imagenes.create(
+                        imagen=imagen_principal,
+                        texto_alternativo=form.cleaned_data.get(
+                            'texto_alternativo_principal', ''
+                        ),
+                    )
+                for imagen in form.cleaned_data.get('imagenes_adicionales', []):
+                    self.object.imagenes.create(imagen=imagen)
                 imagenes_formset.save()
         except ValidationError as error:
             for mensaje in error.messages:

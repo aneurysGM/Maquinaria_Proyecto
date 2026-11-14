@@ -48,6 +48,28 @@ class MaquinariaImagenForm(forms.ModelForm):
         return imagen
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        if not data:
+            return []
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+
+        imagenes = []
+        for archivo in data:
+            imagen = super().clean(archivo, initial)
+            if imagen.size > 5 * 1024 * 1024:
+                raise ValidationError('Cada imagen debe pesar 5 MB o menos.')
+            imagenes.append(imagen)
+        return imagenes
+
+
 MaquinariaImagenFormSet = inlineformset_factory(
     Maquinaria,
     MaquinariaImagen,
@@ -59,6 +81,32 @@ MaquinariaImagenFormSet = inlineformset_factory(
 )
 
 class MaquinariaIntegralForm(forms.ModelForm):
+    imagen_principal = forms.ImageField(
+        label='Imagen principal',
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*',
+        }),
+    )
+    texto_alternativo_principal = forms.CharField(
+        label='Descripción accesible (opcional)',
+        required=False,
+        max_length=160,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Descripción breve de la imagen principal',
+        }),
+    )
+    imagenes_adicionales = MultipleImageField(
+        label='Imágenes adicionales',
+        required=False,
+        widget=MultipleFileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*',
+        }),
+    )
+
     # --- Campos inyectados para la Unidad Física ---
     numero_serie = forms.CharField(label='Número de serie', max_length=50, widget=forms.TextInput(attrs={'class': 'form-control'}))
     estado = forms.ChoiceField(label='Estado', choices=Unidad.ESTADOS, initial='Disponible', widget=forms.Select(attrs={'class': 'form-select'}))
@@ -134,6 +182,12 @@ class MaquinariaIntegralForm(forms.ModelForm):
             raise ValidationError('Ya existe otra unidad registrada con este número de serie.')
         return numero_serie
 
+    def clean_imagen_principal(self):
+        imagen = self.cleaned_data.get('imagen_principal')
+        if imagen and imagen.size > 5 * 1024 * 1024:
+            raise ValidationError('Cada imagen debe pesar 5 MB o menos.')
+        return imagen
+
     def clean_codigo(self):
         codigo = self.cleaned_data['codigo'].strip()
         coincidencia = Maquinaria.objects.filter(codigo__iexact=codigo)
@@ -152,6 +206,14 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        cantidad_imagenes = bool(cleaned_data.get('imagen_principal'))
+        cantidad_imagenes += len(cleaned_data.get('imagenes_adicionales', []))
+        if cantidad_imagenes > 8:
+            self.add_error(
+                'imagenes_adicionales',
+                'Puedes cargar un máximo de 8 imágenes en total, incluida la principal.',
+            )
+
         if self.unidad_instancia:
             reserva_activa = self.unidad_instancia.solicitudes_alquiler.filter(
                 estado__in=('Pendiente', 'Aprobada'),

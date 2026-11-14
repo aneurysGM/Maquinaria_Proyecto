@@ -104,13 +104,44 @@
 
                 <hr class="my-4 text-muted opacity-25">
                 <h5 class="fw-bold mb-2 text-dark">Imágenes de la maquinaria</h5>
-                <p class="small text-secondary">Puedes cargar hasta 8 imágenes, de máximo 5 MB cada una.</p>
+                <p class="small text-secondary">Puedes cargar hasta 8 imágenes en total, incluida la principal. Cada imagen puede pesar hasta 5 MB.</p>
                 {{ imagenes_formset.management_form }}
                 {% if imagenes_formset.non_form_errors %}
                 <div class="alert alert-danger py-2 small" role="alert">
                     {{ imagenes_formset.non_form_errors }}
                 </div>
                 {% endif %}
+                {% if not unidad %}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="{{ form.imagen_principal.id_for_label }}">
+                            {{ form.imagen_principal.label }}
+                        </label>
+                        {{ form.imagen_principal }}
+                        {% if form.imagen_principal.errors %}
+                        <div class="text-danger small">{{ form.imagen_principal.errors }}</div>
+                        {% endif %}
+                        <label class="form-label fw-semibold mt-3" for="{{ form.texto_alternativo_principal.id_for_label }}">
+                            {{ form.texto_alternativo_principal.label }}
+                        </label>
+                        {{ form.texto_alternativo_principal }}
+                        {% if form.texto_alternativo_principal.errors %}
+                        <div class="text-danger small">{{ form.texto_alternativo_principal.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="{{ form.imagenes_adicionales.id_for_label }}">
+                            {{ form.imagenes_adicionales.label }}
+                        </label>
+                        {{ form.imagenes_adicionales }}
+                        <div class="form-text">Puedes seleccionar varias imágenes a la vez. El máximo total incluye la imagen principal.</div>
+                        {% if form.imagenes_adicionales.errors %}
+                        <div class="text-danger small">{{ form.imagenes_adicionales.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if unidad %}
                 <div class="row g-3 mb-3" id="image-formset"
                     data-formset-prefix="{{ imagenes_formset.prefix }}" data-max-num="8">
                     {% for imagen_form in imagenes_formset %}
@@ -155,6 +186,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm mb-4" id="add-image-form">
                     <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar otra imagen
                 </button>
+                {% endif %}
 
                 <hr class="my-4 text-muted opacity-25">
                 <h5 class="fw-bold mb-3 text-dark">Información Financiera y Tarifas</h5>
@@ -313,6 +345,22 @@
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form[enctype="multipart/form-data"]');
+        const primaryImage = document.getElementById('id_imagen_principal');
+        const additionalImages = document.getElementById('id_imagenes_adicionales');
+        if (form && primaryImage && additionalImages) {
+            const validateImageCount = function () {
+                const count = primaryImage.files.length + additionalImages.files.length;
+                additionalImages.setCustomValidity(
+                    count > 8
+                        ? 'Puedes cargar un máximo de 8 imágenes en total, incluida la principal.'
+                        : ''
+                );
+            };
+            primaryImage.addEventListener('change', validateImageCount);
+            additionalImages.addEventListener('change', validateImageCount);
+        }
+
         const container = document.getElementById('image-formset');
         const addButton = document.getElementById('add-image-form');
         const template = document.getElementById('empty-image-form');

@@ -422,7 +422,9 @@ class CatalogoPanelTests(TestCase):
 
         self.assertNotContains(respuesta, 'id="sidebar"')
         self.assertContains(respuesta, 'Cerrar sesión')
-        self.assertContains(respuesta, reverse('catalogo'))
+        self.assertContains(
+            respuesta, reverse('inventario:maquinaria_lista')
+        )
         self.assertContains(respuesta, '$750,00')
         self.assertContains(respuesta, '$3000,00')
         self.assertNotContains(respuesta, '$99000,00')
@@ -471,14 +473,18 @@ class CatalogoPanelTests(TestCase):
         self.assertEqual(unidad.maquinaria.comentarios.count(), 0)
 
     def test_registro_administrativo_guarda_responsable_descripcion_e_imagen(self):
-        image_buffer = BytesIO()
-        Image.new('RGB', (2, 2), color='orange').save(image_buffer, format='PNG')
-        image_buffer.seek(0)
-        imagen = SimpleUploadedFile(
-            'excavadora.png',
-            image_buffer.read(),
-            content_type='image/png',
-        )
+        def imagen_subida(nombre):
+            image_buffer = BytesIO()
+            Image.new('RGB', (2, 2), color='orange').save(
+                image_buffer, format='PNG'
+            )
+            image_buffer.seek(0)
+            return SimpleUploadedFile(
+                nombre,
+                image_buffer.read(),
+                content_type='image/png',
+            )
+
         prefix = MaquinariaImagenFormSet().prefix
         data = {
             'categoria': self.categoria.pk,
@@ -502,14 +508,23 @@ class CatalogoPanelTests(TestCase):
             f'{prefix}-INITIAL_FORMS': '0',
             f'{prefix}-MIN_NUM_FORMS': '0',
             f'{prefix}-MAX_NUM_FORMS': '8',
-            f'{prefix}-0-texto_alternativo': 'Excavadora en obra',
-            f'{prefix}-1-texto_alternativo': '',
-            f'{prefix}-0-imagen': imagen,
+            'imagen_principal': imagen_subida('excavadora-principal.png'),
+            'texto_alternativo_principal': 'Excavadora en obra',
+            'imagenes_adicionales': [
+                imagen_subida('excavadora-lateral.png'),
+                imagen_subida('excavadora-interior.png'),
+            ],
         }
         self.client.force_login(self.admin)
 
         with tempfile.TemporaryDirectory() as media_root:
             with override_settings(MEDIA_ROOT=media_root):
+                formulario = self.client.get(
+                    reverse('inventario:maquinaria_crear')
+                )
+                self.assertContains(formulario, 'Imagen principal')
+                self.assertContains(formulario, 'multiple')
+
                 respuesta = self.client.post(
                     reverse('inventario:maquinaria_crear'),
                     data,
@@ -521,7 +536,30 @@ class CatalogoPanelTests(TestCase):
                         args=[maquinaria.unidades.get().pk],
                     )
                 )
+                imagenes = maquinaria.imagenes.all()
+                self.assertEqual(imagenes.count(), 3)
+                self.assertTrue(
+                    imagenes.first().imagen.name.endswith(
+                        'excavadora-principal.png'
+                    )
+                )
                 self.assertContains(respuesta_detalle, 'Excavadora en obra')
+
+                demasiadas_imagenes = data.copy()
+                demasiadas_imagenes['codigo'] = 'IMG-LIMIT'
+                demasiadas_imagenes['numero_serie'] = 'SERIE-IMG-LIMIT'
+                demasiadas_imagenes['imagen_principal'] = imagen_subida(
+                    'principal-limite.png'
+                )
+                demasiadas_imagenes['imagenes_adicionales'] = [
+                    imagen_subida(f'adicional-{numero}.png')
+                    for numero in range(8)
+                ]
+                respuesta_limite = self.client.post(
+                    reverse('inventario:maquinaria_crear'),
+                    demasiadas_imagenes,
+                )
+                self.assertEqual(respuesta_limite.status_code, 200)
 
         self.assertRedirects(respuesta, reverse('inventario:maquinaria_lista'))
         self.assertEqual(maquinaria.registrada_por, self.admin)
@@ -529,4 +567,4 @@ class CatalogoPanelTests(TestCase):
             maquinaria.descripcion,
             'Descripción de prueba de la excavadora.',
         )
-        self.assertEqual(MaquinariaImagen.objects.filter(maquinaria=maquinaria).count(), 1)
+        self.assertFalse(Maquinaria.objects.filter(codigo='IMG-LIMIT').exists())
