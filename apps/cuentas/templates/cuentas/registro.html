@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -7,48 +8,148 @@
     <title>Crear cuenta · MaquiRent</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap"
-        rel="stylesheet">
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'main.css' %}"> <!-- Ajusta la ruta de tu static si es necesario -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --y: #ffc107; --y-dark: #e0a800; --k: #111111; --ink: #1d1d1f;
+            --muted: #6b7280; --bg: #f6f6f4; --line: #e7e7e3;
+        }
+        body { font-family: 'Barlow', system-ui, sans-serif; background: var(--bg); color: var(--ink); margin: 0; }
+        h1, h2, .mr-brand-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; letter-spacing: -.01em; }
+        :focus-visible { outline: 3px solid var(--y); outline-offset: 2px; }
+
+        .mr-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr; }
+        @media (min-width: 992px) { .mr-shell { grid-template-columns: minmax(360px, 4fr) 7fr; } }
+
+        /* ---------- PANEL DE MARCA ---------- */
+        .mr-side {
+            display: none;
+            background: repeating-linear-gradient(135deg, rgba(255,193,7,.06) 0 16px, transparent 16px 32px), var(--k);
+            color: #fff; padding: 3rem; overflow: hidden;
+            flex-direction: column; justify-content: space-between;
+            position: sticky; top: 0; height: 100vh;
+        }
+        @media (min-width: 992px) { .mr-side { display: flex; } }
+        .mr-side::after {
+            content: "\F5B8"; font-family: "bootstrap-icons";
+            position: absolute; right: -2rem; bottom: 4rem; font-size: 20rem; line-height: 1;
+            color: var(--y); opacity: .08; pointer-events: none;
+        }
+        .mr-brand { display: inline-flex; align-items: center; gap: .65rem; text-decoration: none; color: #fff; }
+        .mr-brand:hover { color: #fff; }
+        .mr-brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: .9rem; background: var(--y); color: var(--k); font-size: 1.35rem; }
+        .mr-brand-name { font-size: 1.7rem; }
+        .mr-brand-name span { color: var(--y); }
+        .mr-side h2 { font-size: clamp(2rem, 3vw, 2.9rem); line-height: 1.05; margin-bottom: 1rem; position: relative; z-index: 1; }
+        .mr-side h2 em { font-style: normal; color: var(--y); }
+        .mr-side p.lead-text { color: rgba(255,255,255,.75); font-size: 1.1rem; max-width: 26rem; position: relative; z-index: 1; }
+        .mr-perks { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; gap: .8rem; position: relative; z-index: 1; }
+        .mr-perks li { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: rgba(255,255,255,.88); }
+        .mr-perks i { width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: .6rem; background: rgba(255,193,7,.15); color: var(--y); }
+        .mr-tagline { color: var(--y); font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; position: relative; z-index: 1; margin-bottom: 1.25rem; display: block; }
+        .mr-hazard { height: 14px; margin: 0 -3rem -3rem; background: repeating-linear-gradient(135deg, var(--y) 0 22px, var(--k) 22px 44px); }
+
+        /* ---------- FORMULARIO ---------- */
+        .mr-main { display: grid; place-items: center; padding: 2rem 1.25rem; }
+        .mr-card { width: 100%; max-width: 680px; background: #fff; border-radius: 1.5rem; padding: 2.5rem 1.75rem; border-top: 6px solid var(--y); box-shadow: 0 1.25rem 3rem rgba(0,0,0,.1); }
+        @media (min-width: 576px) { .mr-card { padding: 2.75rem 2.5rem; } }
+        .mr-brand-mobile { display: flex; justify-content: center; margin-bottom: 1.75rem; color: var(--k); }
+        .mr-brand-mobile:hover { color: var(--k); }
+        .mr-brand-mobile .mr-brand-mark { background: var(--k); color: var(--y); }
+        .mr-brand-mobile .mr-brand-name span { color: var(--y-dark); }
+        @media (min-width: 992px) { .mr-brand-mobile { display: none; } }
+
+        .mr-eyebrow { color: var(--y-dark); font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-bottom: .35rem; }
+        .mr-card h1 { font-size: 2.2rem; margin-bottom: .25rem; }
+        .mr-sub { color: var(--muted); }
+
+        .mr-card .form-label { font-weight: 700; font-size: .85rem; margin-bottom: .3rem; margin-top: .5rem; }
+        .mr-card .form-control, .mr-card .form-select { border: 2px solid var(--line); border-radius: .85rem; padding: .7rem .9rem; box-shadow: none; }
+        .mr-card .form-control:focus, .mr-card .form-select:focus { border-color: var(--y); box-shadow: 0 0 0 .25rem rgba(255,193,7,.3); }
+        .mr-card .input-group { border-radius: .85rem; overflow: hidden; border: 2px solid var(--line); background: #fff; transition: border-color .15s, box-shadow .15s; flex-wrap: nowrap; }
+        .mr-card .input-group:focus-within { border-color: var(--y); box-shadow: 0 0 0 .25rem rgba(255,193,7,.3); }
+        .mr-card .input-group:has(.is-invalid) { border-color: #dc3545; }
+        .mr-card .input-group-text { background: var(--k); color: var(--y); border: 0; padding: 0 .9rem; }
+        .mr-card .input-group .form-control { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+        .mr-card .form-control.is-invalid { background-image: none; }
+        .mr-card .form-text { font-size: .78rem; }
+        .btn-eye { border: 0; background: transparent; color: var(--muted); padding: 0 .9rem; }
+        .btn-eye:hover { color: var(--k); background: #fffbe8; }
+
+        .mr-password-help summary { font-size: .8rem; font-weight: 700; color: var(--k); cursor: pointer; margin-top: .4rem; }
+        .mr-password-help summary:hover { text-decoration: underline; text-decoration-color: var(--y); text-decoration-thickness: 2px; }
+        .mr-password-help ul { padding-left: 1.1rem; margin: .4rem 0 0; }
+
+        /* Medidor de fortaleza */
+        .mr-meter { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: .55rem; }
+        .mr-meter > span { display: block; height: 100%; width: 0; border-radius: 999px; transition: width .25s, background .25s; }
+        .mr-meter-text { font-size: .78rem; font-weight: 700; color: var(--muted); min-height: 1.1rem; margin-top: .25rem; }
+        .mr-match { font-size: .78rem; font-weight: 700; margin-top: .4rem; min-height: 1.1rem; }
+        .mr-match.ok { color: #198754; }
+        .mr-match.bad { color: #dc3545; }
+
+        .mr-btn-primary { background: var(--y); border: 2px solid var(--y); color: var(--k); font-weight: 800; font-size: 1.05rem; padding: .8rem 1rem; border-radius: .9rem; transition: all .15s; }
+        .mr-btn-primary:hover:not(:disabled) { background: var(--k); border-color: var(--k); color: var(--y); }
+        .mr-btn-primary:disabled { background: var(--y-dark); border-color: var(--y-dark); color: var(--k); opacity: .85; }
+
+        .mr-alert { border: 0; border-left: 6px solid; border-radius: .9rem; }
+        .mr-alert-danger { background: #fdecea; border-color: #dc3545; color: #58151c; }
+        .mr-alert-warning { background: #fff8e1; border-color: var(--y); color: #4d3a00; }
+        .mr-alert-admin { background: var(--k); border-color: var(--y); color: #fff; }
+        .mr-alert-admin i { color: var(--y); }
+        .mr-alert-admin strong { color: var(--y); }
+
+        .mr-links { color: var(--muted); }
+        .mr-links a { color: var(--k); font-weight: 700; text-decoration-color: var(--y); text-decoration-thickness: 3px; text-underline-offset: 3px; }
+        .mr-links a:hover { background: var(--y); text-decoration: none; }
+        .mr-back { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .92rem; }
+        .mr-back:hover { color: var(--k); }
+    </style>
 </head>
 
 <body>
-    <div class="mq-shell">
+    <div class="mr-shell">
 
         <!-- Panel de marca (solo en pantallas grandes) -->
-        <aside class="mq-side">
-            <a class="mq-brand" href="{% url 'index' %}">
-                <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
-                <span class="mq-brand-name">MaquiRent</span>
+        <aside class="mr-side">
+            <a class="mr-brand" href="{% url 'index' %}">
+                <span class="mr-brand-mark"><i class="bi bi-truck-flatbed" aria-hidden="true"></i></span>
+                <span class="mr-brand-name">Maqui<span>Rent</span></span>
             </a>
             <div>
-                <h2>Crea tu cuenta y empieza a trabajar</h2>
-                <p>Regístrate para consultar el catálogo de maquinaria y gestionar tus solicitudes de alquiler en un
-                    solo lugar.</p>
+                <h2>Crea tu cuenta y empieza a <em>trabajar</em></h2>
+                <p class="lead-text">Regístrate para consultar el catálogo de maquinaria y gestionar tus solicitudes de alquiler en un solo lugar.</p>
+                <ul class="mr-perks">
+                    <li><i class="bi bi-lightning-charge" aria-hidden="true"></i>Registro en menos de un minuto</li>
+                    <li><i class="bi bi-receipt" aria-hidden="true"></i>Tarifas claras desde el inicio</li>
+                    <li><i class="bi bi-calendar-check" aria-hidden="true"></i>Seguimiento de tus solicitudes</li>
+                </ul>
             </div>
-            <span class="small" style="color:#7d8b95;">Lo que necesitas para mayor comodidad</span>
-            <div class="mq-hazard" aria-hidden="true"></div>
+            <div>
+                <span class="mr-tagline">Lo que necesitas para mayor comodidad</span>
+                <div class="mr-hazard" aria-hidden="true"></div>
+            </div>
         </aside>
 
         <!-- Formulario -->
-        <main class="mq-main">
-            <div class="mq-auth-card">
+        <main class="mr-main">
+            <div class="mr-card">
 
-                <a class="mq-brand mq-brand-mobile" href="{% url 'index' %}">
-                    <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
-                    <span class="mq-brand-name">MaquiRent</span>
+                <a class="mr-brand mr-brand-mobile" href="{% url 'index' %}">
+                    <span class="mr-brand-mark"><i class="bi bi-truck-flatbed" aria-hidden="true"></i></span>
+                    <span class="mr-brand-name">Maqui<span>Rent</span></span>
                 </a>
 
+                <p class="mr-eyebrow">Únete a MaquiRent</p>
                 <h1>Crear cuenta</h1>
-                <p class="mq-sub mb-4">Completa tus datos para registrarte.</p>
+                <p class="mr-sub mb-4">Completa tus datos para registrarte.</p>
 
                 {% if es_primer_usuario %}
-                <div class="alert alert-warning border-0 d-flex gap-2 align-items-center py-2 px-3 mb-4 small"
-                    style="background-color: #fff8e1; color: #7a5c00; border-left: 4px solid var(--mq-amber) !important;"
-                    role="alert">
-                    <i class="bi bi-shield-lock-fill fs-5"></i>
+                <div class="alert mr-alert mr-alert-admin d-flex gap-2 align-items-center py-2 px-3 mb-4 small" role="alert">
+                    <i class="bi bi-shield-lock-fill fs-5" aria-hidden="true"></i>
                     <div>
                         <strong>¡Atención!</strong> Este será el primer usuario registrado en el sistema y se le
                         asignará automáticamente el rol de <strong>Administrador</strong>.
@@ -57,9 +158,8 @@
                 {% endif %}
 
                 {% if form.errors %}
-                <div class="alert alert-danger alert-dismissible fade show d-flex gap-2 align-items-start py-2 small mb-4"
-                    role="alert">
-                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                <div class="alert mr-alert mr-alert-danger alert-dismissible fade show d-flex gap-2 align-items-start py-2 small mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
                     <div>
                         Revisa los campos marcados y corrige los errores.
                         {% for error in form.non_field_errors %}<div class="mt-1">{{ error }}</div>{% endfor %}
@@ -68,13 +168,13 @@
                 </div>
                 {% endif %}
 
-                <form method="post" id="mqRegistro">
+                <form method="post" id="mrRegistro">
                     {% csrf_token %}
 
                     <!-- Fila de Bootstrap para organizar los campos en dos columnas -->
                     <div class="row g-2">
                         {% for field in form %}
-                        <div class="col-md-6 mq-field" data-name="{{ field.name }}">
+                        <div class="col-md-6 mr-field" data-name="{{ field.name }}">
 
                             <label for="{{ field.id_for_label }}" class="form-label">
                                 {{ field.label }}
@@ -90,7 +190,7 @@
 
                             {% if field.help_text %}
                             {% if field.name == 'password1' %}
-                            <details class="mq-password-help">
+                            <details class="mr-password-help">
                                 <summary>Ver requisitos de contraseña</summary>
                                 <div class="form-text">
                                     {{ field.help_text|safe }}
@@ -114,28 +214,25 @@
                     </div>
 
                     {# Aviso de Bloq Mayús, visible solo al escribir una contraseña #}
-                    <div id="aviso-mayusculas"
-                        class="alert alert-warning d-flex gap-2 align-items-center py-2 px-3 small mb-3" role="status"
-                        hidden>
-                        <i class="bi bi-exclamation-triangle"></i> Bloq Mayús está activado.
+                    <div id="aviso-mayusculas" class="alert mr-alert mr-alert-warning d-flex gap-2 align-items-center py-2 px-3 small mb-3 mt-3" role="status" hidden>
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Bloq Mayús está activado.
                     </div>
 
-                    <div class="d-grid mt-3">
-                        <button type="submit" class="btn mq-btn-primary" id="mqCrear">
-                            <span class="mq-label">Crear cuenta</span>
-                            <span class="mq-loading d-none">
-                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Creando
-                                cuenta…
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn mr-btn-primary" id="mrCrear">
+                            <span class="mr-label">Crear cuenta <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
+                            <span class="mr-loading d-none">
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Creando cuenta…
                             </span>
                         </button>
                     </div>
                 </form>
 
-                <div class="mq-links text-center mt-4">
+                <div class="mr-links text-center mt-4">
                     ¿Ya tienes cuenta? <a href="{% url 'cuentas:login' %}">Inicia sesión</a>
                 </div>
                 <div class="text-center mt-3">
-                    <a href="{% url 'index' %}" class="mq-back"><i class="bi bi-arrow-left"></i> Volver al inicio</a>
+                    <a href="{% url 'index' %}" class="mr-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> Volver al inicio</a>
                 </div>
             </div>
         </main>
@@ -143,9 +240,9 @@
 
     <script>
         (function () {
-            var form = document.getElementById('mqRegistro');
+            var form = document.getElementById('mrRegistro');
             var aviso = document.getElementById('aviso-mayusculas');
-            var campos = Array.prototype.slice.call(form.querySelectorAll('.mq-field'));
+            var campos = Array.prototype.slice.call(form.querySelectorAll('.mr-field'));
 
             // Ícono según el tipo de campo
             function iconoPara(control) {
@@ -182,7 +279,7 @@
                     if (icono) {
                         var pre = document.createElement('span');
                         pre.className = 'input-group-text';
-                        pre.innerHTML = '<i class="bi ' + icono + '"></i>';
+                        pre.innerHTML = '<i class="bi ' + icono + '" aria-hidden="true"></i>';
                         group.appendChild(pre);
                     }
                     group.appendChild(control);
@@ -194,7 +291,7 @@
                         ojo.title = 'Mostrar contraseña';
                         ojo.setAttribute('aria-label', 'Mostrar contraseña');
                         ojo.setAttribute('aria-pressed', 'false');
-                        ojo.innerHTML = '<i class="bi bi-eye"></i>';
+                        ojo.innerHTML = '<i class="bi bi-eye" aria-hidden="true"></i>';
                         group.appendChild(ojo);
 
                         ojo.addEventListener('click', function () {
@@ -228,18 +325,18 @@
             if (passwords.length >= 1) {
                 var p1 = passwords[0].control;
                 var meter = document.createElement('div');
-                meter.innerHTML = '<div class="mq-meter"><span></span></div><div class="mq-meter-text" aria-live="polite"></div>';
+                meter.innerHTML = '<div class="mr-meter"><span></span></div><div class="mr-meter-text" aria-live="polite"></div>';
                 var anchor = passwords[0].wrap.querySelector('.input-group');
                 anchor.insertAdjacentElement('afterend', meter);
-                var barra = meter.querySelector('.mq-meter > span');
-                var etiqueta = meter.querySelector('.mq-meter-text');
+                var barra = meter.querySelector('.mr-meter > span');
+                var etiqueta = meter.querySelector('.mr-meter-text');
 
                 var NIVELES = [
                     { txt: '', color: 'transparent', w: 0 },
-                    { txt: 'Débil', color: '#b3261e', w: 25 },
-                    { txt: 'Aceptable', color: '#e08a00', w: 50 },
-                    { txt: 'Buena', color: '#7aa800', w: 75 },
-                    { txt: 'Fuerte', color: '#1e7a3c', w: 100 }
+                    { txt: 'Débil', color: '#dc3545', w: 25 },
+                    { txt: 'Aceptable', color: '#fd7e14', w: 50 },
+                    { txt: 'Buena', color: '#ffc107', w: 75 },
+                    { txt: 'Fuerte', color: '#198754', w: 100 }
                 ];
                 function puntuar(v) {
                     if (!v) return 0;
@@ -263,17 +360,17 @@
             if (passwords.length >= 2) {
                 var p1b = passwords[0].control, p2 = passwords[1].control;
                 var estado = document.createElement('div');
-                estado.className = 'mq-match';
+                estado.className = 'mr-match';
                 estado.setAttribute('aria-live', 'polite');
                 passwords[1].wrap.querySelector('.input-group').insertAdjacentElement('afterend', estado);
 
                 function comprobar() {
-                    if (!p2.value) { estado.textContent = ''; estado.className = 'mq-match'; return; }
+                    if (!p2.value) { estado.textContent = ''; estado.className = 'mr-match'; return; }
                     var ok = p1b.value === p2.value;
-                    estado.className = 'mq-match ' + (ok ? 'ok' : 'bad');
+                    estado.className = 'mr-match ' + (ok ? 'ok' : 'bad');
                     estado.innerHTML = ok
-                        ? '<i class="bi bi-check-circle-fill"></i> Las contraseñas coinciden'
-                        : '<i class="bi bi-x-circle-fill"></i> Las contraseñas no coinciden';
+                        ? '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Las contraseñas coinciden'
+                        : '<i class="bi bi-x-circle-fill" aria-hidden="true"></i> Las contraseñas no coinciden';
                 }
                 p1b.addEventListener('input', comprobar);
                 p2.addEventListener('input', comprobar);
@@ -288,10 +385,10 @@
 
             // 5) Evitar doble envío
             form.addEventListener('submit', function () {
-                var btn = document.getElementById('mqCrear');
+                var btn = document.getElementById('mrCrear');
                 btn.disabled = true;
-                btn.querySelector('.mq-label').classList.add('d-none');
-                btn.querySelector('.mq-loading').classList.remove('d-none');
+                btn.querySelector('.mr-label').classList.add('d-none');
+                btn.querySelector('.mr-loading').classList.remove('d-none');
             });
         })();
     </script>

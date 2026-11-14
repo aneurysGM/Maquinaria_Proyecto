@@ -5,89 +5,149 @@
 
 {% block content %}
 <style>
-  .kpi { display: flex; align-items: center; gap: .9rem; }
-  .kpi-icon { width: 3rem; height: 3rem; border-radius: .75rem; display: grid; place-items: center; font-size: 1.4rem; flex: none; }
-  .kpi-num { font-size: 1.65rem; font-weight: 700; line-height: 1.1; }
-  .thumb { width: 88px; height: 62px; object-fit: cover; border-radius: .5rem; background: #f1f3f7; }
-  .thumb-empty { width: 88px; height: 62px; border-radius: .5rem; background: #f1f3f7; display: grid; place-items: center; color: #94a3b8; }
-  .list-attn .list-group-item { border-left: 0; border-right: 0; padding-left: 0; padding-right: 0; }
+    /* Usa las variables --mr-* definidas en base_dashboard.html */
+    .mr-dash .mr-hero {
+        background: repeating-linear-gradient(135deg, rgba(255,193,7,.07) 0 14px, transparent 14px 28px), var(--mr-black);
+        color: #fff; border-radius: 1.5rem; border-bottom: 6px solid var(--mr-yellow);
+        position: relative; overflow: hidden;
+    }
+    .mr-dash .mr-hero::after {
+        content: "\F5B8"; font-family: "bootstrap-icons";
+        position: absolute; right: 2rem; bottom: -2rem; font-size: 11rem;
+        color: var(--mr-yellow); opacity: .1; pointer-events: none;
+    }
+    .mr-eyebrow { color: var(--mr-yellow); letter-spacing: .12em; text-transform: uppercase; font-size: .72rem; font-weight: 700; }
+    .mr-btn-y { background: var(--mr-yellow); color: var(--mr-black); border: 2px solid var(--mr-yellow); font-weight: 700; }
+    .mr-btn-y:hover { background: var(--mr-yellow-dark); border-color: var(--mr-yellow-dark); color: var(--mr-black); }
+    .mr-btn-ghost { border: 2px solid rgba(255,255,255,.55); color: #fff; font-weight: 600; }
+    .mr-btn-ghost:hover { background: #fff; color: var(--mr-black); }
+
+    /* KPIs */
+    .mr-kpi { background: #fff; border: 0; border-top: 4px solid var(--mr-yellow); border-radius: 1.25rem; padding: 1.1rem; height: 100%; display: flex; align-items: center; gap: .9rem; box-shadow: 0 .125rem .5rem rgba(0,0,0,.06); }
+    .mr-kpi-icon { width: 3rem; height: 3rem; border-radius: .85rem; display: grid; place-items: center; font-size: 1.4rem; flex: none; background: var(--mr-black); color: var(--mr-yellow); }
+    .mr-kpi-num { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.85rem; font-weight: 800; line-height: 1.05; }
+    .mr-kpi-label { font-size: .78rem; color: var(--mr-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .mr-kpi-hot { background: var(--mr-yellow); border-top-color: var(--mr-black); }
+    .mr-kpi-hot .mr-kpi-label { color: #4d3a00; }
+
+    /* Paneles */
+    .mr-panel { background: #fff; border: 0; border-radius: 1.25rem; padding: 1.5rem; box-shadow: 0 .125rem .5rem rgba(0,0,0,.06); }
+    .mr-title { font-weight: 800; display: flex; align-items: center; gap: .6rem; margin-bottom: 1.1rem; }
+    .mr-title::before { content: ""; width: .45rem; height: 1.4rem; background: var(--mr-yellow); border-radius: 2px; }
+
+    /* Tabs */
+    .mr-tabs { gap: .4rem; flex-wrap: wrap; }
+    .mr-tabs .nav-link { border-radius: 999px; font-weight: 700; color: var(--mr-black); border: 2px solid var(--mr-line); padding: .4rem 1rem; font-size: .9rem; }
+    .mr-tabs .nav-link:hover { border-color: var(--mr-black); }
+    .mr-tabs .nav-link.active { background: var(--mr-black); border-color: var(--mr-black); color: var(--mr-yellow); }
+    .list-attn .list-group-item { border-left: 0; border-right: 0; padding-left: 0; padding-right: 0; }
+    .mr-empty-row { color: var(--mr-muted); }
+
+    /* Flota */
+    .mr-fleet-bar { height: 1rem; border-radius: 999px; background: #eee; overflow: hidden; display: flex; }
+    .mr-dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .5rem; }
+    .mr-c-disp { background: var(--mr-yellow); }
+    .mr-c-alq { background: var(--mr-black); }
+    .mr-c-mant { background: #dc3545; }
+
+    /* Badges */
+    .mr-badge { font-weight: 700; font-size: .72rem; padding: .35rem .7rem; border-radius: 999px; display: inline-block; }
+    .mr-badge-ok { background: var(--mr-black); color: var(--mr-yellow); }
+    .mr-badge-off { background: #e9ecef; color: #495057; }
+
+    /* Avatar */
+    .mr-avatar { width: 2.9rem; height: 2.9rem; border-radius: .85rem; background: var(--mr-yellow); color: var(--mr-black); display: grid; place-items: center; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; font-size: 1.3rem; flex-shrink: 0; }
+
+    /* Tabla */
+    .thumb { width: 88px; height: 62px; object-fit: cover; border-radius: .6rem; background: #f1f1ee; }
+    .thumb-empty { width: 88px; height: 62px; border-radius: .6rem; background: #f1f1ee; display: grid; place-items: center; color: #a3a39a; }
+
+    /* Catálogo (vista cliente) */
+    .mr-machine { border: 0; border-radius: 1.25rem; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+    .mr-machine:hover { transform: translateY(-4px); box-shadow: 0 1rem 2rem rgba(0,0,0,.14) !important; }
+    .mr-media { position: relative; }
+    .mr-badge-available { position: absolute; top: .9rem; left: .9rem; background: var(--mr-black); color: var(--mr-yellow); font-weight: 700; font-size: .75rem; padding: .35rem .7rem; border-radius: 999px; }
+    .mr-price-box { background: var(--mr-black); color: #fff; border-radius: .85rem; padding: .75rem 1rem; }
+    .mr-price-box strong { color: var(--mr-yellow); }
 </style>
 
-<div class="container-fluid px-0">
+<div class="container-fluid px-0 mr-dash">
 
     {# ───────── Encabezado con acciones rápidas ───────── #}
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 fw-bold mb-1">Hola, {{ nombre_usuario }}</h1>
-            <p class="text-secondary mb-0">
-                {% now "l, j \d\e F \d\e Y" %}
-                {% if es_administrador %}· Resumen de la operación de hoy{% endif %}
-            </p>
+    <section class="mr-hero p-4 p-lg-5 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 position-relative" style="z-index:1;">
+            <div>
+                <p class="mr-eyebrow mb-1">{% now "l, j \d\e F \d\e Y" %}</p>
+                <h1 class="h2 fw-bold mb-1">Hola, {{ nombre_usuario }}</h1>
+                <p class="mb-0" style="color: rgba(255,255,255,.75);">
+                    {% if es_administrador %}Resumen de la operación de hoy{% else %}Bienvenido a tu panel de MaquiRent{% endif %}
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if puede_registrar_maquinaria %}
+                <a class="btn mr-btn-y" href="{% url 'inventario:maquinaria_crear' %}">
+                    <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Registrar maquinaria
+                </a>
+                {% endif %}
+                {% if es_administrador or es_cliente %}
+                <a class="btn mr-btn-ghost" href="{% url 'alquileres:solicitud_lista' %}">
+                    <i class="bi bi-journal-text me-1" aria-hidden="true"></i>Ver solicitudes
+                </a>
+                {% endif %}
+                {% if puede_consultar_maquinaria %}
+                <a class="btn mr-btn-ghost" href="{% url 'inventario:maquinaria_lista' %}">
+                    <i class="bi bi-search me-1" aria-hidden="true"></i>Consultar maquinaria
+                </a>
+                {% endif %}
+            </div>
         </div>
-        <div class="d-flex flex-wrap gap-2">
-            {% if puede_registrar_maquinaria %}
-            <a class="btn btn-warning" href="{% url 'inventario:maquinaria_crear' %}">
-                <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Registrar maquinaria
-            </a>
-            {% endif %}
-            {% if es_administrador or es_cliente %}
-            <a class="btn btn-primary" href="{% url 'alquileres:solicitud_lista' %}">
-                <i class="bi bi-journal-text me-1" aria-hidden="true"></i>Ver solicitudes
-            </a>
-            {% endif %}
-            {% if puede_consultar_maquinaria %}
-            <a class="btn btn-outline-secondary" href="{% url 'inventario:maquinaria_lista' %}">
-                <i class="bi bi-search me-1" aria-hidden="true"></i>Consultar maquinaria
-            </a>
-            {% endif %}
-        </div>
-    </div>
+    </section>
 
     {% if es_administrador %}
     {# ───────── Indicadores clave ───────── #}
     <div class="row g-3 mb-4">
         <div class="col-6 col-xl">
-            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
-                <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
+            <div class="mr-kpi">
+                <div class="mr-kpi-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></div>
                 <div>
-                    <div class="kpi-num">{% if kpis.disponibles != None %}{{ kpis.disponibles }}{% else %}{{ maquinarias_disponibles|length }}{% endif %}</div>
-                    <div class="small text-secondary">Equipos disponibles</div>
+                    <div class="mr-kpi-num">{% if kpis.disponibles != None %}{{ kpis.disponibles }}{% else %}{{ maquinarias_disponibles|length }}{% endif %}</div>
+                    <div class="mr-kpi-label">Equipos disponibles</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-xl">
-            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
-                <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-calendar-check"></i></div>
+            <div class="mr-kpi">
+                <div class="mr-kpi-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
                 <div>
-                    <div class="kpi-num">{{ kpis.alquileres_activos|default_if_none:0 }}</div>
-                    <div class="small text-secondary">Alquileres activos</div>
+                    <div class="mr-kpi-num">{{ kpis.alquileres_activos|default_if_none:0 }}</div>
+                    <div class="mr-kpi-label">Alquileres activos</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-xl">
-            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
-                <div class="kpi-icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-inbox"></i></div>
+            <div class="mr-kpi mr-kpi-hot">
+                <div class="mr-kpi-icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
                 <div>
-                    <div class="kpi-num">{{ kpis.solicitudes_pendientes|default_if_none:0 }}</div>
-                    <div class="small text-secondary">Solicitudes por revisar</div>
+                    <div class="mr-kpi-num">{{ kpis.solicitudes_pendientes|default_if_none:0 }}</div>
+                    <div class="mr-kpi-label">Solicitudes por revisar</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-xl">
-            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
-                <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-wrench-adjustable"></i></div>
+            <div class="mr-kpi">
+                <div class="mr-kpi-icon"><i class="bi bi-wrench-adjustable" aria-hidden="true"></i></div>
                 <div>
-                    <div class="kpi-num">{{ kpis.en_mantenimiento|default_if_none:0 }}</div>
-                    <div class="small text-secondary">En mantenimiento</div>
+                    <div class="mr-kpi-num">{{ kpis.en_mantenimiento|default_if_none:0 }}</div>
+                    <div class="mr-kpi-label">En mantenimiento</div>
                 </div>
             </div>
         </div>
         <div class="col-12 col-xl">
-            <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
-                <div class="kpi-icon bg-info-subtle text-info-emphasis"><i class="bi bi-cash-coin"></i></div>
+            <div class="mr-kpi">
+                <div class="mr-kpi-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></div>
                 <div>
-                    <div class="kpi-num">RD${{ kpis.ingresos_mes|default_if_none:0|floatformat:"2u" }}</div>
-                    <div class="small text-secondary">Ingresos del mes</div>
+                    <div class="mr-kpi-num">RD${{ kpis.ingresos_mes|default_if_none:0|floatformat:"2u" }}</div>
+                    <div class="mr-kpi-label">Ingresos del mes</div>
                 </div>
             </div>
         </div>
@@ -96,10 +156,10 @@
     <div class="row g-4 mb-4">
         {# ───────── Requiere atención ───────── #}
         <div class="col-lg-8">
-            <section class="p-4 bg-white border rounded-4 shadow-sm h-100" aria-labelledby="attn-title">
-                <h2 class="h5 fw-bold mb-3" id="attn-title">Requiere tu atención</h2>
+            <section class="mr-panel h-100" aria-labelledby="attn-title">
+                <h2 class="h5 mr-title" id="attn-title">Requiere tu atención</h2>
 
-                <ul class="nav nav-tabs mb-3" role="tablist">
+                <ul class="nav nav-pills mr-tabs mb-3" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-solicitudes" type="button" role="tab">
                             Solicitudes
@@ -132,7 +192,7 @@
                                 <a class="btn btn-sm btn-outline-primary" href="{% url 'alquileres:solicitud_detalle' s.pk %}">Revisar</a>
                             </li>
                             {% empty %}
-                            <li class="list-group-item text-secondary">No hay solicitudes pendientes. Todo al día.</li>
+                            <li class="list-group-item mr-empty-row"><i class="bi bi-check-circle-fill me-1" style="color: var(--mr-yellow-dark);" aria-hidden="true"></i>No hay solicitudes pendientes. Todo al día.</li>
                             {% endfor %}
                         </ul>
                         {% if kpis.solicitudes_pendientes > 5 %}<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'alquileres:solicitud_lista' %}?estado=Pendiente">Ver todas las solicitudes pendientes</a>{% endif %}
@@ -152,7 +212,7 @@
                                 </div>
                             </li>
                             {% empty %}
-                            <li class="list-group-item text-secondary">No hay mantenimientos por atender.</li>
+                            <li class="list-group-item mr-empty-row"><i class="bi bi-check-circle-fill me-1" style="color: var(--mr-yellow-dark);" aria-hidden="true"></i>No hay mantenimientos por atender.</li>
                             {% endfor %}
                         </ul>
                         {% if mantenimientos_atencion_total > 5 %}<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'mantenimiento:mantenimiento_lista' %}?atencion=1">Ver todos los mantenimientos por atender</a>{% endif %}
@@ -172,7 +232,7 @@
                                 </div>
                             </li>
                             {% empty %}
-                            <li class="list-group-item text-secondary">No hay pagos vencidos.</li>
+                            <li class="list-group-item mr-empty-row"><i class="bi bi-check-circle-fill me-1" style="color: var(--mr-yellow-dark);" aria-hidden="true"></i>No hay pagos vencidos.</li>
                             {% endfor %}
                         </ul>
                         {% if pagos_vencidos_total > 5 %}<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'ventas:presupuesto_lista' %}?vencidos=1">Ver todos los pagos vencidos</a>{% endif %}
@@ -185,37 +245,36 @@
         <div class="col-lg-4">
             <div class="d-flex flex-column gap-4 h-100">
                 {% if kpis.maquinas_total %}
-                <section class="p-4 bg-white border rounded-4 shadow-sm" aria-labelledby="fleet-title">
-                    <h2 class="h5 fw-bold mb-3" id="fleet-title">Estado de la flota</h2>
-                    <div class="progress mb-3" style="height: .9rem;" role="img" aria-label="Distribución de la flota">
-                        <div class="progress-bar bg-success"  style="width: {% widthratio kpis.disponibles kpis.maquinas_total 100 %}%"></div>
-                        <div class="progress-bar bg-primary"  style="width: {% widthratio kpis.alquiladas kpis.maquinas_total 100 %}%"></div>
-                        <div class="progress-bar bg-danger"   style="width: {% widthratio kpis.en_mantenimiento kpis.maquinas_total 100 %}%"></div>
+                <section class="mr-panel" aria-labelledby="fleet-title">
+                    <h2 class="h5 mr-title" id="fleet-title">Estado de la flota</h2>
+                    <div class="mr-fleet-bar mb-3" role="img" aria-label="Distribución de la flota">
+                        <div class="mr-c-disp" style="width: {% widthratio kpis.disponibles kpis.maquinas_total 100 %}%"></div>
+                        <div class="mr-c-alq" style="width: {% widthratio kpis.alquiladas kpis.maquinas_total 100 %}%"></div>
+                        <div class="mr-c-mant" style="width: {% widthratio kpis.en_mantenimiento kpis.maquinas_total 100 %}%"></div>
                     </div>
-                    <div class="small d-flex justify-content-between"><span><i class="bi bi-circle-fill text-success me-1"></i>Disponibles</span><strong>{{ kpis.disponibles }}</strong></div>
-                    <div class="small d-flex justify-content-between"><span><i class="bi bi-circle-fill text-primary me-1"></i>Alquiladas</span><strong>{{ kpis.alquiladas }}</strong></div>
-                    <div class="small d-flex justify-content-between"><span><i class="bi bi-circle-fill text-danger me-1"></i>En mantenimiento</span><strong>{{ kpis.en_mantenimiento }}</strong></div>
-                    <div class="small d-flex justify-content-between border-top mt-2 pt-2"><span>Total de equipos</span><strong>{{ kpis.maquinas_total }}</strong></div>
+                    <div class="small d-flex justify-content-between mb-1"><span><i class="mr-dot mr-c-disp"></i>Disponibles</span><strong>{{ kpis.disponibles }}</strong></div>
+                    <div class="small d-flex justify-content-between mb-1"><span><i class="mr-dot mr-c-alq"></i>Alquiladas</span><strong>{{ kpis.alquiladas }}</strong></div>
+                    <div class="small d-flex justify-content-between"><span><i class="mr-dot mr-c-mant"></i>En mantenimiento</span><strong>{{ kpis.en_mantenimiento }}</strong></div>
+                    <div class="small d-flex justify-content-between mt-3 pt-2" style="border-top: 1px dashed var(--mr-line);"><span>Total de equipos</span><strong>{{ kpis.maquinas_total }}</strong></div>
                 </section>
                 {% endif %}
 
-                <section class="p-4 bg-white border rounded-4 shadow-sm flex-grow-1" aria-labelledby="access-panel-title">
-                    <h2 class="h5 fw-bold mb-3" id="access-panel-title">Tu acceso</h2>
+                <section class="mr-panel flex-grow-1" aria-labelledby="access-panel-title">
+                    <h2 class="h5 mr-title" id="access-panel-title">Tu acceso</h2>
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-warning text-dark fw-bold d-grid flex-shrink-0"
-                             style="width: 2.75rem; height: 2.75rem; place-items: center;">{{ nombre_usuario|first|upper }}</div>
+                        <div class="mr-avatar" aria-hidden="true">{{ nombre_usuario|first|upper }}</div>
                         <div>
                             <div class="fw-semibold">{{ nombre_usuario }}</div>
                             <small class="text-secondary">{{ rol_usuario }}</small>
                         </div>
                     </div>
-                    <div class="small d-flex justify-content-between mb-2">
+                    <div class="small d-flex justify-content-between align-items-center mb-2">
                         <span>Consultar maquinaria</span>
-                        {% if puede_consultar_maquinaria %}<span class="badge text-bg-success">Permitido</span>{% else %}<span class="badge text-bg-warning">No disponible</span>{% endif %}
+                        {% if puede_consultar_maquinaria %}<span class="mr-badge mr-badge-ok">Permitido</span>{% else %}<span class="mr-badge mr-badge-off">No disponible</span>{% endif %}
                     </div>
-                    <div class="small d-flex justify-content-between">
+                    <div class="small d-flex justify-content-between align-items-center">
                         <span>Registrar maquinaria</span>
-                        {% if puede_registrar_maquinaria %}<span class="badge text-bg-success">Permitido</span>{% else %}<span class="badge text-bg-secondary">Solo consulta</span>{% endif %}
+                        {% if puede_registrar_maquinaria %}<span class="mr-badge mr-badge-ok">Permitido</span>{% else %}<span class="mr-badge mr-badge-off">Solo consulta</span>{% endif %}
                     </div>
                 </section>
             </div>
@@ -223,18 +282,18 @@
     </div>
 
     {# ───────── Maquinaria disponible (tabla para administración) ───────── #}
-    <section class="p-4 bg-white border rounded-4 shadow-sm" aria-labelledby="available-machinery-title">
+    <section class="mr-panel" aria-labelledby="available-machinery-title">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h2 class="h5 fw-bold mb-0" id="available-machinery-title">Maquinaria disponible en tu inventario</h2>
+            <h2 class="h5 mr-title mb-0" id="available-machinery-title">Maquinaria disponible en tu inventario</h2>
             {% if puede_consultar_maquinaria %}
             <a class="btn btn-outline-primary btn-sm" href="{% url 'inventario:maquinaria_lista' %}">Ver todo el inventario</a>
             {% endif %}
         </div>
         <div class="table-responsive">
-            <table class="table align-middle mb-0">
+            <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">Equipo</th><th scope="col">Categoría</th><th scope="col">Marca</th>
+                        <th scope="col" class="ps-3">Equipo</th><th scope="col">Categoría</th><th scope="col">Marca</th>
                         <th scope="col" class="text-end">Alquiler / día</th>
                         <th scope="col" class="text-end">Depósito</th>
                         <th scope="col" class="text-end">Adquisición</th>
@@ -244,7 +303,7 @@
                 <tbody>
                     {% for unidad in maquinarias_disponibles|slice:":8" %}
                     <tr>
-                        <td>
+                        <td class="ps-3">
                             <div class="d-flex align-items-center gap-3">
                                 {% with imagen=unidad.maquinaria.imagenes.all|first %}
                                 {% if imagen %}
@@ -258,10 +317,10 @@
                         </td>
                         <td>{{ unidad.maquinaria.categoria.nombre }}</td>
                         <td>{{ unidad.maquinaria.marca|default:"—" }}</td>
-                        <td class="text-end">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</td>
+                        <td class="text-end fw-semibold">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</td>
                         <td class="text-end">${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</td>
                         <td class="text-end text-secondary">${{ unidad.maquinaria.costo_adquisicion|floatformat:2 }}</td>
-                        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">Ver</a></td>
+                        <td class="text-end pe-3"><a class="btn btn-sm btn-outline-primary" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">Ver</a></td>
                     </tr>
                     {% empty %}
                     <tr><td colspan="7" class="text-center text-secondary py-4">Todavía no has registrado maquinaria disponible.</td></tr>
@@ -274,30 +333,32 @@
     {% elif es_cliente %}
     {# ───────── Vista de cliente: catálogo en tarjetas ───────── #}
     <section aria-labelledby="available-machinery-title">
-        <h2 class="h4 fw-bold mb-3" id="available-machinery-title">Maquinaria para alquilar</h2>
+        <h2 class="h4 mr-title" id="available-machinery-title">Maquinaria para alquilar</h2>
         <div class="row g-4">
             {% for unidad in maquinarias_disponibles %}
             <div class="col-sm-6 col-xl-4">
-                <article class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
-                    {% with imagen=unidad.maquinaria.imagenes.all|first %}
-                    {% if imagen %}
-                    <img src="{{ imagen.imagen.url }}" class="card-img-top" alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}" style="height: 210px; object-fit: cover;">
-                    {% else %}
-                    <div class="bg-light d-grid text-secondary" style="height: 210px; place-items: center;" aria-label="Sin imagen disponible">
-                        <i class="bi bi-truck fs-1" aria-hidden="true"></i>
+                <article class="card mr-machine h-100 shadow-sm">
+                    <div class="mr-media">
+                        {% with imagen=unidad.maquinaria.imagenes.all|first %}
+                        {% if imagen %}
+                        <img src="{{ imagen.imagen.url }}" class="card-img-top" alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}" style="height: 210px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-light d-grid text-secondary" style="height: 210px; place-items: center;" aria-label="Sin imagen disponible">
+                            <i class="bi bi-truck fs-1" aria-hidden="true"></i>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <span class="mr-badge-available"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Disponible</span>
                     </div>
-                    {% endif %}
-                    {% endwith %}
                     <div class="card-body d-flex flex-column p-4">
-                        <span class="badge text-bg-success align-self-start mb-2">Disponible</span>
                         <h3 class="h5 fw-bold">{{ unidad.maquinaria.nombre }}</h3>
                         <p class="text-secondary small mb-3">{{ unidad.maquinaria.categoria.nombre }} · {{ unidad.maquinaria.marca|default:"Marca no especificada" }}</p>
                         <p class="small text-secondary flex-grow-1">{{ unidad.maquinaria.descripcion|default:"Consulta los detalles de este equipo."|truncatechars:130 }}</p>
-                        <div class="border-top pt-3 mb-3">
+                        <div class="mr-price-box mb-3">
                             <div class="d-flex justify-content-between gap-2"><span>Alquiler por día</span><strong>${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</strong></div>
                             <div class="d-flex justify-content-between gap-2 mt-1"><span>Depósito de garantía</span><strong>${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong></div>
                         </div>
-                        <a class="btn btn-outline-primary mt-auto" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">Ver detalle y alquilar</a>
+                        <a class="btn btn-warning mt-auto" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">Ver detalle y alquilar <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>
