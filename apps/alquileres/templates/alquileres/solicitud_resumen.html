@@ -3,7 +3,7 @@
         <h2 class="h5 fw-bold mb-1"><a class="link-dark" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Solicitud #{{ solicitud.pk }} · {{ solicitud.unidad.maquinaria.nombre }}</a></h2>
         <p class="text-secondary small mb-0">Código {{ solicitud.unidad.maquinaria.codigo }} · Serie {{ solicitud.unidad.numero_serie }}</p>
     </div>
-    <span class="badge {% if solicitud.estado == 'Aprobada' %}text-bg-success{% elif solicitud.estado == 'Vencida' or solicitud.estado == 'Rechazada' %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ solicitud.estado }}</span>
+    {% include 'alquileres/estado_cliente.html' %}
 </div>
 <dl class="row g-2 mt-3 mb-0">
     <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">{{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}</dd>
@@ -11,10 +11,11 @@
     <dt class="col-sm-3">Fechas programadas</dt><dd class="col-sm-9">{{ solicitud.fecha_inicio|date:"d/m/Y" }} – {{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
     <dt class="col-sm-3">Enviada</dt><dd class="col-sm-9">{{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</dd>
     <dt class="col-sm-3">Entrega</dt><dd class="col-sm-9">{{ solicitud.estado_entrega }}</dd>
-    {% if solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and solicitud.fecha_limite_pago %}
+    {% if solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and not solicitud.pago_inicial_completo and solicitud.fecha_limite_pago %}
     <dt class="col-sm-3">Fecha límite del pago inicial</dt><dd class="col-sm-9">Renta y depósito: {{ solicitud.fecha_limite_pago|date:"d/m/Y H:i" }}</dd>
     {% endif %}
 </dl>
+{% include 'alquileres/proximo_paso.html' %}
 {% if solicitud.comentario %}<p class="mt-2 mb-0"><strong>Comentario:</strong> {{ solicitud.comentario }}</p>{% endif %}
 {% if solicitud.aviso_vencimiento %}
 <p class="alert {% if solicitud.aviso_vencimiento == 'Vencido' %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0" role="{% if solicitud.aviso_vencimiento == 'Vencido' %}alert{% else %}status{% endif %}">
@@ -43,8 +44,8 @@
 {% endif %}
 <div class="d-flex flex-wrap gap-2 mt-3">
     <a class="btn btn-sm btn-outline-secondary" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Ver detalle</a>
-    {% if es_administrador or solicitud.unidad.estado == 'Disponible' %}
+    {% if es_administrador or solicitud.unidad.estado == 'Disponible' or solicitud.unidad.estado == 'Alquilado' %}
     <a class="btn btn-sm btn-outline-secondary" href="{% url 'inventario:maquinaria_detalle' solicitud.unidad_id %}">Ver maquinaria</a>
     {% endif %}
-    {% if solicitud.presupuesto %}<a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Presupuesto · ${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}</a>{% endif %}
+    {% if solicitud.presupuesto %}<a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto · ${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}</a>{% endif %}
 </div>

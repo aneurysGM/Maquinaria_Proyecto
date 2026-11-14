@@ -4,7 +4,35 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.alquileres.tests_datos import DatosIntegracion
 from .models import RolUsuario, UsuarioPersonalizado
+
+
+class DashboardPendientesTests(DatosIntegracion, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.crear_datos()
+
+    def comprobar_contador(self, esperado):
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(reverse('cuentas:dashboard'))
+        self.assertEqual(respuesta.context['kpis']['solicitudes_pendientes'], esperado)
+        self.assertContains(respuesta, f'''
+            <div class="kpi-num">{esperado}</div>
+            <div class="small text-secondary">Solicitudes por revisar</div>
+        ''', html=True)
+
+    def test_cuenta_todas_las_pendientes_y_excluye_otros_estados(self):
+        for cliente in (self.cliente, self.otro, self.cliente):
+            self.crear_solicitud(cliente=cliente)
+        for estado in ('Aprobada', 'Rechazada', 'Vencida'):
+            self.crear_solicitud(estado=estado)
+        self.comprobar_contador(3)
+
+    def test_sin_pendientes_la_tarjeta_muestra_cero(self):
+        for estado in ('Aprobada', 'Rechazada', 'Vencida'):
+            self.crear_solicitud(estado=estado)
+        self.comprobar_contador(0)
 
 
 class SuspensionClientesTests(TestCase):

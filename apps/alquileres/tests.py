@@ -80,7 +80,7 @@ class SolicitudesAlquilerTests(TestCase):
             respuesta,
             f'href="{reverse("inventario:maquinaria_lista")}"',
         )
-        self.assertContains(respuesta, 'Volver a maquinarias')
+        self.assertContains(respuesta, 'Volver a Mis alquileres')
 
     def test_cliente_puede_ir_a_maquinarias_desde_sus_solicitudes(self):
         self.client.force_login(self.cliente)

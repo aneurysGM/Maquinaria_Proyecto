@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
 {% block title %}Solicitudes de alquiler | MaquiRent{% endblock %}
 {% block page_name %}Alquileres{% endblock %}
 {% block content %}
@@ -6,7 +7,8 @@
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
         <div>
             <p class="text-muted small text-uppercase fw-bold mb-1">Alquileres</p>
-            <h1 class="h3 fw-bold mb-0">{% if es_administrador %}Solicitudes recibidas{% else %}Mis solicitudes{% endif %}</h1>
+            <h1 class="h3 fw-bold mb-0">{% if es_administrador %}Solicitudes recibidas{% else %}Mis alquileres{% endif %}</h1>
+            {% if not es_administrador %}<p class="text-secondary mt-2 mb-0">Todas tus solicitudes y el historial de alquileres.</p>{% endif %}
         </div>
         {% if es_cliente %}
         <a class="btn btn-outline-primary" href="{% url 'inventario:maquinaria_lista' %}">
@@ -15,15 +17,22 @@
         {% endif %}
     </div>
     {% if filtros %}
-    <form method="get" class="card border-0 shadow-sm rounded-4 mb-4">
+    <form method="get" id="filtros-solicitudes" data-codigos-url="{% url 'alquileres:solicitud_codigos' %}" class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <h2 class="h5">Filtrar solicitudes</h2>
             {{ filtros.non_field_errors }}
+            {% for hidden in filtros.hidden_fields %}{{ hidden }}{% endfor %}
             <div class="row g-3">
-                {% for field in filtros %}
+                {% for field in filtros.visible_fields %}
                 <div class="col-md-6 col-xl-3">
                     <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
+                    {% if field.name == 'q' %}
+                    <div class="position-relative">
+                        {{ field }}
+                        <div id="sugerencias-codigos" class="list-group position-absolute w-100 shadow-sm" role="listbox" aria-label="Códigos de maquinaria" style="z-index: 1050; max-height: 18rem; overflow-y: auto;" hidden></div>
+                    </div>
+                    <span id="estado-sugerencias" class="visually-hidden" role="status" aria-live="polite"></span>
+                    {% else %}{{ field }}{% endif %}
                     {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
                 {% endfor %}
@@ -51,4 +60,8 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'alquileres/sugerencias_codigos.js' %}" defer></script>
 {% endblock %}

@@ -59,7 +59,7 @@
             <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
                 <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-calendar-check"></i></div>
                 <div>
-                    <div class="kpi-num">{{ kpis.alquileres_activos|default:"—" }}</div>
+                    <div class="kpi-num">{{ kpis.alquileres_activos|default_if_none:0 }}</div>
                     <div class="small text-secondary">Alquileres activos</div>
                 </div>
             </div>
@@ -68,7 +68,7 @@
             <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
                 <div class="kpi-icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-inbox"></i></div>
                 <div>
-                    <div class="kpi-num">{{ kpis.solicitudes_pendientes|default:"—" }}</div>
+                    <div class="kpi-num">{{ kpis.solicitudes_pendientes|default_if_none:0 }}</div>
                     <div class="small text-secondary">Solicitudes por revisar</div>
                 </div>
             </div>
@@ -77,7 +77,7 @@
             <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
                 <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-wrench-adjustable"></i></div>
                 <div>
-                    <div class="kpi-num">{{ kpis.en_mantenimiento|default:"—" }}</div>
+                    <div class="kpi-num">{{ kpis.en_mantenimiento|default_if_none:0 }}</div>
                     <div class="small text-secondary">En mantenimiento</div>
                 </div>
             </div>
@@ -86,7 +86,7 @@
             <div class="p-3 bg-white border rounded-4 shadow-sm h-100 kpi">
                 <div class="kpi-icon bg-info-subtle text-info-emphasis"><i class="bi bi-cash-coin"></i></div>
                 <div>
-                    <div class="kpi-num">{% if kpis.ingresos_mes != None %}${{ kpis.ingresos_mes|floatformat:0 }}{% else %}—{% endif %}</div>
+                    <div class="kpi-num">RD${{ kpis.ingresos_mes|default_if_none:0|floatformat:"2u" }}</div>
                     <div class="small text-secondary">Ingresos del mes</div>
                 </div>
             </div>
@@ -103,19 +103,19 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-solicitudes" type="button" role="tab">
                             Solicitudes
-                            {% if solicitudes_pendientes %}<span class="badge text-bg-warning ms-1">{{ solicitudes_pendientes|length }}</span>{% endif %}
+                            <span class="badge text-bg-warning ms-1">{{ kpis.solicitudes_pendientes|default_if_none:0 }}</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mant" type="button" role="tab">
                             Mantenimientos
-                            {% if proximos_mantenimientos %}<span class="badge text-bg-secondary ms-1">{{ proximos_mantenimientos|length }}</span>{% endif %}
+                            <span class="badge text-bg-secondary ms-1">{{ mantenimientos_atencion_total|default_if_none:0 }}</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-facturas" type="button" role="tab">
-                            Facturas vencidas
-                            {% if facturas_vencidas %}<span class="badge text-bg-danger ms-1">{{ facturas_vencidas|length }}</span>{% endif %}
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pagos" type="button" role="tab">
+                            Pagos vencidos
+                            <span class="badge text-bg-danger ms-1">{{ pagos_vencidos_total|default_if_none:0 }}</span>
                         </button>
                     </li>
                 </ul>
@@ -123,50 +123,59 @@
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="tab-solicitudes" role="tabpanel">
                         <ul class="list-group list-group-flush list-attn">
-                            {% for s in solicitudes_pendientes|slice:":5" %}
+                            {% for s in solicitudes_pendientes %}
                             <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
                                 <div>
-                                    <div class="fw-semibold">{{ s.cliente }}</div>
-                                    <small class="text-secondary">{{ s.maquinaria }} · {{ s.fecha_inicio|date:"d/m/Y" }} al {{ s.fecha_fin|date:"d/m/Y" }}</small>
+                                    <div class="fw-semibold">{{ s.cliente.get_full_name|default:s.cliente.email }} · Solicitud #{{ s.pk }}</div>
+                                    <small class="text-secondary">{{ s.unidad.maquinaria.nombre }} · {{ s.fecha_inicio|date:"d/m/Y" }} al {{ s.fecha_fin|date:"d/m/Y" }}</small>
                                 </div>
-                                <a class="btn btn-sm btn-outline-primary" href="{% url 'alquileres:solicitud_lista' %}">Revisar</a>
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'alquileres:solicitud_detalle' s.pk %}">Revisar</a>
                             </li>
                             {% empty %}
                             <li class="list-group-item text-secondary">No hay solicitudes pendientes. Todo al día.</li>
                             {% endfor %}
                         </ul>
+                        {% if kpis.solicitudes_pendientes > 5 %}<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'alquileres:solicitud_lista' %}?estado=Pendiente">Ver todas las solicitudes pendientes</a>{% endif %}
                     </div>
 
                     <div class="tab-pane fade" id="tab-mant" role="tabpanel">
                         <ul class="list-group list-group-flush list-attn">
-                            {% for m in proximos_mantenimientos|slice:":5" %}
+                            {% for m in mantenimientos_atencion %}
                             <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
                                 <div>
-                                    <div class="fw-semibold">{{ m.maquinaria }}</div>
-                                    <small class="text-secondary">{{ m.tipo }}</small>
+                                    <div class="fw-semibold">{{ m.unidad.maquinaria.nombre }} · Serie {{ m.unidad.numero_serie }}</div>
+                                    <small class="text-secondary">Trabajo #{{ m.pk }} · {{ m.get_tipo_display }}</small>
                                 </div>
-                                <span class="badge text-bg-light border">{{ m.fecha|date:"d/m/Y" }}</span>
+                                <div class="text-end">
+                                    <span class="badge text-bg-light border">{% if m.fecha > hoy %}Programado: {% else %}Inicio: {% endif %}{{ m.fecha|date:"d/m/Y" }}</span>
+                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'mantenimiento:mantenimiento_historial' m.unidad_id %}#mantenimiento-{{ m.pk }}">Gestionar</a>
+                                </div>
                             </li>
                             {% empty %}
-                            <li class="list-group-item text-secondary">No hay mantenimientos próximos.</li>
+                            <li class="list-group-item text-secondary">No hay mantenimientos por atender.</li>
                             {% endfor %}
                         </ul>
+                        {% if mantenimientos_atencion_total > 5 %}<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'mantenimiento:mantenimiento_lista' %}?atencion=1">Ver todos los mantenimientos por atender</a>{% endif %}
                     </div>
 
-                    <div class="tab-pane fade" id="tab-facturas" role="tabpanel">
+                    <div class="tab-pane fade" id="tab-pagos" role="tabpanel">
                         <ul class="list-group list-group-flush list-attn">
-                            {% for f in facturas_vencidas|slice:":5" %}
+                            {% for p in pagos_vencidos %}
                             <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
                                 <div>
-                                    <div class="fw-semibold">{{ f.numero }} · {{ f.cliente }}</div>
-                                    <small class="text-danger">Venció el {{ f.fecha_vencimiento|date:"d/m/Y" }}</small>
+                                    <div class="fw-semibold">Presupuesto #{{ p.pk }} · {{ p.solicitud.cliente.get_full_name|default:p.solicitud.cliente.email }}</div>
+                                    <small class="text-danger">Venció el {{ p.solicitud.fecha_limite_pago|date:"d/m/Y H:i" }}</small>
                                 </div>
-                                <strong>${{ f.monto|floatformat:2 }}</strong>
+                                <div class="text-end">
+                                    <strong>RD${{ p.saldo_pendiente_actual|floatformat:"2u" }}</strong>
+                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' p.pk %}">Ver presupuesto</a>
+                                </div>
                             </li>
                             {% empty %}
-                            <li class="list-group-item text-secondary">No hay facturas vencidas.</li>
+                            <li class="list-group-item text-secondary">No hay pagos vencidos.</li>
                             {% endfor %}
                         </ul>
+                        {% if pagos_vencidos_total > 5 %}<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'ventas:presupuesto_lista' %}?vencidos=1">Ver todos los pagos vencidos</a>{% endif %}
                     </div>
                 </div>
             </section>

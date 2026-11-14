@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
 {% block title %}Solicitud #{{ solicitud.pk }} | MaquiRent{% endblock %}
 {% block page_name %}Detalle de solicitud{% endblock %}
 {% block content %}
@@ -6,7 +7,7 @@
     <a class="btn btn-outline-secondary mb-3" href="{% url 'alquileres:solicitud_lista' %}">Volver a solicitudes</a>
     <h1 class="h3 mb-4">Detalle de solicitud #{{ solicitud.pk }}</h1>
     <article class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body p-4">
-        {% include 'alquileres/solicitud_resumen.html' %}
+        {% include 'alquileres/solicitud_resumen.html' with es_detalle=True %}
         {% include 'alquileres/solicitud_acciones.html' %}
     </div></article>
     <section class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
@@ -22,4 +23,8 @@
         </dl>
     </div></section>
 </div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'alquileres/motivo_rechazo.js' %}" defer></script>
 {% endblock %}

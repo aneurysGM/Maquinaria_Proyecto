@@ -158,7 +158,7 @@ class MaquinariaListaView(LoginRequiredMixin, InventarioConsultaRequiredMixin, L
             maquinaria__activo=True,
         )
         if self.request.user.es_cliente:
-            queryset = queryset.filter(estado='Disponible')
+            queryset = queryset.filter(estado__in=['Disponible', 'Alquilado'])
         
         # Capturar parámetros de la URL (GET)
         q = self.request.GET.get('q', '').strip()
@@ -259,11 +259,9 @@ class MaquinariaDetalleView(DetailView):
             maquinaria__activo=True,
         )
         usuario = self.request.user
-        if not (
-            usuario.is_authenticated
-            and usuario.puede_consultar_maquinaria
-            and not usuario.es_cliente
-        ):
+        if usuario.is_authenticated and usuario.es_cliente:
+            unidades = unidades.filter(estado__in=['Disponible', 'Alquilado'])
+        elif not (usuario.is_authenticated and usuario.puede_consultar_maquinaria):
             unidades = unidades.filter(estado='Disponible')
         return get_object_or_404(unidades, pk=self.kwargs.get(self.pk_url_kwarg))
 
@@ -277,7 +275,7 @@ class MaquinariaDetalleView(DetailView):
             usuario.is_authenticated and usuario.es_cliente
         )
         context['puede_solicitar_alquiler'] = (
-            self.object.estado == 'Disponible'
+            self.object.estado in ('Disponible', 'Alquilado')
             and (not usuario.is_authenticated or usuario.es_cliente)
         )
         return context

@@ -2,7 +2,8 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import F, Q, Sum, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from apps.ventas.models import PresupuestoAlquiler
@@ -16,14 +17,45 @@ def pago_inicial_completo(solicitud):
     except PresupuestoAlquiler.DoesNotExist:
         return False
 
-    pagos = presupuesto.pagos.aggregate(
-        renta=Sum('monto', filter=Q(concepto='renta')),
-        deposito=Sum('monto', filter=Q(concepto='deposito')),
-    )
     return (
-        (pagos['renta'] or Decimal('0.00')) >= presupuesto.importe_renta
-        and (pagos['deposito'] or Decimal('0.00')) >= presupuesto.deposito_garantia
+        presupuesto.renta_pendiente == 0 and presupuesto.deposito_pendiente == 0
     )
+
+
+def reservas_confirmadas():
+    """Incluye pagos anteriores a la confirmación explícita y entregas históricas."""
+    cero = Value(Decimal('0.00'), output_field=DecimalField(max_digits=18, decimal_places=2))
+    return SolicitudAlquiler.objects.filter(
+        estado='Aprobada', fecha_retorno__isnull=True,
+    ).annotate(
+        renta_recibida=Coalesce(Sum('presupuesto__pagos__monto', filter=Q(presupuesto__pagos__concepto='renta')), cero),
+        deposito_recibido=Coalesce(Sum('presupuesto__pagos__monto', filter=Q(presupuesto__pagos__concepto='deposito')), cero),
+    ).filter(
+        Q(fecha_confirmacion__isnull=False) | Q(fecha_salida__isnull=False)
+        | Q(renta_recibida__gte=F('presupuesto__importe_renta'), deposito_recibido__gte=F('presupuesto__deposito_garantia'))
+    )
+
+
+def cruces_confirmados(unidad_id, inicio, fin, *, excluir=None):
+    return reservas_confirmadas().filter(
+        unidad_id=unidad_id, fecha_inicio__lte=fin, fecha_fin__gte=inicio,
+    ).exclude(pk=excluir)
+
+
+def solicitudes_afectadas(solicitud):
+    limite = timezone.now() - timedelta(days=SolicitudAlquiler.PLAZO_PAGO_DIAS)
+    return SolicitudAlquiler.objects.filter(
+        Q(estado='Pendiente') | Q(estado='Aprobada', fecha_revision__gt=limite)
+        | Q(estado='Aprobada', fecha_revision__isnull=True),
+        unidad_id=solicitud.unidad_id,
+        fecha_retorno__isnull=True, fecha_inicio__lte=solicitud.fecha_fin,
+        fecha_fin__gte=solicitud.fecha_inicio,
+    ).exclude(pk=solicitud.pk).exclude(pk__in=reservas_confirmadas().values('pk')).order_by('pk')
+
+
+def periodos_ocupados(unidad_id):
+    return [dict(inicio=s.fecha_inicio.isoformat(), fin=s.fecha_fin.isoformat())
+            for s in reservas_confirmadas().filter(unidad_id=unidad_id).order_by('fecha_inicio')]
 
 
 def puede_aprobar_reserva(solicitud, unidad):
@@ -34,24 +66,14 @@ def puede_aprobar_reserva(solicitud, unidad):
     if solicitud.fecha_salida is not None:
         return False
 
-    otras_aprobadas = SolicitudAlquiler.objects.filter(
-        unidad=unidad,
-        estado='Aprobada',
-        fecha_retorno__isnull=True,
-    ).exclude(pk=solicitud.pk).exists()
-    return not otras_aprobadas
+    return not cruces_confirmados(unidad.pk, solicitud.fecha_inicio, solicitud.fecha_fin, excluir=solicitud.pk).exists()
 
 
 def liberar_unidad_si_no_reservada(unidad, solicitud_id):
     if unidad.estado != 'Alquilado':
         return False
 
-    otra_reserva = SolicitudAlquiler.objects.filter(
-        unidad=unidad,
-    ).exclude(pk=solicitud_id).filter(
-        estado='Aprobada',
-        fecha_retorno__isnull=True,
-    ).exists()
+    otra_reserva = reservas_confirmadas().filter(unidad=unidad).exclude(pk=solicitud_id).exists()
     if otra_reserva:
         return False
 
