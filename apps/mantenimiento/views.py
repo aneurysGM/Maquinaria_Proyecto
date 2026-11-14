@@ -24,7 +24,14 @@ def mantenimiento_lista(request):
             'mantenimientos': mantenimientos_abiertos(), 'hoy': timezone.localdate(),
         })
 
-    unidades = Unidad.objects.select_related('maquinaria__categoria').filter(activo=True, maquinaria__activo=True)
+    unidades = Unidad.objects.select_related(
+        'maquinaria__categoria',
+    ).prefetch_related(
+        'maquinaria__imagenes',
+    ).filter(
+        activo=True,
+        maquinaria__activo=True,
+    )
     consulta = request.GET.get('q', '').strip()
     
     if consulta:

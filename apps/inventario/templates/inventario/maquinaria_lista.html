@@ -4,6 +4,24 @@
 {% block page_name %}Maquinaria Pesada{% endblock %}
 
 {% block content %}
+<style>
+    .machinery-thumb {
+        width: 88px;
+        height: 62px;
+        object-fit: cover;
+        border-radius: .5rem;
+        background: #f1f3f7;
+    }
+    .machinery-thumb-empty {
+        width: 88px;
+        height: 62px;
+        border-radius: .5rem;
+        background: #f1f3f7;
+        display: grid;
+        place-items: center;
+        color: #94a3b8;
+    }
+</style>
 <div class="container-fluid px-0">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -98,9 +116,23 @@
                         <tr>
                             <td class="ps-4 fw-bold text-dark">{{ unidad.maquinaria.codigo }}</td>
                             <td>
-                                <div class="fw-bold">{{ unidad.maquinaria.nombre }}</div>
-                                <small class="text-muted">Serie: {{ unidad.numero_serie }} 
-                                {{ unidad.maquinaria.marca|default_if_none:"" }} {{ unidad.maquinaria.modelo|default_if_none:"" }}</small>
+                                <div class="d-flex align-items-center gap-3">
+                                    {% with imagen=unidad.maquinaria.imagenes.all|first %}
+                                    {% if imagen %}
+                                    <img class="machinery-thumb" src="{{ imagen.imagen.url }}"
+                                        alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}">
+                                    {% else %}
+                                    <div class="machinery-thumb-empty" aria-hidden="true">
+                                        <i class="bi bi-truck"></i>
+                                    </div>
+                                    {% endif %}
+                                    {% endwith %}
+                                    <div>
+                                        <div class="fw-bold">{{ unidad.maquinaria.nombre }}</div>
+                                        <small class="text-muted">Serie: {{ unidad.numero_serie }}
+                                        {{ unidad.maquinaria.marca|default_if_none:"" }} {{ unidad.maquinaria.modelo|default_if_none:"" }}</small>
+                                    </div>
+                                </div>
                             </td>
                             <td><span class="badge bg-light text-dark border">{{ unidad.maquinaria.categoria.nombre }}</span></td>
                             <td class="fw-semibold">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</td>

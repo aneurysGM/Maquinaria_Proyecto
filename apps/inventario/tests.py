@@ -185,6 +185,54 @@ class CatalogoPanelTests(TestCase):
             reverse('inventario:maquinaria_detalle', args=[unidad.pk]),
         )
 
+    def test_imagen_principal_aparece_en_listados_de_todos_los_roles(self):
+        unidad = self.crear_unidad(
+            'PUB-IMG-001', 'Excavadora con imagen visible', self.admin
+        )
+        MaquinariaImagen.objects.create(
+            maquinaria=unidad.maquinaria,
+            imagen='maquinaria/listado-principal.png',
+            texto_alternativo='Foto principal de la excavadora',
+        )
+        tecnico = UsuarioPersonalizado.objects.create_user(
+            email='tecnico-imagenes@example.com',
+            password='test-password',
+            rol=RolUsuario.TECNICO,
+        )
+        imagen_url = '/media/maquinaria/listado-principal.png'
+
+        self.assertContains(self.client.get(reverse('catalogo')), imagen_url)
+
+        vistas_por_rol = (
+            (
+                self.admin,
+                (
+                    'inventario:maquinaria_lista',
+                    'cuentas:dashboard',
+                ),
+            ),
+            (
+                self.cliente,
+                (
+                    'inventario:maquinaria_lista',
+                    'cuentas:dashboard',
+                ),
+            ),
+            (
+                tecnico,
+                (
+                    'inventario:maquinaria_lista',
+                    'mantenimiento:mantenimiento_lista',
+                    'tecnico_mantenimiento:dashboard',
+                ),
+            ),
+        )
+        for usuario, rutas in vistas_por_rol:
+            self.client.force_login(usuario)
+            for ruta in rutas:
+                with self.subTest(rol=usuario.rol, ruta=ruta):
+                    self.assertContains(self.client.get(reverse(ruta)), imagen_url)
+
     def test_visitante_puede_ver_detalle_y_debe_iniciar_sesion_para_solicitar(self):
         unidad = self.crear_unidad(
             'PUB-DET-001', 'Excavadora pública con detalle', self.admin

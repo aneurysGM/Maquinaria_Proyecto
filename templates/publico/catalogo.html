@@ -90,6 +90,13 @@
             margin-bottom: 1rem;
         }
 
+        .mq-product-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
         .filter-sidebar {
             background: #fff;
             border: 1px solid var(--mq-line);
@@ -187,7 +194,14 @@
                     <div class="col-md-6 col-xl-4">
                         <div class="mq-product-card">
                             <div class="mq-product-img">
+                                {% with imagen=maquina.maquinaria.imagenes.all|first %}
+                                {% if imagen %}
+                                <img src="{{ imagen.imagen.url }}"
+                                    alt="{{ imagen.texto_alternativo|default:maquina.maquinaria.nombre }}">
+                                {% else %}
                                 <i class="bi bi-truck-flatbed"></i>
+                                {% endif %}
+                                {% endwith %}
                             </div>
                             <h3 class="fs-5 mb-1">{{ maquina.nombre }}</h3>
                             <p class="text-muted small mb-2">{{ maquina.maquinaria.categoria.nombre|title }}</p>

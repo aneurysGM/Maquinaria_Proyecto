@@ -49,7 +49,9 @@ class CatalogoPublicoView(ListView):
 
     def get_queryset(self):
         queryset = Unidad.objects.select_related(
-            'maquinaria__categoria'
+            'maquinaria__categoria',
+        ).prefetch_related(
+            'maquinaria__imagenes',
         ).filter(
             activo=True,
             estado='Disponible',
@@ -206,7 +208,11 @@ class MaquinariaListaView(LoginRequiredMixin, InventarioConsultaRequiredMixin, L
     
     def get_queryset(self):
         # Traemos la unidad junto con los datos de su maquinaria base
-        queryset = Unidad.objects.select_related('maquinaria__categoria').filter(
+        queryset = Unidad.objects.select_related(
+            'maquinaria__categoria',
+        ).prefetch_related(
+            'maquinaria__imagenes',
+        ).filter(
             activo=True,
             maquinaria__activo=True,
         )

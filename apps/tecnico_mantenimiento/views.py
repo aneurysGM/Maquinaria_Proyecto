@@ -23,6 +23,13 @@ def dashboard(request):
         'unidades_mantenimiento': unidades_activas.filter(
             estado='Mantenimiento',
         ).count(),
+        'unidades_destacadas': unidades_activas.select_related(
+            'maquinaria__categoria',
+        ).prefetch_related(
+            'maquinaria__imagenes',
+        ).order_by(
+            '-maquinaria__fecha_modificacion',
+        )[:6],
     })
 
 

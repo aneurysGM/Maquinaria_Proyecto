@@ -4,6 +4,13 @@
 {% block page_name %}Panel técnico{% endblock %}
 
 {% block content %}
+<style>
+    .technician-thumb {
+        width: 100%;
+        height: 190px;
+        object-fit: cover;
+    }
+</style>
 <div class="container-fluid px-0">
     <section class="p-4 p-lg-5 bg-white border rounded-4 shadow-sm mb-4">
         <p class="text-muted small text-uppercase fw-bold mb-1">Área técnica</p>
@@ -42,5 +49,46 @@
             </article>
         </div>
     </div>
+
+    <section class="mt-5" aria-labelledby="technician-machinery-title">
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <h2 class="h4 fw-bold mb-0" id="technician-machinery-title">Maquinaria reciente</h2>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'inventario:maquinaria_lista' %}">
+                Ver toda la flota
+            </a>
+        </div>
+        <div class="row g-4">
+            {% for unidad in unidades_destacadas %}
+            <div class="col-sm-6 col-xl-4">
+                <article class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                    {% with imagen=unidad.maquinaria.imagenes.all|first %}
+                    {% if imagen %}
+                    <img src="{{ imagen.imagen.url }}" class="technician-thumb"
+                        alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}">
+                    {% else %}
+                    <div class="technician-thumb bg-light d-grid text-secondary"
+                        style="place-items: center;" aria-label="Sin imagen disponible">
+                        <i class="bi bi-truck fs-1" aria-hidden="true"></i>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <h3 class="h5 fw-bold">{{ unidad.maquinaria.nombre }}</h3>
+                            <span class="badge text-bg-light border">{{ unidad.get_estado_display }}</span>
+                        </div>
+                        <p class="small text-secondary mb-0">
+                            {{ unidad.maquinaria.codigo }} · Serie {{ unidad.numero_serie }}
+                        </p>
+                    </div>
+                </article>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="alert alert-light border mb-0">No hay unidades activas para mostrar.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
 </div>
 {% endblock %}
