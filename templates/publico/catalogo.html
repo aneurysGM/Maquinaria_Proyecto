@@ -7,236 +7,389 @@
     <title>Catálogo de Maquinaria · MaquiRent</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700;800&display=swap"
         rel="stylesheet">
     <style>
         :root {
-            --mq-ink: #1f2a33;
-            --mq-steel: #5b6b77;
-            --mq-concrete: #eef0f1;
-            --mq-line: #d9dee2;
-            --mq-amber: #f2b705;
-            --mq-amber-dark: #c99700;
-            --mq-radius: 12px;
+            --mr-yellow: #ffc107;
+            --mr-yellow-dark: #e0a800;
+            --mr-black: #111111;
+            --mr-ink: #1d1d1f;
+            --mr-muted: #6b7280;
+            --mr-bg: #f6f6f4;
+            --mr-line: #e7e7e3;
+            --mr-radius: 1.25rem;
         }
+
+        * { -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Barlow', sans-serif;
-            background: var(--mq-concrete);
-            color: var(--mq-ink);
+            font-family: 'Barlow', system-ui, sans-serif;
+            background: var(--mr-bg);
+            color: var(--mr-ink);
         }
 
-        h1,
-        h2,
-        h3,
-        .mq-brand-name {
+        h1, h2, h3, .mr-brand-name {
             font-family: 'Barlow Semi Condensed', sans-serif;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: -.01em;
         }
 
-        .mq-nav {
-            background: #fff;
-            border-bottom: 1px solid var(--mq-line);
+        /* ---------- NAV ---------- */
+        .mr-nav {
+            background: rgba(17, 17, 17, .96);
+            backdrop-filter: blur(8px);
+            border-bottom: 3px solid var(--mr-yellow);
         }
-
-        .mq-brand {
-            display: inline-flex;
-            align-items: center;
-            gap: .6rem;
-            text-decoration: none;
-            color: var(--mq-ink);
+        .mr-brand {
+            display: inline-flex; align-items: center; gap: .65rem;
+            text-decoration: none; color: #fff;
         }
-
-        .mq-brand-mark {
-            width: 38px;
-            height: 38px;
-            display: grid;
-            place-items: center;
-            border-radius: 10px;
-            background: var(--mq-ink);
-            color: var(--mq-amber);
+        .mr-brand-mark {
+            width: 40px; height: 40px;
+            display: grid; place-items: center;
+            border-radius: .8rem;
+            background: var(--mr-yellow);
+            color: var(--mr-black);
+            font-size: 1.25rem;
         }
-
-        .mq-brand-name {
-            font-size: 1.5rem;
+        .mr-brand-name { font-size: 1.55rem; }
+        .mr-brand-name span { color: var(--mr-yellow); }
+        .mr-nav-link {
+            color: #fff; text-decoration: none; font-weight: 600; font-size: .95rem;
+            border: 2px solid rgba(255,255,255,.35);
+            padding: .45rem 1rem; border-radius: 999px;
+            transition: all .15s;
         }
+        .mr-nav-link:hover { background: var(--mr-yellow); border-color: var(--mr-yellow); color: var(--mr-black); }
 
-        /* Estilo Tarjeta de Producto (Tipo Amazon) */
-        .mq-product-card {
-            background: #fff;
-            border: 1px solid var(--mq-line);
-            border-radius: var(--mq-radius);
-            padding: 1.25rem;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            transition: box-shadow .2s ease;
-        }
-
-        .mq-product-card:hover {
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-            border-color: #b9c2c9;
-        }
-
-        .mq-product-img {
-            background: var(--mq-concrete);
-            height: 160px;
-            flex: 0 0 160px;
+        /* ---------- HERO ---------- */
+        .mr-hero {
+            background:
+                repeating-linear-gradient(135deg, rgba(255,193,7,.06) 0 16px, transparent 16px 32px),
+                var(--mr-black);
+            color: #fff;
             position: relative;
             overflow: hidden;
-            border-radius: 8px;
-            display: grid;
-            place-items: center;
-            font-size: 3rem;
-            color: var(--mq-steel);
-            margin-bottom: 1rem;
         }
-
-        .mq-product-img img {
-            position: absolute;
-            inset: 0;
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
+        .mr-hero::after {
+            content: "\F5B8";
+            font-family: "bootstrap-icons";
+            position: absolute; right: 4%; bottom: -3rem;
+            font-size: 16rem;
+            color: var(--mr-yellow);
+            opacity: .1;
+            pointer-events: none;
         }
+        .mr-eyebrow {
+            color: var(--mr-yellow);
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            font-size: .75rem; font-weight: 700;
+        }
+        .mr-hero h1 { font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.05; }
+        .mr-hero h1 em { font-style: normal; color: var(--mr-yellow); }
 
-        .filter-sidebar {
+        .mr-search {
             background: #fff;
-            border: 1px solid var(--mq-line);
-            border-radius: var(--mq-radius);
-            padding: 1.5rem;
+            border-radius: 999px;
+            padding: .4rem;
+            display: flex; align-items: center; gap: .5rem;
+            box-shadow: 0 1rem 2rem rgba(0,0,0,.35);
+            max-width: 640px;
+        }
+        .mr-search i.bi-search { margin-left: 1rem; color: var(--mr-muted); }
+        .mr-search input {
+            border: 0; outline: 0; flex: 1; min-width: 0;
+            padding: .6rem .25rem; font-size: 1rem; background: transparent;
+        }
+        .mr-search button {
+            background: var(--mr-yellow); color: var(--mr-black);
+            border: 0; border-radius: 999px;
+            font-weight: 700; padding: .65rem 1.5rem;
+            transition: background .15s;
+        }
+        .mr-search button:hover { background: var(--mr-yellow-dark); }
+
+        /* ---------- TOOLBAR ---------- */
+        .mr-toolbar {
+            background: #fff;
+            border-bottom: 1px solid var(--mr-line);
+            position: sticky; top: 0; z-index: 10;
+        }
+        .mr-chips {
+            display: flex; gap: .5rem;
+            overflow-x: auto; scrollbar-width: none;
+            padding: .85rem 0;
+        }
+        .mr-chips::-webkit-scrollbar { display: none; }
+        .mr-chip {
+            white-space: nowrap;
+            padding: .45rem 1.1rem;
+            border-radius: 999px;
+            border: 2px solid var(--mr-line);
+            color: var(--mr-ink);
+            text-decoration: none;
+            font-weight: 600; font-size: .9rem;
+            transition: all .15s;
+        }
+        .mr-chip:hover { border-color: var(--mr-black); }
+        .mr-chip.active { background: var(--mr-black); border-color: var(--mr-black); color: var(--mr-yellow); }
+
+        .mr-sort {
+            border: 2px solid var(--mr-line);
+            border-radius: 999px;
+            font-weight: 600; font-size: .9rem;
+            padding: .45rem 2.2rem .45rem 1rem;
+            min-width: 210px;
+        }
+        .mr-sort:focus { border-color: var(--mr-yellow); box-shadow: 0 0 0 .25rem rgba(255,193,7,.3); }
+
+        /* ---------- RESULTADOS ---------- */
+        .mr-count {
+            background: var(--mr-black); color: var(--mr-yellow);
+            font-weight: 700; font-size: .85rem;
+            padding: .3rem .8rem; border-radius: 999px;
+        }
+        .mr-clear { color: var(--mr-ink); font-weight: 600; font-size: .9rem; text-decoration-color: var(--mr-yellow); text-decoration-thickness: 2px; }
+        .mr-clear:hover { background: var(--mr-yellow); }
+
+        /* ---------- TARJETA ---------- */
+        .mr-card {
+            background: #fff;
+            border: 1px solid var(--mr-line);
+            border-radius: var(--mr-radius);
+            overflow: hidden;
+            height: 100%;
+            display: flex; flex-direction: column;
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+        .mr-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1.25rem 2.25rem rgba(0,0,0,.12);
+            border-color: var(--mr-yellow);
+        }
+        .mr-media {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            background: linear-gradient(135deg, #f0efe9, #e6e5de);
+            display: grid; place-items: center;
+            color: #a3a39a; font-size: 3.5rem;
+            overflow: hidden;
+        }
+        .mr-media img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform .4s ease;
+        }
+        .mr-card:hover .mr-media img { transform: scale(1.06); }
+        .mr-tag {
+            position: absolute; top: .85rem; left: .85rem; z-index: 1;
+            background: var(--mr-black); color: var(--mr-yellow);
+            font-size: .72rem; font-weight: 700;
+            letter-spacing: .04em; text-transform: uppercase;
+            padding: .35rem .75rem; border-radius: 999px;
+        }
+        .mr-body { padding: 1.25rem; display: flex; flex-direction: column; flex: 1; }
+        .mr-body h3 { font-size: 1.3rem; margin-bottom: .25rem; }
+        .mr-meta { color: var(--mr-muted); font-size: .9rem; }
+        .mr-specs {
+            display: flex; flex-wrap: wrap; gap: .4rem;
+            margin: .85rem 0 1rem;
+        }
+        .mr-spec {
+            background: var(--mr-bg);
+            border-radius: .6rem;
+            font-size: .78rem; font-weight: 600;
+            padding: .3rem .6rem;
+            color: #4b5563;
+        }
+        .mr-spec i { color: var(--mr-yellow-dark); margin-right: .25rem; }
+        .mr-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--mr-line);
+            display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+        }
+        .mr-price small { display: block; color: var(--mr-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+        .mr-price strong { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.6rem; line-height: 1; font-weight: 800; }
+        .mr-price strong span { font-size: .9rem; color: var(--mr-muted); font-weight: 600; }
+        .mr-btn {
+            background: var(--mr-yellow); color: var(--mr-black);
+            font-weight: 700; border: 2px solid var(--mr-yellow);
+            border-radius: .8rem; padding: .5rem 1rem;
+            text-decoration: none; white-space: nowrap;
+            transition: all .15s;
+        }
+        .mr-btn:hover { background: var(--mr-black); border-color: var(--mr-black); color: var(--mr-yellow); }
+
+        /* ---------- VACÍO ---------- */
+        .mr-empty {
+            background: #fff;
+            border: 2px dashed var(--mr-line);
+            border-radius: var(--mr-radius);
+            padding: 4rem 1.5rem;
+            text-align: center;
+        }
+        .mr-empty-icon {
+            width: 5rem; height: 5rem;
+            display: grid; place-items: center;
+            background: var(--mr-black); color: var(--mr-yellow);
+            border-radius: 1.25rem; font-size: 2.25rem;
+            margin: 0 auto 1.25rem;
         }
 
-        .btn-search {
-            background: var(--mq-amber);
-            border: none;
-            font-weight: 700;
-            color: var(--mq-ink);
-        }
+        /* ---------- FOOTER ---------- */
+        .mr-site-footer { background: var(--mr-black); color: rgba(255,255,255,.7); border-top: 4px solid var(--mr-yellow); }
+        .mr-site-footer strong { color: #fff; }
+        .mr-site-footer .accent { color: var(--mr-yellow); }
 
-        .btn-search:hover {
-            background: var(--mq-amber-dark);
+        @media (max-width: 575.98px) {
+            .mr-sort { width: 100%; }
+            .mr-hero::after { font-size: 10rem; }
+            .mr-search button span { display: none; }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Navegación superior -->
-    <nav class="navbar navbar-expand-lg mq-nav py-2 sticky-top">
-        <div class="container-fluid px-4">
-            <a class="mq-brand" href="{% url 'index' %}">
-                <span class="mq-brand-mark"><i class="bi bi-truck-flatbed"></i></span>
-                <span class="mq-brand-name">MaquiRent</span>
+    <!-- NAV -->
+    <nav class="mr-nav sticky-top py-2" style="z-index: 20;">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="mr-brand" href="{% url 'index' %}">
+                <span class="mr-brand-mark"><i class="bi bi-truck-flatbed" aria-hidden="true"></i></span>
+                <span class="mr-brand-name">Maqui<span>Rent</span></span>
             </a>
-
-            <!-- Barra de Búsqueda Superior (Estilo Amazon) -->
-            <form method="GET" action="{% url 'catalogo' %}" class="d-flex mx-auto col-12 col-md-6 my-2 my-lg-0">
-                <div class="input-group">
-                    <input type="text" name="q" class="form-control"
-                        placeholder="Buscar excavadoras, tractores, grúas..." value="{{ request.GET.q }}">
-                    <button class="btn btn-search" type="submit"><i class="bi bi-search"></i></button>
-                </div>
-            </form>
-
-            <div class="d-flex gap-2">
-                <a href="{% url 'index' %}" class="btn btn-outline-secondary btn-sm">Volver al inicio</a>
-            </div>
+            <a href="{% url 'index' %}" class="mr-nav-link">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver al inicio
+            </a>
         </div>
     </nav>
 
-    <div class="container-fluid px-4 py-4">
-        <div class="row g-4">
-            <!-- Columna Izquierda: Filtros -->
-            <div class="col-lg-3">
-                <div class="filter-sidebar">
-                    <h4 class="fs-5 mb-3">Filtrar resultados</h4>
+    <!-- HERO + BÚSQUEDA -->
+    <header class="mr-hero py-5">
+        <div class="container position-relative" style="z-index: 1;">
+            <p class="mr-eyebrow mb-2">Catálogo de maquinaria</p>
+            <h1 class="mb-3">Encuentra el equipo <em>ideal</em><br class="d-none d-md-block"> para tu obra</h1>
+            <p class="mb-4" style="color: rgba(255,255,255,.75); max-width: 560px;">
+                Excavadoras, tractores, grúas y más. Compara tarifas diarias y reserva en minutos.
+            </p>
+            <form method="GET" action="{% url 'catalogo' %}" class="mr-search" role="search">
+                {% if request.GET.categoria %}<input type="hidden" name="categoria" value="{{ request.GET.categoria }}">{% endif %}
+                {% if request.GET.orden %}<input type="hidden" name="orden" value="{{ request.GET.orden }}">{% endif %}
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="q" value="{{ request.GET.q }}"
+                    placeholder="Buscar excavadoras, tractores, grúas..." aria-label="Buscar maquinaria">
+                <button type="submit"><i class="bi bi-search d-sm-none" aria-hidden="true"></i><span>Buscar</span></button>
+            </form>
+        </div>
+    </header>
+
+    <!-- TOOLBAR: CATEGORÍAS + ORDEN -->
+    <div class="mr-toolbar">
+        <div class="container">
+            <div class="row align-items-center g-2">
+                <div class="col-lg">
+                    <nav class="mr-chips" aria-label="Categorías">
+                        <a class="mr-chip {% if not request.GET.categoria %}active{% endif %}"
+                            href="?q={{ request.GET.q|urlencode }}&orden={{ request.GET.orden|urlencode }}">Todas</a>
+                        {% for categoria in categorias %}
+                        <a class="mr-chip {% if request.GET.categoria == categoria.pk|stringformat:'s' %}active{% endif %}"
+                            href="?categoria={{ categoria.pk }}&q={{ request.GET.q|urlencode }}&orden={{ request.GET.orden|urlencode }}">
+                            {{ categoria.nombre }}
+                        </a>
+                        {% endfor %}
+                    </nav>
+                </div>
+                <div class="col-lg-auto pb-2 pb-lg-0">
                     <form method="GET" action="{% url 'catalogo' %}">
-                        <!-- Mantener la búsqueda si ya existe -->
-                        {% if request.GET.q %}
-                        <input type="hidden" name="q" value="{{ request.GET.q }}">
-                        {% endif %}
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Categoría</label>
-                            <select name="categoria" class="form-select" onchange="this.form.submit()">
-                                <option value="">Todas las categorías</option>
-                                {% for categoria in categorias %}
-                                <option value="{{ categoria.pk }}"
-                                    {% if request.GET.categoria == categoria.pk|stringformat:"s" %}selected{% endif %}>
-                                    {{ categoria.nombre }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Ordenar por</label>
-                            <select name="orden" class="form-select" onchange="this.form.submit()">
-                                <option value="recientes" {% if request.GET.orden == "recientes" or not request.GET.orden %}selected{% endif %}>Más recientes</option>
-                                <option value="precio_bajo" {% if request.GET.orden == "precio_bajo" %}selected{% endif %}>Precio: menor a mayor</option>
-                                <option value="precio_alto" {% if request.GET.orden == "precio_alto" %}selected{% endif %}>Precio: mayor a menor</option>
-                            </select>
-                        </div>
-                        {% if request.GET.q %}
-                        <input type="hidden" name="q" value="{{ request.GET.q }}">
-                        {% endif %}
+                        {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+                        {% if request.GET.categoria %}<input type="hidden" name="categoria" value="{{ request.GET.categoria }}">{% endif %}
+                        <label for="orden" class="visually-hidden">Ordenar por</label>
+                        <select id="orden" name="orden" class="form-select mr-sort" onchange="this.form.submit()">
+                            <option value="recientes" {% if request.GET.orden == "recientes" or not request.GET.orden %}selected{% endif %}>Más recientes</option>
+                            <option value="precio_bajo" {% if request.GET.orden == "precio_bajo" %}selected{% endif %}>Precio: menor a mayor</option>
+                            <option value="precio_alto" {% if request.GET.orden == "precio_alto" %}selected{% endif %}>Precio: mayor a menor</option>
+                        </select>
                     </form>
-                </div>
-            </div>
-
-            <!-- Columna Derecha: Listado de Maquinarias -->
-            <div class="col-lg-9">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="fs-4 m-0">Resultados de maquinaria</h2>
-                    <span class="text-muted">{{ maquinarias.count|default:"0" }} equipos encontrados</span>
-                </div>
-
-                <div class="row g-4">
-                    {% for maquina in maquinarias %}
-                    <div class="col-md-6 col-xl-4">
-                        <div class="mq-product-card">
-                            <div class="mq-product-img">
-                                {% with imagen=maquina.maquinaria.imagenes.all|first %}
-                                {% if imagen %}
-                                <img src="{{ imagen.imagen.url }}"
-                                    alt="{{ imagen.texto_alternativo|default:maquina.maquinaria.nombre }}">
-                                {% else %}
-                                <i class="bi bi-truck-flatbed"></i>
-                                {% endif %}
-                                {% endwith %}
-                            </div>
-                            <h3 class="fs-5 mb-1">{{ maquina.nombre }}</h3>
-                            <p class="text-muted small mb-2">{{ maquina.maquinaria.categoria.nombre|title }}</p>
-                            <p class="text-secondary small mb-3 flex-grow-1">
-                                {{ maquina.maquinaria.marca|default:"Marca no especificada" }}
-                                {% if maquina.maquinaria.modelo %}· {{ maquina.maquinaria.modelo }}{% endif %}
-                                <br>Serie: {{ maquina.numero_serie }}
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
-                                <span class="fw-bold text-dark">${{ maquina.maquinaria.tarifa_diaria }} / día</span>
-                                <a href="{% url 'inventario:maquinaria_detalle' maquina.id %}" class="btn btn-sm btn-dark">Ver detalle</a>
-                            </div>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="col-12 text-center py-5">
-                        <div class="p-5 bg-white border rounded">
-                            <i class="bi bi-search display-4 text-muted mb-3 d-block"></i>
-                            <h3>No se encontraron maquinarias</h3>
-                            <p class="text-muted">Intenta buscar con otros términos o cambia los filtros seleccionados.
-                            </p>
-                            <a href="{% url 'catalogo' %}" class="btn btn-warning mt-2">Ver todo el catálogo</a>
-                        </div>
-                    </div>
-                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- RESULTADOS -->
+    <main class="container py-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <h2 class="fs-3 m-0">Resultados</h2>
+                <span class="mr-count">{{ maquinarias|length }} equipos</span>
+            </div>
+            {% if request.GET.q or request.GET.categoria %}
+            <a href="{% url 'catalogo' %}" class="mr-clear"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Limpiar filtros</a>
+            {% endif %}
+        </div>
+
+        <div class="row g-4">
+            {% for maquina in maquinarias %}
+            <div class="col-sm-6 col-lg-4 col-xxl-3">
+                <article class="mr-card">
+                    <div class="mr-media">
+                        <span class="mr-tag">{{ maquina.maquinaria.categoria.nombre|title }}</span>
+                        {% with imagen=maquina.maquinaria.imagenes.all|first %}
+                        {% if imagen %}
+                        <img src="{{ imagen.imagen.url }}" loading="lazy"
+                            alt="{{ imagen.texto_alternativo|default:maquina.maquinaria.nombre }}">
+                        {% else %}
+                        <i class="bi bi-truck-flatbed" aria-hidden="true"></i>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="mr-body">
+                        <h3>{{ maquina.nombre|default:maquina.maquinaria.nombre }}</h3>
+                        <p class="mr-meta mb-0">{{ maquina.maquinaria.marca|default:"Marca no especificada" }}</p>
+                        <div class="mr-specs">
+                            {% if maquina.maquinaria.modelo %}
+                            <span class="mr-spec"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i>{{ maquina.maquinaria.modelo }}</span>
+                            {% endif %}
+                            <span class="mr-spec"><i class="bi bi-upc-scan" aria-hidden="true"></i>Serie {{ maquina.numero_serie }}</span>
+                        </div>
+                        <div class="mr-footer">
+                            <div class="mr-price">
+                                <small>Desde</small>
+                                <strong>${{ maquina.maquinaria.tarifa_diaria|floatformat:2 }} <span>/ día</span></strong>
+                            </div>
+                            <a href="{% url 'inventario:maquinaria_detalle' maquina.id %}" class="mr-btn">
+                                Ver detalle <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="mr-empty">
+                    <div class="mr-empty-icon"><i class="bi bi-search" aria-hidden="true"></i></div>
+                    <h3 class="fs-3">No se encontraron maquinarias</h3>
+                    <p class="text-muted mb-4">Intenta buscar con otros términos o cambia los filtros seleccionados.</p>
+                    <a href="{% url 'catalogo' %}" class="mr-btn d-inline-block px-4 py-2">Ver todo el catálogo</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mr-site-footer py-4 mt-4">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+            <span><strong>Maqui<span class="accent">Rent</span></strong> · Alquiler de maquinaria pesada</span>
+            <span>© {% now "Y" %} MaquiRent. Todos los derechos reservados.</span>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

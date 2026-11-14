@@ -4,80 +4,233 @@
 {% block page_name %}Historial del cliente{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0">
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-        <div>
-            <a href="{% url 'clientes:cliente_lista' %}" class="link-secondary text-decoration-none small">
-                <i class="bi bi-arrow-left me-1"></i>Volver a clientes
-            </a>
-            <h1 class="h2 mt-2 mb-1">{{ cliente.get_full_name|default:cliente.email }}</h1>
-            <p class="text-muted mb-0">Historial de solicitudes de alquiler</p>
-        </div>
-        {% if cliente.is_active %}
-        <span class="badge rounded-pill text-bg-success fs-6">Cuenta activa</span>
-        {% else %}
-        <span class="badge rounded-pill text-bg-secondary fs-6">Cuenta inactiva</span>
-        {% endif %}
-    </div>
+<style>
+    .mr-history {
+        --mr-yellow: #ffc107;
+        --mr-yellow-dark: #e0a800;
+        --mr-black: #111111;
+    }
 
+    /* CABECERA DEL CLIENTE */
+    .mr-profile {
+        background:
+            repeating-linear-gradient(135deg, rgba(255,193,7,.07) 0 14px, transparent 14px 28px),
+            var(--mr-black);
+        color: #fff;
+        border-radius: 1.5rem;
+        border-bottom: 6px solid var(--mr-yellow);
+    }
+    .mr-profile .mr-back { color: rgba(255,255,255,.7); text-decoration: none; font-size: .85rem; }
+    .mr-profile .mr-back:hover { color: var(--mr-yellow); }
+    .mr-eyebrow {
+        color: var(--mr-yellow);
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+    .mr-avatar {
+        width: 4.5rem; height: 4.5rem;
+        border-radius: 1.1rem;
+        background: var(--mr-yellow);
+        color: var(--mr-black);
+        display: grid; place-items: center;
+        font-size: 2rem; font-weight: 800;
+        flex-shrink: 0;
+    }
+    .mr-status {
+        font-weight: 700;
+        font-size: .85rem;
+        padding: .5rem 1rem;
+        border-radius: 999px;
+    }
+    .mr-status-on  { background: var(--mr-yellow); color: var(--mr-black); }
+    .mr-status-off { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,.5); }
+
+    /* ALERTAS */
+    .mr-alert {
+        border: 0;
+        border-left: 6px solid;
+        border-radius: 1rem;
+    }
+    .mr-alert-danger  { background: #fdecea; border-color: #dc3545; color: #58151c; }
+    .mr-alert-warning { background: #fff8e1; border-color: var(--mr-yellow); color: #4d3a00; }
+
+    /* TARJETAS DE DATOS */
+    .mr-info {
+        border: 0;
+        border-radius: 1.25rem;
+        border-top: 4px solid var(--mr-yellow);
+    }
+    .mr-info .mr-icon {
+        width: 2.5rem; height: 2.5rem;
+        display: grid; place-items: center;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        border-radius: .75rem;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .mr-info .mr-label {
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    /* TÍTULO DE SECCIÓN */
+    .mr-section-title {
+        font-weight: 800;
+        display: flex; align-items: center; gap: .6rem;
+    }
+    .mr-section-title::before {
+        content: "";
+        width: .5rem; height: 1.6rem;
+        background: var(--mr-yellow);
+        border-radius: 2px;
+    }
+    .mr-count {
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        font-size: .8rem;
+        font-weight: 700;
+        padding: .25rem .7rem;
+        border-radius: 999px;
+    }
+
+    /* TABLA */
+    .mr-table-card { border: 0; border-radius: 1.25rem; overflow: hidden; }
+    .mr-table thead th {
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        font-size: .75rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        border-bottom: 3px solid var(--mr-yellow);
+        padding-top: .9rem;
+        padding-bottom: .9rem;
+        white-space: nowrap;
+    }
+    .mr-table tbody tr:hover { background: #fffbe8; }
+    .mr-table a { color: var(--mr-black); font-weight: 600; text-decoration-color: var(--mr-yellow); text-decoration-thickness: 2px; }
+    .mr-table a:hover { background: var(--mr-yellow); }
+
+    /* BADGES */
+    .mr-badge { font-weight: 700; font-size: .72rem; padding: .35rem .65rem; border-radius: 999px; display: inline-block; }
+    .mr-badge-ok      { background: var(--mr-black); color: var(--mr-yellow); }
+    .mr-badge-pending { background: var(--mr-yellow); color: var(--mr-black); }
+    .mr-badge-bad     { background: #dc3545; color: #fff; }
+    .mr-badge-late    { background: #fff3cd; color: #664d03; border: 1px solid var(--mr-yellow); }
+
+    .mr-empty-icon {
+        width: 4rem; height: 4rem;
+        display: grid; place-items: center;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        border-radius: 1rem;
+        font-size: 1.8rem;
+        margin: 0 auto 1rem;
+    }
+</style>
+
+<div class="container-fluid px-0 mr-history">
+
+    <!-- CABECERA -->
+    <section class="mr-profile p-4 p-lg-5 mb-4">
+        <a href="{% url 'clientes:cliente_lista' %}" class="mr-back">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a clientes
+        </a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="mr-avatar" aria-hidden="true">{{ cliente.get_full_name|default:cliente.email|slice:":1"|upper }}</div>
+                <div>
+                    <p class="mr-eyebrow mb-1">Historial de solicitudes de alquiler</p>
+                    <h1 class="h2 fw-bold mb-0">{{ cliente.get_full_name|default:cliente.email }}</h1>
+                </div>
+            </div>
+            {% if cliente.is_active %}
+            <span class="mr-status mr-status-on"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Cuenta activa</span>
+            {% else %}
+            <span class="mr-status mr-status-off"><i class="bi bi-slash-circle me-1" aria-hidden="true"></i>Cuenta inactiva</span>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ALERTAS -->
     {% if not cliente.is_active and cliente.suspension_hasta %}
-    <div class="alert alert-danger" role="alert">
-        <i class="bi bi-person-lock me-1"></i>
+    <div class="alert mr-alert mr-alert-danger" role="alert">
+        <i class="bi bi-person-lock me-1" aria-hidden="true"></i>
         Cuenta suspendida por devoluciones tardías hasta el {{ cliente.suspension_hasta|date:"d/m/Y" }}.
     </div>
     {% endif %}
     {% if devoluciones_tardias or alquileres_vencidos %}
-    <div class="alert alert-warning" role="alert">
-        <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Warning en la cuenta.</strong>
+    <div class="alert mr-alert mr-alert-warning" role="alert">
+        <strong><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Warning en la cuenta.</strong>
         {{ devoluciones_tardias }} devolución(es) tardía(s) registrada(s) y
         {{ alquileres_vencidos }} alquiler(es) actualmente vencido(s).
         {{ infracciones_graves }} devolución(es) superaron los 3 días; la segunda infracción grave suspende la cuenta por 6 meses.
     </div>
     {% endif %}
 
-    <div class="row g-4 mb-4">
+    <!-- DATOS DEL CLIENTE -->
+    <div class="row g-4 mb-5">
         <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <span class="small text-muted">Correo electrónico</span>
-                    <div class="fw-semibold text-break mt-1">{{ cliente.email }}</div>
+            <div class="card mr-info shadow-sm h-100">
+                <div class="card-body d-flex gap-3 align-items-start">
+                    <div class="mr-icon"><i class="bi bi-envelope" aria-hidden="true"></i></div>
+                    <div class="min-w-0">
+                        <span class="mr-label">Correo electrónico</span>
+                        <div class="fw-semibold text-break mt-1">{{ cliente.email }}</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <span class="small text-muted">Teléfono</span>
-                    <div class="fw-semibold mt-1">{{ cliente.telefono|default:"No registrado" }}</div>
+            <div class="card mr-info shadow-sm h-100">
+                <div class="card-body d-flex gap-3 align-items-start">
+                    <div class="mr-icon"><i class="bi bi-telephone" aria-hidden="true"></i></div>
+                    <div>
+                        <span class="mr-label">Teléfono</span>
+                        <div class="fw-semibold mt-1">{{ cliente.telefono|default:"No registrado" }}</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <span class="small text-muted">Registrado desde</span>
-                    <div class="fw-semibold mt-1">{{ cliente.date_joined|date:"d/m/Y" }}</div>
+            <div class="card mr-info shadow-sm h-100">
+                <div class="card-body d-flex gap-3 align-items-start">
+                    <div class="mr-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
+                    <div>
+                        <span class="mr-label">Registrado desde</span>
+                        <div class="fw-semibold mt-1">{{ cliente.date_joined|date:"d/m/Y" }}</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <span class="small text-muted">Solicitudes registradas</span>
-                    <div class="fw-semibold mt-1">{{ solicitudes|length }}</div>
+            <div class="card mr-info shadow-sm h-100">
+                <div class="card-body d-flex gap-3 align-items-start">
+                    <div class="mr-icon"><i class="bi bi-receipt" aria-hidden="true"></i></div>
+                    <div>
+                        <span class="mr-label">Solicitudes registradas</span>
+                        <div class="fw-bold fs-4 mt-1 lh-1">{{ solicitudes|length }}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- TABLA DE SOLICITUDES -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 mb-0">Solicitudes de maquinaria</h2>
+        <h2 class="h4 mr-section-title mb-0">Solicitudes de maquinaria</h2>
+        <span class="mr-count">{{ solicitudes|length }}</span>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="card mr-table-card shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="table mr-table align-middle mb-0">
+                <thead>
                     <tr>
                         <th scope="col" class="ps-3">Maquinaria</th>
                         <th scope="col">Plan y fecha programada</th>
@@ -103,11 +256,11 @@
                         </td>
                         <td>
                             {% if solicitud.estado == "Aprobada" %}
-                            <span class="badge text-bg-success">Aprobada</span>
+                            <span class="mr-badge mr-badge-ok">Aprobada</span>
                             {% elif solicitud.estado == "Rechazada" %}
-                            <span class="badge text-bg-danger">Rechazada</span>
+                            <span class="mr-badge mr-badge-bad">Rechazada</span>
                             {% else %}
-                            <span class="badge text-bg-warning">Pendiente</span>
+                            <span class="mr-badge mr-badge-pending">Pendiente</span>
                             {% endif %}
                             {% if solicitud.fecha_revision %}
                             <span class="d-block small text-muted mt-1">Revisada {{ solicitud.fecha_revision|date:"d/m/Y H:i" }}</span>
@@ -125,27 +278,27 @@
                             {% if solicitud.fecha_retorno %}
                             <span class="d-block small">Devuelta: {{ solicitud.fecha_retorno|date:"d/m/Y H:i" }}</span>
                             {% if solicitud.dias_atraso > 0 %}
-                            <span class="badge text-bg-warning mt-1">{{ solicitud.dias_atraso }} día(s) tarde</span>
+                            <span class="mr-badge mr-badge-late mt-1">{{ solicitud.dias_atraso }} día(s) tarde</span>
                             {% else %}
-                            <span class="badge text-bg-success mt-1">A tiempo</span>
+                            <span class="mr-badge mr-badge-ok mt-1">A tiempo</span>
                             {% endif %}
                             {% elif solicitud.fecha_salida %}
                             <span class="d-block small text-muted">Retorno pendiente</span>
                             {% if solicitud.dias_atraso_actual > 0 %}
-                            <span class="badge text-bg-warning mt-1">Warning · {{ solicitud.dias_atraso_actual }} día(s) tarde</span>
+                            <span class="mr-badge mr-badge-late mt-1">Warning · {{ solicitud.dias_atraso_actual }} día(s) tarde</span>
                             {% endif %}
                             {% endif %}
                         </td>
                         <td>
                             {% if solicitud.presupuesto %}
-                            <span class="d-block small">Total: ${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}</span>
-                            <span class="d-block small">Saldo: ${{ solicitud.presupuesto.saldo_pendiente_actual|floatformat:2 }}</span>
+                            <span class="d-block small">Total: <strong>${{ solicitud.presupuesto.importe_total_actual|floatformat:2 }}</strong></span>
+                            <span class="d-block small">Saldo: <strong>${{ solicitud.presupuesto.saldo_pendiente_actual|floatformat:2 }}</strong></span>
                             {% if solicitud.dias_atraso_actual and not solicitud.fecha_retorno %}
                             <span class="d-block small text-warning-emphasis">Mora estimada: ${{ solicitud.mora_estimada|floatformat:2 }}</span>
                             {% elif solicitud.fecha_retorno and solicitud.dias_atraso %}
                             <span class="d-block small">Mora: ${{ solicitud.presupuesto.mora_total|floatformat:2 }}</span>
                             {% endif %}
-                            <a class="d-block small mt-1" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto</a>
+                            <a class="d-inline-block small mt-1" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                             {% else %}
                             <span class="small text-muted">Sin presupuesto histórico</span>
                             {% endif %}
@@ -154,7 +307,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="5" class="text-center py-5">
-                            <i class="bi bi-clock-history display-6 text-muted d-block mb-2"></i>
+                            <div class="mr-empty-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
                             <span class="fw-semibold">Este cliente todavía no tiene solicitudes de alquiler.</span>
                         </td>
                     </tr>

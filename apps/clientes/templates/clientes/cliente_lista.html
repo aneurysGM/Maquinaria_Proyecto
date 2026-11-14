@@ -4,17 +4,138 @@
 {% block page_name %}Clientes{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0">
-    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
-        <div>
-            <p class="text-uppercase text-muted small fw-semibold mb-1">Gestión de negocio</p>
-            <h1 class="h2 mb-1">Clientes registrados</h1>
-            <p class="text-muted mb-0">Consulta el estado de las cuentas y el historial de solicitudes de alquiler.</p>
-        </div>
-        <span class="badge text-bg-dark fs-6">{{ page_obj.paginator.count }} clientes</span>
-    </div>
+<style>
+    .mr-list {
+        --mr-yellow: #ffc107;
+        --mr-yellow-dark: #e0a800;
+        --mr-black: #111111;
+    }
 
-    <form method="get" class="card border-0 shadow-sm mb-4">
+    /* CABECERA */
+    .mr-header {
+        background:
+            repeating-linear-gradient(135deg, rgba(255,193,7,.07) 0 14px, transparent 14px 28px),
+            var(--mr-black);
+        color: #fff;
+        border-radius: 1.5rem;
+        border-bottom: 6px solid var(--mr-yellow);
+    }
+    .mr-eyebrow {
+        color: var(--mr-yellow);
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+    .mr-total {
+        background: var(--mr-yellow);
+        color: var(--mr-black);
+        border-radius: 1rem;
+        padding: .6rem 1.2rem;
+        text-align: center;
+        line-height: 1.1;
+    }
+    .mr-total strong { display: block; font-size: 1.75rem; font-weight: 800; }
+    .mr-total span { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* FILTROS */
+    .mr-filter { border: 0; border-radius: 1.25rem; border-left: 6px solid var(--mr-yellow); }
+    .mr-list .form-control:focus,
+    .mr-list .form-select:focus {
+        border-color: var(--mr-yellow);
+        box-shadow: 0 0 0 .25rem rgba(255,193,7,.3);
+    }
+    .mr-btn-yellow {
+        background: var(--mr-yellow);
+        color: var(--mr-black);
+        border: 2px solid var(--mr-yellow);
+        font-weight: 700;
+    }
+    .mr-btn-yellow:hover { background: var(--mr-yellow-dark); border-color: var(--mr-yellow-dark); color: var(--mr-black); }
+    .mr-btn-dark-outline {
+        border: 2px solid var(--mr-black);
+        color: var(--mr-black);
+        font-weight: 600;
+    }
+    .mr-btn-dark-outline:hover { background: var(--mr-black); color: var(--mr-yellow); }
+
+    /* TABLA */
+    .mr-table-card { border: 0; border-radius: 1.25rem; overflow: hidden; }
+    .mr-table thead th {
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        font-size: .75rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        border-bottom: 3px solid var(--mr-yellow);
+        padding-top: .9rem;
+        padding-bottom: .9rem;
+        white-space: nowrap;
+    }
+    .mr-table tbody tr:hover { background: #fffbe8; }
+
+    /* AVATAR */
+    .mr-avatar {
+        width: 2.75rem; height: 2.75rem;
+        border-radius: .8rem;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        display: grid; place-items: center;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    /* BADGES */
+    .mr-badge { font-weight: 700; font-size: .72rem; padding: .35rem .7rem; border-radius: 999px; display: inline-block; }
+    .mr-badge-on   { background: var(--mr-black); color: var(--mr-yellow); }
+    .mr-badge-off  { background: #e9ecef; color: #495057; }
+    .mr-badge-warn { background: #fff3cd; color: #664d03; border: 1px solid var(--mr-yellow); }
+
+    .mr-empty-icon {
+        width: 4rem; height: 4rem;
+        display: grid; place-items: center;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        border-radius: 1rem;
+        font-size: 1.8rem;
+        margin: 0 auto 1rem;
+    }
+
+    /* PAGINACIÓN */
+    .mr-list .pagination .page-link {
+        color: var(--mr-black);
+        border: 2px solid var(--mr-black);
+        font-weight: 600;
+        margin: 0 .2rem;
+        border-radius: .6rem;
+    }
+    .mr-list .pagination .page-link:hover { background: var(--mr-yellow); border-color: var(--mr-yellow); color: var(--mr-black); }
+    .mr-list .pagination .page-item.disabled .page-link {
+        background: var(--mr-black);
+        border-color: var(--mr-black);
+        color: var(--mr-yellow);
+    }
+</style>
+
+<div class="container-fluid px-0 mr-list">
+
+    <!-- CABECERA -->
+    <section class="mr-header p-4 p-lg-5 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <p class="mr-eyebrow mb-1">Gestión de negocio</p>
+                <h1 class="h2 fw-bold mb-1">Clientes registrados</h1>
+                <p class="mb-0" style="color:rgba(255,255,255,.75);">Consulta el estado de las cuentas y el historial de solicitudes de alquiler.</p>
+            </div>
+            <div class="mr-total">
+                <strong>{{ page_obj.paginator.count }}</strong>
+                <span>clientes</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FILTROS -->
+    <form method="get" class="card mr-filter shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-7">
@@ -31,18 +152,19 @@
                     </select>
                 </div>
                 <div class="col-md-2 d-grid">
-                    <button class="btn btn-warning fw-semibold" type="submit">
-                        <i class="bi bi-search me-1"></i>Filtrar
+                    <button class="btn mr-btn-yellow" type="submit">
+                        <i class="bi bi-search me-1" aria-hidden="true"></i>Filtrar
                     </button>
                 </div>
             </div>
         </div>
     </form>
 
-    <div class="card border-0 shadow-sm">
+    <!-- TABLA -->
+    <div class="card mr-table-card shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="table mr-table align-middle mb-0">
+                <thead>
                     <tr>
                         <th scope="col" class="ps-3">Cliente</th>
                         <th scope="col">Teléfono</th>
@@ -54,35 +176,40 @@
                     {% for cliente in clientes %}
                     <tr>
                         <td class="ps-3">
-                            <span class="d-block fw-semibold">{{ cliente.get_full_name|default:cliente.email }}</span>
-                            {% if cliente.get_full_name %}
-                            <span class="small text-muted">{{ cliente.email }}</span>
-                            {% endif %}
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="mr-avatar" aria-hidden="true">{{ cliente.get_full_name|default:cliente.email|slice:":1"|upper }}</div>
+                                <div>
+                                    <span class="d-block fw-semibold">{{ cliente.get_full_name|default:cliente.email }}</span>
+                                    {% if cliente.get_full_name %}
+                                    <span class="small text-muted">{{ cliente.email }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </td>
                         <td>{{ cliente.telefono|default:"No registrado" }}</td>
                         <td>
                             {% if cliente.is_active %}
-                            <span class="badge rounded-pill text-bg-success">Activa</span>
+                            <span class="mr-badge mr-badge-on">Activa</span>
                             {% else %}
-                            <span class="badge rounded-pill text-bg-secondary">Inactiva</span>
+                            <span class="mr-badge mr-badge-off">Inactiva</span>
                             {% endif %}
                             {% if cliente.devoluciones_tardias or cliente.alquileres_vencidos %}
-                            <span class="badge rounded-pill text-bg-warning ms-1" title="Tiene devoluciones tardías o alquileres vencidos">
-                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Warning
+                            <span class="mr-badge mr-badge-warn ms-1" title="Tiene devoluciones tardías o alquileres vencidos">
+                                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Warning
                             </span>
                             {% endif %}
                         </td>
                         <td class="text-end pe-3">
-                            <a class="btn btn-sm btn-outline-dark"
+                            <a class="btn btn-sm mr-btn-dark-outline"
                                 href="{% url 'clientes:cliente_detalle' cliente.pk %}">
-                                <i class="bi bi-clock-history me-1"></i>Ver historial
+                                <i class="bi bi-clock-history me-1" aria-hidden="true"></i>Ver historial
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="4" class="text-center py-5">
-                            <i class="bi bi-people display-6 text-muted d-block mb-2"></i>
+                            <div class="mr-empty-icon"><i class="bi bi-people" aria-hidden="true"></i></div>
                             <span class="fw-semibold">No hay clientes que coincidan con la búsqueda.</span>
                         </td>
                     </tr>
@@ -92,6 +219,7 @@
         </div>
     </div>
 
+    <!-- PAGINACIÓN -->
     {% if is_paginated %}
     <nav class="mt-4" aria-label="Paginación de clientes">
         <ul class="pagination justify-content-center">

@@ -2,45 +2,312 @@
 {% block title %}Inicio | MaquiRent{% endblock %}
 {% block page_name %}Inicio{% endblock %}
 {% block content %}
-<div class="container-fluid px-0">
-    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
-        <div><h1 class="h3 fw-bold">Mis alquileres activos</h1><p class="text-secondary mb-0">Consulta el próximo paso de tus solicitudes y reservas.</p></div>
-        <div class="d-flex gap-2 align-items-start">
-            <a class="btn btn-outline-primary" href="{% url 'alquileres:solicitud_lista' %}">Mis alquileres e historial</a>
-            <a class="btn btn-warning" href="{% url 'inventario:maquinaria_lista' %}">Ver maquinarias</a>
-        </div>
-    </div>
-    <div class="row g-3">
-        {% for solicitud in solicitudes %}
-        <div class="col-12"><article class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
-            {% include 'alquileres/solicitud_resumen.html' %}
-        </div></article></div>
-        {% empty %}
-        <div class="col-12"><p class="alert alert-light border">No tienes alquileres activos. Puedes consultar tus solicitudes anteriores en Mis alquileres.</p></div>
-        {% endfor %}
-    </div>
+<style>
+    .mr-client {
+        --mr-yellow: #ffc107;
+        --mr-yellow-dark: #e0a800;
+        --mr-black: #111111;
+        --mr-black-soft: #1d1d1f;
+    }
 
-    <section class="mt-5" aria-labelledby="available-machinery-title">
-        <h2 class="h4 fw-bold mb-3" id="available-machinery-title">Maquinaria disponible</h2>
+    /* HERO */
+    .mr-hero {
+        background:
+            repeating-linear-gradient(135deg, rgba(255,193,7,.07) 0 14px, transparent 14px 28px),
+            var(--mr-black);
+        color: #fff;
+        border-radius: 1.5rem;
+        border-bottom: 6px solid var(--mr-yellow);
+        position: relative;
+        overflow: hidden;
+    }
+    .mr-hero::after {
+        content: "\F5B8"; /* bi-truck */
+        font-family: "bootstrap-icons";
+        position: absolute;
+        right: 2rem;
+        bottom: -1.5rem;
+        font-size: 11rem;
+        color: var(--mr-yellow);
+        opacity: .12;
+        pointer-events: none;
+    }
+    .mr-hero .mr-eyebrow {
+        color: var(--mr-yellow);
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .mr-btn-yellow {
+        background: var(--mr-yellow);
+        color: var(--mr-black);
+        border: 2px solid var(--mr-yellow);
+        font-weight: 700;
+    }
+    .mr-btn-yellow:hover { background: var(--mr-yellow-dark); border-color: var(--mr-yellow-dark); color: var(--mr-black); }
+    .mr-btn-outline-light {
+        border: 2px solid rgba(255,255,255,.6);
+        color: #fff;
+        font-weight: 600;
+    }
+    .mr-btn-outline-light:hover { background: #fff; color: var(--mr-black); }
+    .mr-btn-dark-outline {
+        border: 2px solid var(--mr-black);
+        color: var(--mr-black);
+        font-weight: 600;
+    }
+    .mr-btn-dark-outline:hover { background: var(--mr-black); color: var(--mr-yellow); }
+
+    /* MINI ESTADÍSTICAS */
+    .mr-stat {
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,193,7,.35);
+        border-radius: 1rem;
+    }
+    .mr-stat strong { color: var(--mr-yellow); font-size: 1.75rem; line-height: 1; }
+
+    /* ACCESOS RÁPIDOS */
+    .mr-quick {
+        background: #fff;
+        border: 2px solid #eee;
+        border-radius: 1.25rem;
+        transition: transform .15s, border-color .15s, box-shadow .15s;
+        color: var(--mr-black);
+        text-decoration: none;
+        display: block;
+        height: 100%;
+    }
+    .mr-quick:hover {
+        transform: translateY(-3px);
+        border-color: var(--mr-yellow);
+        box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.08);
+        color: var(--mr-black);
+    }
+    .mr-icon {
+        width: 3.25rem; height: 3.25rem;
+        display: grid; place-items: center;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        border-radius: .9rem;
+        font-size: 1.5rem;
+    }
+
+    /* TÍTULOS DE SECCIÓN */
+    .mr-section-title {
+        font-weight: 800;
+        display: flex; align-items: center; gap: .6rem;
+    }
+    .mr-section-title::before {
+        content: "";
+        width: .5rem; height: 1.6rem;
+        background: var(--mr-yellow);
+        border-radius: 2px;
+    }
+
+    /* PASOS */
+    .mr-steps {
+        background: var(--mr-yellow);
+        border-radius: 1.5rem;
+        color: var(--mr-black);
+    }
+    .mr-step-num {
+        width: 2.5rem; height: 2.5rem;
+        border-radius: 50%;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        display: grid; place-items: center;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    /* ALQUILERES ACTIVOS */
+    .mr-active-card {
+        border: 0;
+        border-left: 6px solid var(--mr-yellow);
+        border-radius: 1rem;
+    }
+
+    /* CATÁLOGO */
+    .mr-machine {
+        border: 0;
+        border-radius: 1.25rem;
+        overflow: hidden;
+        transition: transform .15s, box-shadow .15s;
+    }
+    .mr-machine:hover { transform: translateY(-4px); box-shadow: 0 1rem 2rem rgba(0,0,0,.14) !important; }
+    .mr-machine .mr-media { position: relative; }
+    .mr-badge-available {
+        position: absolute; top: .9rem; left: .9rem;
+        background: var(--mr-black);
+        color: var(--mr-yellow);
+        font-weight: 700;
+        font-size: .75rem;
+        padding: .35rem .7rem;
+        border-radius: 999px;
+    }
+    .mr-price {
+        background: var(--mr-black);
+        color: #fff;
+        border-radius: .75rem;
+        padding: .4rem .8rem;
+        font-weight: 700;
+    }
+    .mr-price span { color: var(--mr-yellow); }
+
+    /* CTA FINAL */
+    .mr-cta {
+        background: var(--mr-black);
+        color: #fff;
+        border-radius: 1.5rem;
+        border-top: 6px solid var(--mr-yellow);
+    }
+</style>
+
+<div class="container-fluid px-0 mr-client">
+
+    <!-- HERO DE BIENVENIDA -->
+    <section class="mr-hero p-4 p-lg-5 mb-4" aria-labelledby="welcome-title">
+        <div class="row align-items-center g-4 position-relative" style="z-index:1;">
+            <div class="col-lg-7">
+                <p class="mr-eyebrow mb-2">Portal de clientes</p>
+                <h1 class="display-6 fw-bold mb-2" id="welcome-title">
+                    ¡Hola, {{ request.user.first_name|default:request.user.username }}!
+                </h1>
+                <p class="lead mb-4" style="color:rgba(255,255,255,.8);">
+                    Encuentra la maquinaria que necesita tu obra, solicítala en minutos y da seguimiento a tus alquileres desde un solo lugar.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-lg mr-btn-yellow" href="{% url 'inventario:maquinaria_lista' %}">
+                        <i class="bi bi-search me-1" aria-hidden="true"></i> Explorar maquinaria
+                    </a>
+                    <a class="btn btn-lg mr-btn-outline-light" href="{% url 'alquileres:solicitud_lista' %}">
+                        <i class="bi bi-clock-history me-1" aria-hidden="true"></i> Mis alquileres
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="mr-stat p-3 h-100">
+                            <strong class="d-block">{{ solicitudes|length }}</strong>
+                            <small style="color:rgba(255,255,255,.75);">Alquileres activos</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mr-stat p-3 h-100">
+                            <strong class="d-block">{{ maquinarias_disponibles|length }}</strong>
+                            <small style="color:rgba(255,255,255,.75);">Equipos disponibles</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ACCESOS RÁPIDOS -->
+    <section class="mb-5" aria-label="Accesos rápidos">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a class="mr-quick p-4" href="{% url 'inventario:maquinaria_lista' %}">
+                    <div class="mr-icon mb-3"><i class="bi bi-truck" aria-hidden="true"></i></div>
+                    <h2 class="h6 fw-bold mb-1">Catálogo de maquinaria</h2>
+                    <p class="small text-secondary mb-0">Explora equipos por categoría, marca y tarifa diaria.</p>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a class="mr-quick p-4" href="{% url 'alquileres:solicitud_lista' %}">
+                    <div class="mr-icon mb-3"><i class="bi bi-receipt" aria-hidden="true"></i></div>
+                    <h2 class="h6 fw-bold mb-1">Mis solicitudes</h2>
+                    <p class="small text-secondary mb-0">Revisa el estado de tus reservas y tu historial.</p>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a class="mr-quick p-4" href="#available-machinery-title">
+                    <div class="mr-icon mb-3"><i class="bi bi-lightning-charge" aria-hidden="true"></i></div>
+                    <h2 class="h6 fw-bold mb-1">Disponible ahora</h2>
+                    <p class="small text-secondary mb-0">Mira los equipos listos para alquilar hoy mismo.</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CÓMO FUNCIONA -->
+    <section class="mr-steps p-4 p-lg-5 mb-5" aria-labelledby="how-title">
+        <h2 class="h4 fw-bold mb-4" id="how-title">Alquilar es fácil</h2>
+        <div class="row g-4">
+            <div class="col-md-4 d-flex gap-3">
+                <div class="mr-step-num">1</div>
+                <div><h3 class="h6 fw-bold mb-1">Elige tu equipo</h3><p class="small mb-0">Busca en el catálogo la maquinaria ideal para tu proyecto.</p></div>
+            </div>
+            <div class="col-md-4 d-flex gap-3">
+                <div class="mr-step-num">2</div>
+                <div><h3 class="h6 fw-bold mb-1">Envía tu solicitud</h3><p class="small mb-0">Indica las fechas y espera la confirmación de nuestro equipo.</p></div>
+            </div>
+            <div class="col-md-4 d-flex gap-3">
+                <div class="mr-step-num">3</div>
+                <div><h3 class="h6 fw-bold mb-1">Recibe y trabaja</h3><p class="small mb-0">Coordina la entrega y da seguimiento desde tu panel.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ALQUILERES ACTIVOS -->
+    <section class="mb-5" aria-labelledby="active-title">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="h4 mr-section-title mb-0" id="active-title">Tus alquileres activos</h2>
+            <a class="btn btn-sm mr-btn-dark-outline" href="{% url 'alquileres:solicitud_lista' %}">Ver historial completo</a>
+        </div>
+        <div class="row g-3">
+            {% for solicitud in solicitudes %}
+            <div class="col-12">
+                <article class="card mr-active-card shadow-sm">
+                    <div class="card-body p-4">
+                        {% include 'alquileres/solicitud_resumen.html' %}
+                    </div>
+                </article>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body text-center p-5">
+                        <div class="mr-icon mx-auto mb-3"><i class="bi bi-box-seam" aria-hidden="true"></i></div>
+                        <h3 class="h5 fw-bold">Aún no tienes alquileres activos</h3>
+                        <p class="text-secondary mb-3">Cuando solicites una maquinaria, aquí verás el siguiente paso de tu reserva.</p>
+                        <a class="btn mr-btn-yellow" href="{% url 'inventario:maquinaria_lista' %}">Buscar maquinaria</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- MAQUINARIA DISPONIBLE -->
+    <section class="mb-5" aria-labelledby="available-machinery-title">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="h4 mr-section-title mb-0" id="available-machinery-title">Maquinaria disponible</h2>
+            <a class="btn btn-sm mr-btn-dark-outline" href="{% url 'inventario:maquinaria_lista' %}">Ver todo el catálogo</a>
+        </div>
         <div class="row g-4">
             {% for unidad in maquinarias_disponibles|slice:":6" %}
             <div class="col-sm-6 col-xl-4">
-                <article class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
-                    {% with imagen=unidad.maquinaria.imagenes.all|first %}
-                    {% if imagen %}
-                    <img src="{{ imagen.imagen.url }}" class="card-img-top"
-                        alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}"
-                        style="height: 210px; object-fit: cover;">
-                    {% else %}
-                    <div class="bg-light d-grid text-secondary"
-                        style="height: 210px; place-items: center;"
-                        aria-label="Sin imagen disponible">
-                        <i class="bi bi-truck fs-1" aria-hidden="true"></i>
+                <article class="card mr-machine h-100 shadow-sm">
+                    <div class="mr-media">
+                        {% with imagen=unidad.maquinaria.imagenes.all|first %}
+                        {% if imagen %}
+                        <img src="{{ imagen.imagen.url }}" class="card-img-top"
+                            alt="{{ imagen.texto_alternativo|default:unidad.maquinaria.nombre }}"
+                            style="height: 210px; object-fit: cover;">
+                        {% else %}
+                        <div class="d-grid text-secondary bg-light"
+                            style="height: 210px; place-items: center;"
+                            aria-label="Sin imagen disponible">
+                            <i class="bi bi-truck fs-1" aria-hidden="true"></i>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <span class="mr-badge-available"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Disponible</span>
                     </div>
-                    {% endif %}
-                    {% endwith %}
                     <div class="card-body d-flex flex-column p-4">
-                        <span class="badge text-bg-success align-self-start mb-2">Disponible</span>
                         <h3 class="h5 fw-bold">{{ unidad.maquinaria.nombre }}</h3>
                         <p class="text-secondary small mb-3">
                             {{ unidad.maquinaria.categoria.nombre }}
@@ -50,10 +317,12 @@
                             {{ unidad.maquinaria.descripcion|default:"Consulta los detalles de este equipo."|truncatechars:120 }}
                         </p>
                         <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                            <strong>${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }} / día</strong>
-                            <a class="btn btn-sm btn-outline-primary"
+                            <div class="mr-price">
+                                <span>${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</span> / día
+                            </div>
+                            <a class="btn btn-sm mr-btn-yellow"
                                 href="{% url 'inventario:maquinaria_detalle' unidad.id %}">
-                                Ver detalle
+                                Ver detalle <i class="bi bi-arrow-right" aria-hidden="true"></i>
                             </a>
                         </div>
                     </div>
@@ -64,6 +333,17 @@
                 <p class="alert alert-light border mb-0">No hay maquinaria disponible en este momento.</p>
             </div>
             {% endfor %}
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="mr-cta p-4 p-lg-5 mb-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h2 class="h4 fw-bold mb-1">¿No encuentras lo que buscas?</h2>
+                <p class="mb-0" style="color:rgba(255,255,255,.75);">Revisa el catálogo completo, nuestro inventario se actualiza constantemente.</p>
+            </div>
+            <a class="btn btn-lg mr-btn-yellow" href="{% url 'inventario:maquinaria_lista' %}">Ver catálogo completo</a>
         </div>
     </section>
 </div>
