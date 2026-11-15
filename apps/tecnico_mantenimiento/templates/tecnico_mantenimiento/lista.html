@@ -25,12 +25,13 @@
                         <th>Teléfono</th>
                         <th>Especialidad</th>
                         <th>Estado</th>
+                        <th>Disponibilidad</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tecnico in tecnicos %}
                     <tr>
-                        <td class="ps-4 fw-semibold">{{ tecnico.get_full_name|default:"Sin nombre" }}</td>
+                        <td class="ps-4 fw-semibold"><a href="{% url 'tecnico_mantenimiento:perfil' tecnico.pk %}">{{ tecnico.get_full_name|default:tecnico.email }}</a></td>
                         <td>{{ tecnico.email }}</td>
                         <td>{{ tecnico.telefono|default:"—" }}</td>
                         <td>{{ tecnico.especialidad|default:"—" }}</td>
@@ -41,10 +42,11 @@
                             <span class="badge text-bg-secondary">Inactivo</span>
                             {% endif %}
                         </td>
+                        <td>{{ tecnico.disponible|yesno:"Disponible,No disponible" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center text-secondary py-5">
+                        <td colspan="6" class="text-center text-secondary py-5">
                             Todavía no hay técnicos registrados.
                         </td>
                     </tr>

@@ -67,6 +67,7 @@
                             <th class="py-3">Descripción</th>
                             <th class="py-3">Costo</th>
                             <th class="py-3 pe-4">Técnico responsable</th>
+                            <th class="py-3 pe-4">Registrado por</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -98,6 +99,13 @@
                                     {% endwith %}
                                 {% else %}
                                     <span class="text-muted italic">No registrado</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4">
+                                {% if mantenimiento.registrado_por %}
+                                    {{ mantenimiento.registrado_por.get_full_name|default:mantenimiento.registrado_por.email }}
+                                {% else %}
+                                    No registrado
                                 {% endif %}
                             </td>
                         </tr>

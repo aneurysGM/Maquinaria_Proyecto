@@ -1,10 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.db import DatabaseError, transaction
 from apps.inventario.models import Unidad
 from apps.cuentas.models import permisos_panel
 from .forms import MantenimientoForm
@@ -59,10 +58,10 @@ def mantenimiento_registrar(request):
     initial_data = {'unidad': unidad_preseleccionada} if unidad_preseleccionada else {}
 
     if request.method == 'POST':
-        form = MantenimientoForm(request.POST)
-        if form.is_valid():
+        form = MantenimientoForm(request.POST, usuario=request.user)
+        if 'filtrar' not in request.POST and form.is_valid():
             try:
-                mantenimiento = form.save(tecnico=request.user)
+                mantenimiento = form.save()
             except ValidationError as error:
                 for msg in error.messages:
                     form.add_error(None, msg)
@@ -72,11 +71,16 @@ def mantenimiento_registrar(request):
                 messages.success(request, 'Mantenimiento registrado con éxito. La unidad ha pasado a estado "En mantenimiento".')
                 return redirect('mantenimiento:mantenimiento_historial', unidad_id=mantenimiento.unidad_id)
     else:
-        form = MantenimientoForm(initial=initial_data)
+        form = MantenimientoForm(initial=initial_data, usuario=request.user)
 
     return render(request, 'mantenimiento/mantenimiento_form.html', {
         'form': form,
-        'nombre_usuario': request.user.get_full_name() or request.user.email
+        'nombre_usuario': request.user.get_full_name() or request.user.email,
+        'tecnicos_disponibles': [
+            {'id': tecnico.pk, 'especialidad': tecnico.especialidad,
+             'nombre': form.fields['tecnico_responsable'].label_from_instance(tecnico)}
+            for tecnico in form.tecnicos_disponibles
+        ] if request.user.es_administrador else [],
     })
 
 
@@ -88,7 +92,7 @@ def mantenimiento_historial(request, unidad_id):
         raise PermissionDenied("Acceso restringido.")
 
     unidad = get_object_or_404(Unidad.objects.select_related('maquinaria__categoria'), pk=unidad_id)
-    mantenimientos = unidad.mantenimientos.select_related('tecnico')
+    mantenimientos = unidad.mantenimientos.select_related('tecnico', 'registrado_por')
     
     return render(request, 'mantenimiento/mantenimiento_historial.html', {
         'unidad': unidad, 

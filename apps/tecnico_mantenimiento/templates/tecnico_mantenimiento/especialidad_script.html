@@ -1,0 +1,18 @@
+<script>
+(() => {
+    const selector = document.getElementById('id_especialidad');
+    const campo = document.getElementById('id_nueva_especialidad');
+    const contenedor = document.getElementById('campo-nueva-especialidad');
+    const actualizar = () => {
+        const nueva = selector.value === '__nueva__';
+        contenedor.hidden = !nueva;
+        campo.disabled = !nueva;
+        campo.required = nueva;
+    };
+    selector.addEventListener('change', () => {
+        actualizar();
+        if (!contenedor.hidden) campo.focus();
+    });
+    actualizar();
+})();
+</script>

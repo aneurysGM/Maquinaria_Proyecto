@@ -1,12 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Unidad
 
-from .forms import TecnicoCreacionForm
+from .forms import TecnicoCreacionForm, TecnicoPerfilForm
 
 
 @login_required(login_url='cuentas:login')
@@ -66,3 +66,16 @@ def crear(request):
     return render(request, 'tecnico_mantenimiento/crear.html', {
         'form': form,
     })
+
+
+@login_required(login_url='cuentas:login')
+def perfil(request, tecnico_id):
+    if not request.user.es_administrador:
+        raise PermissionDenied
+    tecnico = get_object_or_404(UsuarioPersonalizado, pk=tecnico_id, rol=RolUsuario.TECNICO)
+    form = TecnicoPerfilForm(request.POST if request.method == 'POST' else None, instance=tecnico)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Perfil técnico actualizado.')
+        return redirect('tecnico_mantenimiento:perfil', tecnico_id=tecnico.pk)
+    return render(request, 'tecnico_mantenimiento/perfil.html', {'tecnico': tecnico, 'form': form})

@@ -64,6 +64,11 @@ class UsuarioPersonalizado(AbstractUser):
         verbose_name='Especialidad técnica',
         db_column='Especialidad',
     )
+    disponible = models.BooleanField(
+        default=True,
+        verbose_name='Disponible para mantenimiento',
+        db_column='Disponible',
+    )
     suspension_hasta = models.DateField(
         null=True,
         blank=True,

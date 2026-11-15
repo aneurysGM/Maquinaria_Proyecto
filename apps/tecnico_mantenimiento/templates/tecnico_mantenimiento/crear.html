@@ -19,7 +19,7 @@
                 {% endif %}
                 <div class="row g-3">
                     {% for field in form %}
-                    <div class="{% if field.name == 'password1' or field.name == 'password2' %}col-md-6{% else %}col-12{% endif %}">
+                    <div {% if field.name == 'nueva_especialidad' %}id="campo-nueva-especialidad"{% endif %} class="{% if field.name == 'password1' or field.name == 'password2' %}col-md-6{% else %}col-12{% endif %}">
                         <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {{ field }}
                         {% if field.help_text %}
@@ -39,4 +39,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% include 'tecnico_mantenimiento/especialidad_script.html' %}
 {% endblock %}

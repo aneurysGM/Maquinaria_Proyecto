@@ -2,7 +2,8 @@ from django import forms
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from apps.inventario.models import Unidad
-from apps.cuentas.models import permisos_panel
+from apps.cuentas.models import RolUsuario, UsuarioPersonalizado, permisos_panel
+from apps.tecnico_mantenimiento.especialidades import opciones_especialidad
 from .models import Mantenimiento
 
 
@@ -14,7 +15,22 @@ class UnidadMantenimientoChoiceField(forms.ModelChoiceField):
         )
 
 
+class TecnicoChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, tecnico):
+        return f'{tecnico.get_full_name() or tecnico.email} · {tecnico.especialidad or "Sin especialidad"}'
+
+
 class MantenimientoForm(forms.Form):
+    especialidad = forms.ChoiceField(
+        label='Filtrar por especialidad', required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    tecnico_responsable = TecnicoChoiceField(
+        label='Técnico responsable', queryset=UsuarioPersonalizado.objects.none(),
+        empty_label='Selecciona un técnico',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        error_messages={'invalid_choice': 'Selecciona un técnico activo y disponible de la especialidad indicada.'},
+    )
     unidad = UnidadMantenimientoChoiceField(
         label='Maquinaria / unidad física', 
         queryset=Unidad.objects.none(),
@@ -45,21 +61,48 @@ class MantenimientoForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, usuario, **kwargs):
         super().__init__(*args, **kwargs)
+        self.usuario = usuario
+        self.tecnicos_disponibles = UsuarioPersonalizado.objects.filter(
+            rol=RolUsuario.TECNICO, is_active=True, disponible=True,
+        ).order_by('first_name', 'last_name', 'email')
+        if usuario.es_administrador:
+            self.fields['especialidad'].choices = [('', 'Todas las especialidades'), *opciones_especialidad()]
+            especialidad = self.data.get('especialidad', '') if self.is_bound else self.initial.get('especialidad', '')
+            tecnicos = self.tecnicos_disponibles
+            if especialidad:
+                tecnicos = tecnicos.filter(especialidad=especialidad)
+            self.fields['tecnico_responsable'].queryset = tecnicos
+            self.sin_tecnicos = not tecnicos.exists()
+        else:
+            # El responsable se obtiene exclusivamente de la sesión del técnico.
+            self.fields.pop('especialidad')
+            self.fields.pop('tecnico_responsable')
         # Solo permitimos programar mantenimiento a unidades activas que estén libres o ya en taller
         self.fields['unidad'].queryset = Unidad.objects.select_related('maquinaria').filter(
             activo=True, maquinaria__activo=True, estado__in=('Disponible', 'Mantenimiento'),
         )
 
     @transaction.atomic
-    def save(self, *, tecnico):
+    def save(self):
         # Validar permisos de técnico o administrador
-        permisos = permisos_panel(tecnico)
+        usuario = UsuarioPersonalizado.objects.select_for_update().get(pk=self.usuario.pk)
+        permisos = permisos_panel(usuario)
         if not (permisos.get('es_administrador') or permisos.get('es_tecnico')):
             raise PermissionDenied("No tienes permisos para registrar mantenimientos.")
 
         datos = self.cleaned_data
+        if usuario.es_administrador:
+            tecnico = UsuarioPersonalizado.objects.select_for_update().filter(
+                pk=datos['tecnico_responsable'].pk,
+                rol=RolUsuario.TECNICO, is_active=True, disponible=True,
+            ).first()
+            especialidad = datos.get('especialidad')
+            if tecnico is None or (especialidad and tecnico.especialidad != especialidad):
+                raise ValidationError('El técnico ya no está activo y disponible para esa especialidad. Selecciona otro.')
+        else:
+            tecnico = usuario
         
         # Bloqueo atómico para evitar condiciones de carrera
         unidad = Unidad.objects.select_for_update().select_related('maquinaria').filter(pk=datos['unidad'].pk).first()
@@ -69,6 +112,7 @@ class MantenimientoForm(forms.Form):
         mantenimiento = Mantenimiento(
             unidad=unidad, 
             tecnico=tecnico,
+            registrado_por=usuario,
             fecha=datos['fecha'],
             tipo=datos['tipo'],
             descripcion=datos['descripcion'],

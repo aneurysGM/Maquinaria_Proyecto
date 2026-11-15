@@ -3,6 +3,8 @@ from django.urls import reverse
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Categoria, Maquinaria, Unidad
+from .forms import TecnicoCreacionForm
+from .models import EspecialidadTecnica
 
 
 class GestionTecnicosTests(TestCase):
@@ -38,7 +40,8 @@ class GestionTecnicosTests(TestCase):
                 'last_name': 'Técnica',
                 'email': 'ana-tecnica@example.com',
                 'telefono': '809-555-0101',
-                'especialidad': 'Sistema hidráulico',
+                'especialidad': '__nueva__',
+                'nueva_especialidad': 'Sistema hidráulico',
                 'password1': 'Firme!Girasol_2026',
                 'password2': 'Firme!Girasol_2026',
             },
@@ -158,7 +161,7 @@ class GestionTecnicosTests(TestCase):
                 self.client.force_login(usuario)
                 respuesta = self.client.get(url)
                 self.assertEqual(respuesta.status_code, 200)
-                self.assertContains(respuesta, f'class="mq-avatar">{iniciales}</div>')
+                self.assertContains(respuesta, f'class="mq-avatar" aria-hidden="true">{iniciales}</div>')
                 self.assertContains(respuesta, nombre)
                 self.assertContains(respuesta, f'<span>{rol}</span>')
 
@@ -246,3 +249,73 @@ class GestionTecnicosTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'En mantenimiento')
         self.assertNotContains(respuesta, '9876543')
+
+    def test_catalogo_ofrece_bases_y_anadir_al_final(self):
+        opciones = list(TecnicoCreacionForm().fields['especialidad'].choices)
+        self.assertEqual([valor for valor, _ in opciones[1:4]], ['Hidráulica', 'Electricidad', 'Mecánica'])
+        self.assertEqual(opciones[-1], ('__nueva__', '+ Añadir especialidad'))
+
+    def test_nueva_especialidad_se_comparte_con_otros_perfiles_y_filtro(self):
+        self.client.force_login(self.admin)
+        url = reverse('tecnico_mantenimiento:perfil', args=[self.tecnico.pk])
+        respuesta = self.client.post(url, {
+            'especialidad': '__nueva__', 'nueva_especialidad': '  Motores   marinos  ', 'disponible': '1',
+        })
+        self.assertRedirects(respuesta, url)
+        self.tecnico.refresh_from_db()
+        self.assertEqual(self.tecnico.especialidad, 'Motores marinos')
+        self.assertTrue(EspecialidadTecnica.objects.filter(nombre='Motores marinos').exists())
+        self.assertContains(self.client.get(reverse('tecnico_mantenimiento:crear')), 'Motores marinos')
+        self.assertContains(self.client.get(reverse('mantenimiento:mantenimiento_registrar')), 'Motores marinos')
+        otro = UsuarioPersonalizado.objects.create_user(email='otro-tecnico@example.com', rol=RolUsuario.TECNICO)
+        self.assertContains(self.client.get(reverse('tecnico_mantenimiento:perfil', args=[otro.pk])), 'Motores marinos')
+
+    def test_disponibilidad_no_desactiva_cuenta_ni_modifica_otros_datos(self):
+        self.client.force_login(self.admin)
+        url = reverse('tecnico_mantenimiento:perfil', args=[self.tecnico.pk])
+        password = self.tecnico.password
+        for valor, disponible in [('0', False), ('1', True)]:
+            with self.subTest(disponible=disponible):
+                respuesta = self.client.post(url, {'especialidad': self.tecnico.especialidad, 'disponible': valor})
+                self.assertRedirects(respuesta, url)
+                self.tecnico.refresh_from_db()
+                self.assertEqual(self.tecnico.disponible, disponible)
+                self.assertTrue(self.tecnico.is_active)
+                self.assertEqual(self.tecnico.password, password)
+                self.assertEqual(self.tecnico.email, 'tecnico-panel@example.com')
+                self.assertEqual(self.tecnico.especialidad, 'Motores diésel')
+                self.assertContains(self.client.get(url), f'value="{valor}" selected')
+
+    def test_nueva_especialidad_exige_nombre_y_no_crea_catalogo_si_hay_errores(self):
+        self.client.force_login(self.admin)
+        url = reverse('tecnico_mantenimiento:perfil', args=[self.tecnico.pk])
+        for nombre in ('   ', 'x' * 101):
+            with self.subTest(nombre=nombre):
+                respuesta = self.client.post(url, {
+                    'especialidad': '__nueva__', 'nueva_especialidad': nombre, 'disponible': '1',
+                })
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertIn('nueva_especialidad', respuesta.context['form'].errors)
+        self.assertFalse(EspecialidadTecnica.objects.filter(nombre='').exists())
+        self.tecnico.refresh_from_db()
+        self.assertEqual(self.tecnico.especialidad, 'Motores diésel')
+
+    def test_reutiliza_especialidad_sin_duplicar_por_mayusculas(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('tecnico_mantenimiento:perfil', args=[self.tecnico.pk]), {
+            'especialidad': '__nueva__', 'nueva_especialidad': 'HIDRÁULICA', 'disponible': '1',
+        })
+        self.tecnico.refresh_from_db()
+        self.assertEqual(self.tecnico.especialidad, 'Hidráulica')
+        self.assertFalse(EspecialidadTecnica.objects.filter(nombre='HIDRÁULICA').exists())
+
+    def test_perfil_solo_administrador_y_solo_de_tecnicos(self):
+        url = reverse('tecnico_mantenimiento:perfil', args=[self.tecnico.pk])
+        for usuario in (self.tecnico, self.cliente):
+            self.client.force_login(usuario)
+            self.assertEqual(self.client.get(url).status_code, 403)
+            self.assertEqual(self.client.post(url, {'disponible': '0'}).status_code, 403)
+        self.tecnico.refresh_from_db()
+        self.assertTrue(self.tecnico.disponible)
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('tecnico_mantenimiento:perfil', args=[self.cliente.pk])).status_code, 404)
