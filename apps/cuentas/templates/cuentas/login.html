@@ -229,16 +229,18 @@
             iconoOjo.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
         });
 
-        // Comprueba Bloq Mayús cuando se pulsa una tecla en el campo
+        // Comprueba Bloq Mayús al escribir en correo o contraseña
         function comprobarMayusculas(evento) {
             avisoMayusculas.hidden = !evento.getModifierState('CapsLock');
         }
-        campoClave.addEventListener('keydown', comprobarMayusculas);
-        campoClave.addEventListener('keyup', comprobarMayusculas);
+        [campoCorreo, campoClave].forEach(function (campo) {
+            campo.addEventListener('keydown', comprobarMayusculas);
+            campo.addEventListener('keyup', comprobarMayusculas);
 
-        // Oculta el aviso cuando dejamos el campo de contraseña
-        campoClave.addEventListener('blur', function () {
-            avisoMayusculas.hidden = true;
+            // Oculta el aviso cuando dejamos cualquiera de los campos
+            campo.addEventListener('blur', function () {
+                avisoMayusculas.hidden = true;
+            });
         });
 
         // Evita doble envío y muestra "Entrando…"
