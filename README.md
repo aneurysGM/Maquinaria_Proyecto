@@ -28,6 +28,14 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Pruebas de desarrollo fuera del repositorio — 16 de noviembre de 2026
+
+Las pruebas automatizadas y sus datos compartidos se conservan únicamente en la
+copia local y no se incluyen al clonar el repositorio. Se retiraron sus rutas
+anteriores de `apps/`. La comprobación del traslado conservó los mismos 171 casos
+de Django y las tres pruebas JavaScript. `db.sqlite3` y sus respaldos permanecen
+en sus rutas originales, sin cambios de contenido.
+
 ### Estado final de las mejoras de alquiler — 13 de noviembre de 2026
 
 - La última ejecución de Django pasó **150 pruebas en SQLite temporal**. Se

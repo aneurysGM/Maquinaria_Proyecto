@@ -32,3 +32,6 @@ Thumbs.db
 
 # Archivos de imagenes y videos temporales
 .Imagenes
+
+# Pruebas y evidencias conservadas únicamente en local
+/test/

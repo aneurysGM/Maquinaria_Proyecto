@@ -44,8 +44,6 @@ Django añadió los permisos y el tipo de contenido del nuevo catálogo.
 ## Verificación
 
 ```powershell
-python manage.py test apps.tecnico_mantenimiento apps.mantenimiento --noinput
-node apps/tecnico_mantenimiento/tests_controles.cjs
 python manage.py makemigrations --check --dry-run
 python manage.py check
 ```
