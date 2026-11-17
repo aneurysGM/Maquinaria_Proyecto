@@ -98,6 +98,7 @@
         .mr-alert { border: 0; border-left: 6px solid; border-radius: .9rem; }
         .mr-alert-danger { background: #fdecea; border-color: #dc3545; color: #58151c; }
         .mr-alert-warning { background: #fff8e1; border-color: var(--y); color: #4d3a00; }
+        #aviso-mayusculas:not([hidden]) { display: flex; }
         .mr-alert-admin { background: var(--k); border-color: var(--y); color: #fff; }
         .mr-alert-admin i { color: var(--y); }
         .mr-alert-admin strong { color: var(--y); }
@@ -214,7 +215,7 @@
                     </div>
 
                     {# Aviso de Bloq Mayús, visible solo al escribir una contraseña #}
-                    <div id="aviso-mayusculas" class="alert mr-alert mr-alert-warning d-flex gap-2 align-items-center py-2 px-3 small mb-3 mt-3" role="status" hidden>
+                    <div id="aviso-mayusculas" class="alert mr-alert mr-alert-warning gap-2 align-items-center py-2 px-3 small mb-3 mt-3" role="status" hidden>
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Bloq Mayús está activado.
                     </div>
 
