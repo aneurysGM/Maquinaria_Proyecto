@@ -28,6 +28,42 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Catálogo, solicitudes simultáneas y formularios de acceso — 14 de noviembre de 2026
+
+- Al agregar o editar maquinaria se puede seleccionar una imagen principal y
+  cargar varias imágenes adicionales en una sola selección. El límite es de ocho
+  imágenes en total, incluida la principal, con un máximo de 5 MB por archivo.
+  La imagen principal se muestra en el catálogo público y en los paneles/listados
+  de Administrador, Cliente y Técnico. El nombre del equipo aparece debajo de la
+  imagen y el detalle se presenta sin el panel lateral en todos los roles.
+- Cuando se completa el pago inicial de una reserva (renta y depósito), las
+  solicitudes con fechas cruzadas ya no se rechazan automáticamente. El
+  Administrador escribe un motivo individual; cada cliente lo ve en Mis
+  alquileres y recibe un correo. Puede aceptar el aplazamiento o cancelar la
+  solicitud. Si ya hay pagos registrados, la cancelación en línea se bloquea
+  para que Administración revise el reembolso.
+- Las solicitudes aplazadas esperan el retorno real de la maquinaria y se
+  programan una a la vez, sin cruzarse con reservas confirmadas. La nueva fecha
+  conserva la duración solicitada y deja cinco días para pagar, siempre antes
+  del inicio. La migración
+  `apps/alquileres/migrations/0006_remove_solicitudalquiler_ck_solicitud_estado_and_more.py`
+  agrega los datos del aviso/aplazamiento y el estado Cancelada; fue aplicada a
+  la base SQLite local. Los rechazos manuales siguen usando su motivo separado.
+- Los avisos de correo usan SMTP de Django. Para entregarlos se deben configurar
+  `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS` o `EMAIL_USE_SSL`,
+  `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` y `DEFAULT_FROM_EMAIL` en `.env`;
+  no se guardan credenciales en el repositorio. La guía
+  [Cliente y confirmación de reservas](docs/flujo-cliente-reservas.md) detalla
+  este flujo y su configuración.
+- En Iniciar sesión y Crear cuenta, el aviso de Bloq Mayús permanece oculto
+  mientras la tecla no esté activa. Se corrigió el conflicto entre el atributo
+  HTML `hidden` y la clase Bootstrap `d-flex`.
+- Verificación: **91 pruebas** de alquileres y ventas aprobadas en SQLite
+  temporal; controles JavaScript, `manage.py check`,
+  `makemigrations --check --dry-run` y `git diff --check` sin incidencias. En el
+  navegador se confirmó que el aviso de Bloq Mayús inicia oculto tanto en login
+  como en registro.
+
 ### Estado final de las mejoras de alquiler — 13 de noviembre de 2026
 
 - La última ejecución de Django pasó **150 pruebas en SQLite temporal**. Se
@@ -185,10 +221,9 @@ puede documentar en una guía específica y enlazarla desde aquí.
   catálogo sin iniciar sesión. La información pública conserva las tarifas y
   descripción, pero no expone el costo de adquisición; las unidades que no
   están disponibles no se muestran en este acceso público.
-- La vista pública del detalle usa el ancho completo, sin la barra lateral del
-  panel ni el botón **Cerrar sesión**. Incluye enlaces para volver al inicio e
-  iniciar sesión. Los usuarios autenticados mantienen la navegación normal del
-  panel.
+- El detalle usa el ancho completo, sin el panel lateral, para visitantes y para
+  usuarios autenticados. Incluye los enlaces de navegación propios de cada
+  acceso; las demás pantallas autenticadas conservan su navegación normal.
 - El visitante puede elegir **Iniciar sesión para solicitar**. La solicitud
   continúa requiriendo autenticación y, después de ingresar, se respeta el
   destino de solicitud original.
