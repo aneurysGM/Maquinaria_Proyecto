@@ -1,0 +1,33 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Perfil técnico{% endblock %}
+{% block page_name %}Perfil técnico{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <a class="text-secondary" href="{% url 'tecnico_mantenimiento:lista' %}">Volver a técnicos</a>
+    <h1 class="h3 fw-bold mt-3">{{ tecnico.get_full_name|default:tecnico.email }}</h1>
+    <div class="card border-0 shadow-sm rounded-4 mt-4">
+        <div class="card-body p-4">
+            <dl class="row">
+                <dt class="col-sm-3">Correo electrónico</dt><dd class="col-sm-9">{{ tecnico.email }}</dd>
+                <dt class="col-sm-3">Teléfono</dt><dd class="col-sm-9">{{ tecnico.telefono|default:"—" }}</dd>
+                <dt class="col-sm-3">Estado de la cuenta</dt><dd class="col-sm-9">{{ tecnico.is_active|yesno:"Activo,Inactivo" }}</dd>
+            </dl>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                {% for field in form %}
+                <div class="mb-3" {% if field.name == 'nueva_especialidad' %}id="campo-nueva-especialidad"{% endif %}>
+                    <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-warning fw-semibold">Guardar perfil</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% include 'tecnico_mantenimiento/especialidad_script.html' %}
+{% endblock %}

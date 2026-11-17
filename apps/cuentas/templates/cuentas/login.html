@@ -21,7 +21,6 @@
         body { font-family: 'Barlow', system-ui, sans-serif; background: var(--bg); color: var(--ink); margin: 0; }
         h1, h2, .mr-brand-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; letter-spacing: -.01em; }
         :focus-visible { outline: 3px solid var(--y); outline-offset: 2px; }
-        #aviso-mayusculas[hidden] { display: none !important; }
 
         .mr-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr; }
         @media (min-width: 992px) { .mr-shell { grid-template-columns: minmax(380px, 5fr) 6fr; } }
@@ -83,6 +82,7 @@
         .mr-alert { border: 0; border-left: 6px solid; border-radius: .9rem; }
         .mr-alert-danger { background: #fdecea; border-color: #dc3545; color: #58151c; }
         .mr-alert-warning { background: #fff8e1; border-color: var(--y); color: #4d3a00; }
+        #aviso-mayusculas:not([hidden]) { display: flex; }
 
         .mr-links { color: var(--muted); }
         .mr-links a { color: var(--k); font-weight: 700; text-decoration-color: var(--y); text-decoration-thickness: 3px; text-underline-offset: 3px; }
@@ -171,7 +171,7 @@
                     </div>
 
                     {# Oculto hasta detectar Bloq Mayús activo #}
-                    <div id="aviso-mayusculas" class="alert mr-alert mr-alert-warning d-flex gap-2 align-items-center py-2 px-3 small mb-3" role="status" hidden>
+                    <div id="aviso-mayusculas" class="alert mr-alert mr-alert-warning gap-2 align-items-center py-2 px-3 small mb-3" role="status" hidden>
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Bloq Mayús está activado.
                     </div>
 
@@ -229,16 +229,18 @@
             iconoOjo.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
         });
 
-        // Comprueba Bloq Mayús cuando se pulsa una tecla en el campo
+        // Comprueba Bloq Mayús al escribir en correo o contraseña
         function comprobarMayusculas(evento) {
             avisoMayusculas.hidden = !evento.getModifierState('CapsLock');
         }
-        campoClave.addEventListener('keydown', comprobarMayusculas);
-        campoClave.addEventListener('keyup', comprobarMayusculas);
+        [campoCorreo, campoClave].forEach(function (campo) {
+            campo.addEventListener('keydown', comprobarMayusculas);
+            campo.addEventListener('keyup', comprobarMayusculas);
 
-        // Oculta el aviso cuando dejamos el campo de contraseña
-        campoClave.addEventListener('blur', function () {
-            avisoMayusculas.hidden = true;
+            // Oculta el aviso cuando dejamos cualquiera de los campos
+            campo.addEventListener('blur', function () {
+                avisoMayusculas.hidden = true;
+            });
         });
 
         // Evita doble envío y muestra "Entrando…"

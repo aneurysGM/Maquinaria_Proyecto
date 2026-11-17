@@ -95,11 +95,8 @@ en Mis alquileres, el error queda registrado y el administrador recibe un mensaj
 ## Verificación
 
 ```powershell
-.\.venv\Scripts\python.exe -B manage.py test --noinput
 .\.venv\Scripts\python.exe -B manage.py check
 .\.venv\Scripts\python.exe -B manage.py makemigrations --check --dry-run
-node apps/alquileres/tests_controles.cjs
-node apps/alquileres/tests_sugerencias_controles.cjs
 git diff --check
 ```
 

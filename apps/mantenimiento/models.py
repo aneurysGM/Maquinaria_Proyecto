@@ -31,6 +31,11 @@ class Mantenimiento(models.Model):
         settings.AUTH_USER_MODEL, models.PROTECT, null=True, blank=True, editable=False,
         db_column='TecnicoResponsableID', related_name='mantenimientos_registrados',
     )
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, models.PROTECT, null=True, blank=True, editable=False,
+        db_column='RegistradoPorID', related_name='mantenimientos_creados',
+        verbose_name='Registrado por',
+    )
 
     class Meta:
         verbose_name = 'mantenimiento'
