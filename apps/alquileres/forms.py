@@ -34,6 +34,23 @@ class SolicitudAlquilerForm(forms.ModelForm):
         return cleaned_data
 
 
+class SolicitudAplazarForm(forms.Form):
+    fecha_inicio = forms.DateField(
+        label='Nueva fecha de inicio',
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(attrs={
+            'class': 'form-control form-control-sm',
+            'type': 'date',
+        }),
+    )
+
+    def clean_fecha_inicio(self):
+        fecha_inicio = self.cleaned_data['fecha_inicio']
+        if fecha_inicio < timezone.localdate():
+            raise forms.ValidationError('La nueva fecha de inicio no puede estar en el pasado.')
+        return fecha_inicio
+
+
 class SolicitudFiltroForm(forms.Form):
     codigo_exacto = forms.CharField(required=False, max_length=20, widget=forms.HiddenInput())
     q = forms.CharField(
