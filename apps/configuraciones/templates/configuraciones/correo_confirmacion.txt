@@ -1,0 +1,11 @@
+Hola {{ usuario.get_full_name|default:'usuario' }},
+
+Solicitaste usar {{ solicitud.correo_nuevo }} como correo de acceso a MaquiRent.
+
+Abre este enlace y pulsa «Confirmar cambio de correo»:
+{{ enlace }}
+
+Vence el {{ solicitud.vence_en|date:'d/m/Y H:i' }} (hora de Santo Domingo) y solo se puede usar una vez.
+Tu correo actual seguirá activo hasta que confirmes. Tu contraseña, rol e historial se conservan.
+
+Si no solicitaste el cambio, ignora este mensaje.
