@@ -62,7 +62,7 @@ class DashboardAdminView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         usuario = self.request.user
         unidades = Unidad.objects.select_related(
-            'maquinaria__categoria',
+            'maquinaria__categoria', 'maquinaria__marca',
             'maquinaria__registrada_por',
         ).prefetch_related('maquinaria__imagenes').filter(
             activo=True,
@@ -84,7 +84,7 @@ class DashboardAdminView(LoginRequiredMixin, TemplateView):
             ahora = timezone.now()
             local = timezone.localtime(ahora, timezone.get_default_timezone())
             pendientes = SolicitudAlquiler.objects.filter(estado='Pendiente').select_related(
-                'cliente', 'unidad__maquinaria',
+                'cliente', 'unidad__maquinaria__marca',
             ).order_by('fecha_creacion', 'pk')
             mantenimientos = mantenimientos_abiertos()
             pagos_vencidos = presupuestos_con_pago_vencido(ahora=ahora)

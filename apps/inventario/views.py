@@ -29,7 +29,7 @@ class InicioPublicoView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['maquinarias_destacadas'] = Unidad.objects.select_related(
-            'maquinaria__categoria',
+            'maquinaria__categoria', 'maquinaria__marca',
         ).prefetch_related(
             'maquinaria__imagenes',
         ).filter(
@@ -49,7 +49,7 @@ class CatalogoPublicoView(ListView):
 
     def get_queryset(self):
         queryset = Unidad.objects.select_related(
-            'maquinaria__categoria',
+            'maquinaria__categoria', 'maquinaria__marca',
         ).prefetch_related(
             'maquinaria__imagenes',
         ).filter(
@@ -63,7 +63,7 @@ class CatalogoPublicoView(ListView):
             queryset = queryset.filter(
                 Q(maquinaria__nombre__icontains=query)
                 | Q(maquinaria__codigo__icontains=query)
-                | Q(maquinaria__marca__icontains=query)
+                | Q(maquinaria__marca__nombre__icontains=query)
                 | Q(maquinaria__categoria__nombre__icontains=query)
             )
 
@@ -209,7 +209,7 @@ class MaquinariaListaView(LoginRequiredMixin, InventarioConsultaRequiredMixin, L
     def get_queryset(self):
         # Traemos la unidad junto con los datos de su maquinaria base
         queryset = Unidad.objects.select_related(
-            'maquinaria__categoria',
+            'maquinaria__categoria', 'maquinaria__marca',
         ).prefetch_related(
             'maquinaria__imagenes',
         ).filter(
@@ -230,7 +230,7 @@ class MaquinariaListaView(LoginRequiredMixin, InventarioConsultaRequiredMixin, L
                 Q(maquinaria__codigo__icontains=q) |
                 Q(maquinaria__nombre__icontains=q) |
                 Q(numero_serie__icontains=q) |
-                Q(maquinaria__marca__icontains=q)
+                Q(maquinaria__marca__nombre__icontains=q)
             )
         
         # Filtrar por categoría
@@ -309,7 +309,7 @@ class MaquinariaDetalleView(DetailView):
     def get_object(self, queryset=None):
         # Optimizamos trayendo la unidad, su maquinaria y la categoría en una sola consulta
         unidades = Unidad.objects.select_related(
-            'maquinaria__categoria',
+            'maquinaria__categoria', 'maquinaria__marca',
         ).prefetch_related(
             'maquinaria__imagenes',
             'maquinaria__comentarios__cliente',

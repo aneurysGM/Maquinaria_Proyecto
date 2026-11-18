@@ -38,7 +38,15 @@ class Maquinaria(models.Model):
     codigo = models.CharField(max_length=20, unique=True, db_column='Codigo', verbose_name='Código')
     nombre = models.CharField(max_length=120, db_column='Nombre', verbose_name='Descripción')
     descripcion = models.TextField(blank=True, default='', verbose_name='Detalles del equipo')
-    marca = models.CharField(max_length=60, blank=True, null=True, db_column='Marca')
+    marca = models.ForeignKey(
+        'marca.Marca',
+        models.PROTECT,
+        blank=True,
+        null=True,
+        db_column='MarcaID',
+        related_name='maquinarias',
+        verbose_name='Marca',
+    )
     modelo = models.CharField(max_length=60, blank=True, null=True, db_column='Modelo')
     registrada_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

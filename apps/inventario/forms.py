@@ -131,7 +131,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Describe las características principales de la maquinaria.',
             }),
-            'marca': forms.TextInput(attrs={'class': 'form-control'}),
+            'marca': forms.Select(attrs={'class': 'form-select'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
             'costo_adquisicion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'tarifa_diaria': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

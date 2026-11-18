@@ -238,7 +238,7 @@
                 {% if puede_consultar_maquinaria %}
                 <a href="{% url 'inventario:maquinaria_lista' %}" class="mq-nav-link {% if 'maquinaria' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-gear-wide-connected" aria-hidden="true"></i>
-                    <span>Maquinarias</span>
+                    <span>{% if es_administrador %}Gestionar Maquinaria{% else %}Maquinarias{% endif %}</span>
                 </a>
                 {% endif %}
                 {% if es_administrador or es_cliente %}
