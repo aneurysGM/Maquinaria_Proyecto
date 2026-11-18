@@ -27,7 +27,7 @@ class CambioCorreoForm(forms.Form):
         widget=forms.EmailInput(attrs={'class': 'form-control', 'autocomplete': 'email'}),
     )
     contrasena_actual = forms.CharField(
-        label='Contraseña actual', strip=False,
+        label='Contraseña actual del sistema', strip=False,
         widget=forms.PasswordInput(attrs={
             'class': 'form-control', 'autocomplete': 'current-password',
         }),

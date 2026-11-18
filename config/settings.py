@@ -41,7 +41,6 @@ EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', '').lower() in {'1', 'true', 'yes'}
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))
-CAMBIO_CORREO_VIGENCIA_SEGUNDOS = int(os.getenv('CAMBIO_CORREO_VIGENCIA_SEGUNDOS', '3600'))
 DEFAULT_FROM_EMAIL = os.getenv(
     'DEFAULT_FROM_EMAIL',
     EMAIL_HOST_USER or 'webmaster@localhost',
