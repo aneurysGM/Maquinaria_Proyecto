@@ -178,6 +178,34 @@ class AutorizacionCliente(models.Model):
         return f'Autorizaciones de {self.usuario.email}'
 
 
+class SolicitudCambioCorreo(models.Model):
+    """Conserva el estado de un enlace; nunca almacena su token en claro."""
+
+    usuario = models.ForeignKey(
+        UsuarioPersonalizado, on_delete=models.CASCADE,
+        related_name='cambios_correo',
+    )
+    correo_anterior = models.EmailField()
+    correo_nuevo = models.EmailField()
+    token_hash = models.CharField(max_length=64, unique=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    vence_en = models.DateTimeField()
+    usado_en = models.DateTimeField(null=True, blank=True)
+    motivo_invalidacion = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        db_table = 'SolicitudCambioCorreo'
+        verbose_name = 'solicitud de cambio de correo'
+
+
+def puede_editar_su_perfil(usuario):
+    """Todos los roles con perfil pueden editar su propia cuenta activa."""
+    return (
+        usuario.is_authenticated and usuario.is_active
+        and (usuario.es_administrador or usuario.es_tecnico or usuario.es_cliente)
+    )
+
+
 def cliente_puede(usuario, permiso):
     """Evalúa si un cliente específico tiene autorizado realizar una acción."""
     if not usuario.is_authenticated:

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Confirmar correo · MaquiRent</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f6f6f4; color: #1d1d1f; font: 1rem/1.6 system-ui, sans-serif; }
+        main { max-width: 36rem; margin: 10vh auto; padding: 2rem; border-top: 6px solid #ffc107; border-radius: 1.5rem; background: white; box-shadow: 0 1rem 3rem #0001; }
+        h1 { line-height: 1.2; } a { color: #333; } p { overflow-wrap: anywhere; }
+        button { background: #ffc107; border: 0; border-radius: .5rem; padding: .9rem 1.2rem; font: inherit; font-weight: 700; cursor: pointer; }
+        .error { border-left: 4px solid #dc3545; padding: 1rem; background: #fdecea; }
+        @media (max-width: 600px) { main { margin: 2rem 1rem; padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+<main>
+    <p><strong>MaquiRent</strong> · Mi perfil</p>
+    {% if error %}
+        <h1>No se pudo cambiar el correo</h1>
+        <p class="error" role="alert">{{ error }}</p>
+        <p>Tu correo activo se conserva.</p>
+    {% elif confirmado %}
+        <h1>Correo actualizado</h1>
+        <p>Ya puedes iniciar sesión con tu correo nuevo y la misma contraseña. Tu cuenta conserva su rol e historial.</p>
+    {% else %}
+        <h1>Confirma tu correo nuevo</h1>
+        <p>Nuevo correo: <strong>{{ solicitud.correo_nuevo }}</strong></p>
+        <p>El enlace vence el {{ solicitud.vence_en|date:'d/m/Y H:i' }}. Al confirmar, el correo anterior dejará de servir para iniciar sesión.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit">Confirmar cambio de correo</button>
+        </form>
+    {% endif %}
+    {% if request.user.is_authenticated %}
+        <p><a href="{% url 'configuraciones:mi_perfil' %}">Volver a mi perfil</a></p>
+        {% if confirmado %}
+        <form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión y probar el acceso</button></form>
+        {% endif %}
+    {% else %}
+        <p><a href="{% url 'cuentas:login' %}">Iniciar sesión</a></p>
+    {% endif %}
+</main>
+</body>
+</html>
