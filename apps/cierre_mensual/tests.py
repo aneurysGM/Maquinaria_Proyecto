@@ -12,7 +12,10 @@ from django.utils import timezone
 from openpyxl import load_workbook
 
 from apps.alquileres.models import SolicitudAlquiler
-from apps.cierre_mensual.consultas import ingresos_periodo_actual
+from apps.cierre_mensual.consultas import (
+    ingresos_periodo_actual,
+    semanas_del_mes,
+)
 from apps.cierre_mensual.models import CierreMensual
 from apps.cierre_mensual.servicios import cerrar_periodo
 from apps.inventario.models import Categoria, Maquinaria, Unidad
@@ -118,12 +121,75 @@ class CierreMensualTests(TestCase):
         respuesta = self.client.get(reverse('cuentas:dashboard'))
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'RD$20.00')
-        self.assertContains(respuesta, 'Cerrar mes y descargar Excel')
+        self.assertNotContains(respuesta, 'Cerrar mes y descargar Excel')
 
         self.client.force_login(self.cliente)
         respuesta = self.client.get(reverse('cuentas:dashboard'))
         self.assertEqual(respuesta.status_code, 200)
         self.assertNotContains(respuesta, 'Cerrar mes y descargar Excel')
+
+    def test_boton_e_historial_estan_dentro_de_ventas_y_presupuestos(self):
+        self.client.force_login(self.administrador)
+        respuesta = self.client.get(reverse('ventas:presupuesto_lista'))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, 'Cerrar mes y descargar Excel')
+        self.assertContains(respuesta, reverse('cierre_mensual:historial'))
+
+    def test_historial_mensual_muestra_periodos_y_solo_es_administrativo(self):
+        hoy = timezone.localdate()
+        self.client.force_login(self.administrador)
+        respuesta = self.client.get(reverse('cierre_mensual:historial'))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(
+            respuesta,
+            reverse(
+                'cierre_mensual:mes',
+                kwargs={'anio': hoy.year, 'mes': hoy.month},
+            ),
+        )
+
+        self.client.force_login(self.cliente)
+        respuesta = self.client.get(reverse('cierre_mensual:historial'))
+        self.assertEqual(respuesta.status_code, 403)
+
+    def test_historial_crea_cuatro_secciones_de_semana_por_mes(self):
+        self.client.force_login(self.administrador)
+        hoy = timezone.localdate()
+        respuesta = self.client.get(reverse(
+            'cierre_mensual:mes',
+            kwargs={'anio': hoy.year, 'mes': hoy.month},
+        ))
+
+        self.assertEqual(respuesta.status_code, 200)
+        semanas = semanas_del_mes(hoy.year, hoy.month)
+        ultimo_dia = (
+            (hoy.replace(day=28) + timedelta(days=4)).replace(day=1)
+            - timedelta(days=1)
+        ).day
+        self.assertEqual(
+            [(semana['desde'].day, semana['hasta'].day) for semana in semanas],
+            [(1, 7), (8, 14), (15, 21), (22, ultimo_dia)],
+        )
+        for numero in range(1, 5):
+            self.assertContains(respuesta, f'Semana {numero}')
+
+    def test_detalle_semanal_muestra_todos_los_conceptos_y_datos_del_pago(self):
+        pago = self.crear_pago('30.00', 'deposito', timezone.now())
+        self.client.force_login(self.administrador)
+        hoy = timezone.localtime(pago.creado_en).date()
+        semana = min((hoy.day - 1) // 7 + 1, 4)
+        respuesta = self.client.get(reverse(
+            'cierre_mensual:semana',
+            kwargs={'anio': hoy.year, 'mes': hoy.month, 'semana': semana},
+        ))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, self.cliente.email)
+        self.assertContains(respuesta, 'CIERRE-01')
+        self.assertContains(respuesta, 'Depósito de garantía')
+        self.assertContains(respuesta, '30.00')
 
     def test_solo_administrador_puede_descargar_y_cerrar(self):
         self.client.force_login(self.cliente)

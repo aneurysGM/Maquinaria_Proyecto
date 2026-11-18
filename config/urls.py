@@ -25,8 +25,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', InicioPublicoView.as_view(), name='index'),
     path('catalogo/', CatalogoPublicoView.as_view(), name='catalogo'),
+    path('ventas/cierres-mensuales/', include('apps.cierre_mensual.urls')),
     path('ventas/', include('apps.ventas.urls')),
-    path('cierres-mensuales/', include('apps.cierre_mensual.urls')),
     # Rutas de la app cuentas (prefijo /cuentas/ o directamente en la raíz)
     path('auth/', include('apps.cuentas.urls')),
     path('inventario/', include('apps.inventario.urls')),
