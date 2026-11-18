@@ -28,6 +28,7 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+<<<<<<< HEAD
 ### Gestión de marcas de maquinaria — 18 de noviembre de 2026
 
 - Se creó `apps/marca/` para administrar marcas mediante el panel: crear,
@@ -100,6 +101,20 @@ puede documentar en una guía específica y enlazarla desde aquí.
   pendientes y se comprobó la creación de `django_session`. Para reproducir la
   actualización en otra instalación, configura la base correspondiente y ejecuta
   `manage.py migrate`.
+=======
+### Cambio inmediato de correo en Mi perfil
+
+Administrador, Cliente y Técnico pueden cambiar su propio correo con la
+contraseña actual del sistema. Al guardar una dirección válida y disponible,
+el cambio se aplica de inmediato y se conserva la contraseña, el rol y el
+historial. Se retiró la confirmación por enlace de este flujo y se mantuvieron
+las migraciones ya publicadas. Consultar [Mi perfil](docs/mi-perfil.md) para
+probarlo en local y revisar las validaciones.
+
+Validación local de la corrección: **54 pruebas aprobadas** de configuraciones,
+técnicos, clientes y mantenimiento en SQLite de pruebas; `manage.py check`,
+`makemigrations --check --dry-run` y `git diff --check` correctos.
+>>>>>>> 74edba46372928d42bda425739a9485ea7d3ed49
 
 ### Pruebas de desarrollo fuera del repositorio — 16 de noviembre de 2026
 

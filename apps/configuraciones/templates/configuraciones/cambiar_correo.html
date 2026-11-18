@@ -7,7 +7,7 @@
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4 p-lg-5">
             <p>Correo activo: <strong class="text-break">{{ request.user.email }}</strong></p>
-            <p class="text-secondary">Enviaremos al correo nuevo un enlace con vencimiento y de un solo uso. Hasta que confirmes, seguirás entrando con tu correo actual. Tu contraseña se conserva.</p>
+            <p class="text-secondary">El cambio se guarda de inmediato. Desde ese momento iniciarás sesión con el correo nuevo y la misma contraseña.</p>
             <form method="post" novalidate>
                 {% csrf_token %}
                 {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
@@ -19,7 +19,7 @@
                 </div>
                 {% endfor %}
                 <div class="d-flex flex-wrap gap-2 mt-4">
-                    <button class="btn btn-warning fw-semibold" type="submit">Enviar enlace de confirmación</button>
+                    <button class="btn btn-warning fw-semibold" type="submit">Guardar correo</button>
                     <a class="btn btn-outline-secondary" href="{% url 'configuraciones:mi_perfil' %}">Cancelar</a>
                 </div>
             </form>

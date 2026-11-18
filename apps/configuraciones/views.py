@@ -1,11 +1,8 @@
-import logging
-from smtplib import SMTPException
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -14,14 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 
 from apps.cuentas.models import UsuarioPersonalizado, puede_editar_su_perfil
-from .correo import (
-    ErrorCambioCorreo, confirmar_cambio_correo, obtener_solicitud,
-    solicitar_cambio_correo, validar_solicitud,
-)
 from .forms import CambioContrasenaForm, CambioCorreoForm, MiPerfilForm
-
-
-logger = logging.getLogger(__name__)
 
 
 def usuario_configurable(usuario):
@@ -85,7 +75,7 @@ class CambiarCorreoView(ConfiguracionesRequiredMixin, View):
         return self.mostrar(request, CambioCorreoForm(usuario=request.user))
 
     def post(self, request):
-        # Serializa los cambios de la misma cuenta durante la solicitud.
+        # Valida la contraseña y modifica únicamente la cuenta de la sesión.
         try:
             with transaction.atomic():
                 usuario = UsuarioPersonalizado.objects.select_for_update().get(pk=request.user.pk)
@@ -95,37 +85,14 @@ class CambiarCorreoView(ConfiguracionesRequiredMixin, View):
                     return self.mostrar(request, form, status=403)
                 if not form.is_valid():
                     return self.mostrar(request, form)
-                solicitar_cambio_correo(request, usuario, form.cleaned_data['correo_nuevo'])
-        except ErrorCambioCorreo as error:
-            form.add_error(None, str(error))
-        except (SMTPException, OSError):
-            logger.warning('No se pudo enviar la confirmación de cambio de correo.')
-            form.add_error(None, 'No se pudo enviar el enlace. Revisa la configuración del envío con el administrador e inténtalo de nuevo.')
+                usuario.email = form.cleaned_data['correo_nuevo']
+                usuario.save(update_fields=['email'])
+        except IntegrityError:
+            form.add_error('correo_nuevo', 'Ese correo ya está registrado.')
         else:
-            messages.success(request, 'Enviamos un enlace al correo nuevo. Tu correo actual sigue activo hasta que confirmes el cambio.')
+            messages.success(request, 'Tu correo se actualizó correctamente. Ya puedes iniciar sesión con el correo nuevo y la misma contraseña.')
             return redirect('configuraciones:mi_perfil')
         return self.mostrar(request, form)
-
-
-@method_decorator(never_cache, name='dispatch')
-class ConfirmarCorreoView(View):
-    def get(self, request, token):
-        try:
-            solicitud = obtener_solicitud(token)
-            if request.user.is_authenticated and request.user.pk != solicitud.usuario_id:
-                raise ErrorCambioCorreo('Este enlace pertenece a otra cuenta. Cierra esa sesión para continuar.')
-            validar_solicitud(solicitud, solicitud.usuario)
-        except ErrorCambioCorreo as error:
-            return render(request, 'configuraciones/confirmar_correo.html', {'error': str(error)}, status=400)
-        # Abrir el enlace no lo consume: evita confirmaciones por escáneres de correo.
-        return render(request, 'configuraciones/confirmar_correo.html', {'solicitud': solicitud})
-
-    def post(self, request, token):
-        try:
-            confirmar_cambio_correo(token, request.user)
-        except ErrorCambioCorreo as error:
-            return render(request, 'configuraciones/confirmar_correo.html', {'error': str(error)}, status=400)
-        return render(request, 'configuraciones/confirmar_correo.html', {'confirmado': True})
 
 
 class CambiarContrasenaView(ConfiguracionesRequiredMixin, PasswordChangeView):
