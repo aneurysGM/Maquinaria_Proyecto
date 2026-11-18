@@ -1,0 +1,53 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Mi perfil{% endblock %}
+{% block page_name %}Mi perfil{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <a class="text-secondary" href="{% url 'configuraciones:indice' %}">Volver a configuraciones</a>
+        <h1 class="h3 fw-bold mt-3 mb-1">Mi perfil</h1>
+        <p class="text-secondary">Consulta y actualiza los datos de tu cuenta.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold mb-3">Datos personales</h2>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                        {% endfor %}
+                        <button class="btn btn-warning fw-semibold" type="submit">Guardar datos</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold mb-3">Cuenta</h2>
+                    <dl>
+                        <dt>Correo electrónico</dt><dd class="text-break">{{ perfil.email }}</dd>
+                        <dt>Rol</dt><dd>{% if perfil.es_administrador %}Administrador{% else %}{{ perfil.get_rol_display }}{% endif %}</dd>
+                        {% if perfil.es_tecnico %}
+                        <dt>Especialidad</dt><dd>{{ perfil.especialidad|default:'No registrada' }}</dd>
+                        <dt>Disponibilidad</dt><dd>{{ perfil.disponible|yesno:'Disponible,No disponible' }}</dd>
+                        {% endif %}
+                    </dl>
+                    {% if perfil.es_tecnico %}<p class="text-secondary small">El administrador gestiona tu especialidad y disponibilidad.</p>{% endif %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-primary" href="{% url 'configuraciones:cambiar_correo' %}">Cambiar correo</a>
+                        <a class="btn btn-outline-secondary" href="{% url 'configuraciones:cambiar_contrasena' %}">Cambiar contraseña</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
