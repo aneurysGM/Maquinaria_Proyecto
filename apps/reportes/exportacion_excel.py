@@ -53,7 +53,7 @@ def _valor_celda(celda, valor):
     celda.alignment = Alignment(vertical='top', wrap_text=True)
 
 
-def exportar_excel(tipo, titulo, encabezados, filas, total):
+def exportar_excel(tipo, titulo, encabezados, filas, total, etiqueta_total='Total de costos'):
     libro = Workbook()
     hoja = libro.active
     hoja.title = tipo[:31]
@@ -71,7 +71,7 @@ def exportar_excel(tipo, titulo, encabezados, filas, total):
     if total is not None:
         fila_total = len(filas) + 2
         celda = hoja.cell(row=fila_total, column=max(1, len(encabezados) - 1))
-        celda.value = 'Total de costos'
+        celda.value = etiqueta_total
         celda.font = Font(bold=True)
         celda = hoja.cell(row=fila_total, column=len(encabezados))
         _valor_celda(celda, total)

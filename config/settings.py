@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'apps.cuentas',
     'apps.inventario',
     'apps.ventas',
+    'apps.cierre_mensual',
     'apps.alquileres',
     'apps.mantenimiento',
     'apps.tecnico_mantenimiento',
