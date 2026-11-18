@@ -1,0 +1,56 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block title %}Historial mensual de pagos{% endblock %}
+{% block page_name %}Historial mensual{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <a href="{% url 'ventas:presupuesto_lista' %}" class="small text-decoration-none">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Ventas y Presupuestos
+        </a>
+        <h1 class="h2 mt-2 mb-1">Historial mensual de pagos</h1>
+        <p class="text-secondary mb-0">
+            Cada mes contiene cuatro secciones: días 1–7, 8–14, 15–21 y 22 hasta el último día.
+            Los depósitos se muestran aparte y no se suman a Ingresos del Mes.
+        </p>
+    </div>
+
+    <div class="row g-3">
+        {% for mes in meses %}
+        <div class="col-md-6 col-xl-4">
+            <a class="card h-100 border-0 shadow-sm text-decoration-none text-reset"
+               href="{% url 'cierre_mensual:mes' anio=mes.anio mes=mes.mes %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                        <h2 class="h4 mb-0">{{ mes.fecha|date:"F Y" }}</h2>
+                        <span class="badge {% if mes.estado == 'En curso' %}text-bg-primary{% else %}text-bg-secondary{% endif %}">
+                            {{ mes.estado }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary">Ingresos</span>
+                        <strong>RD${{ mes.ingresos|floatformat:"2u" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small mt-1">
+                        <span class="text-secondary">Depósitos recibidos</span>
+                        <span>RD${{ mes.depositos|floatformat:"2u" }}</span>
+                    </div>
+                    <div class="small text-secondary mt-3">
+                        {{ mes.cantidad_pagos }} pago(s) registrados
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center text-secondary py-5">
+                    Todavía no hay periodos mensuales para mostrar.
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block title %}Pagos de {{ periodo.fecha|date:"F Y" }}{% endblock %}
+{% block page_name %}Historial mensual{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <a href="{% url 'cierre_mensual:historial' %}" class="small text-decoration-none">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver al historial mensual
+        </a>
+        <h1 class="h2 mt-2 mb-1">{{ periodo.fecha|date:"F Y" }}</h1>
+        <p class="text-secondary mb-0">Selecciona una de las cuatro secciones semanales para ver el detalle de cada pago.</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="small text-secondary">Ingresos (renta y mora)</div>
+                <div class="h4 mb-0">RD${{ periodo.ingresos|floatformat:"2u" }}</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="small text-secondary">Depósitos recibidos</div>
+                <div class="h4 mb-0">RD${{ periodo.depositos|floatformat:"2u" }}</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="small text-secondary">Pagos registrados</div>
+                <div class="h4 mb-0">{{ periodo.cantidad_pagos }}</div>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for semana in semanas %}
+        <div class="col-md-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <h2 class="h5 mb-1">Semana {{ semana.numero }}</h2>
+                            <p class="small text-secondary mb-3">
+                                {{ semana.desde|date:"d/m/Y" }} – {{ semana.hasta|date:"d/m/Y" }}
+                            </p>
+                        </div>
+                        <span class="badge text-bg-light border">{{ semana.resumen.cantidad_pagos }} pago(s)</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Ingresos</span>
+                        <strong>RD${{ semana.resumen.ingresos|floatformat:"2u" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small mt-1">
+                        <span class="text-secondary">Depósitos</span>
+                        <span>RD${{ semana.resumen.depositos|floatformat:"2u" }}</span>
+                    </div>
+                    <a class="btn btn-outline-primary btn-sm mt-3"
+                       href="{% url 'cierre_mensual:semana' anio=periodo.anio mes=periodo.mes semana=semana.numero %}">
+                        Ver pagos de la semana
+                    </a>
+                </div>
+            </section>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
