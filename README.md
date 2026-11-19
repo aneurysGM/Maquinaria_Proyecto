@@ -28,7 +28,26 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
-<<<<<<< HEAD
+### Acciones de categorías de maquinaria — 19 de noviembre de 2026
+
+El lápiz de `/inventario/categorias/` apuntaba a `#` y no tenía una vista de
+edición conectada. Cada fila dispone ahora de **Editar** y **Eliminar** para
+su categoría. La edición carga y guarda el nombre y la descripción; el borrado
+requiere confirmación por POST y conserva las categorías con maquinaria
+asociada, incluidos equipos inactivos. Ambos accesos son del Administrador.
+
+Se añade `apps/inventario/templates/inventario/categoria_confirmar_eliminar.html`
+para revisar la categoría y cancelar o confirmar su eliminación. La
+[guía de revisión de categorías](docs/categorias.md) recoge la causa, los cambios,
+las comprobaciones y los pasos de aceptación.
+
+Pasaron las **12 pruebas locales nuevas** de categorías, `manage.py check`,
+`makemigrations --check --dry-run` y `git diff --check`. La suite de inventario
+ejecutó 34 pruebas y conservó los mismos cuatro fallos de expectativas de la
+barra lateral del catálogo que se reprodujeron en una copia de HEAD sin el
+arreglo. El usuario confirmó que probó el arreglo en Edge y quedó bien, con
+**Editar** y **Eliminar** visibles en cada fila. No se requieren migraciones.
+
 ### Gestión de marcas de maquinaria — 18 de noviembre de 2026
 
 - Se creó `apps/marca/` para administrar marcas mediante el panel: crear,
@@ -101,7 +120,7 @@ puede documentar en una guía específica y enlazarla desde aquí.
   pendientes y se comprobó la creación de `django_session`. Para reproducir la
   actualización en otra instalación, configura la base correspondiente y ejecuta
   `manage.py migrate`.
-=======
+
 ### Cambio inmediato de correo en Mi perfil
 
 Administrador, Cliente y Técnico pueden cambiar su propio correo con la
@@ -114,7 +133,6 @@ probarlo en local y revisar las validaciones.
 Validación local de la corrección: **54 pruebas aprobadas** de configuraciones,
 técnicos, clientes y mantenimiento en SQLite de pruebas; `manage.py check`,
 `makemigrations --check --dry-run` y `git diff --check` correctos.
->>>>>>> 74edba46372928d42bda425739a9485ea7d3ed49
 
 ### Pruebas de desarrollo fuera del repositorio — 16 de noviembre de 2026
 
