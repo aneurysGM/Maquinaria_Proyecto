@@ -2,9 +2,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Q
+from django.db.models.deletion import ProtectedError
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView,
+    DeleteView,
     DetailView,
     ListView,
     TemplateView,
@@ -198,6 +200,46 @@ class CategoriaCrearView(LoginRequiredMixin, InventarioRegistroRequiredMixin, Cr
     form_class = CategoriaForm
     template_name = 'inventario/categoria_form.html'
     success_url = reverse_lazy('inventario:categoria_lista')
+
+
+class CategoriaEditarView(LoginRequiredMixin, InventarioRegistroRequiredMixin, UpdateView):
+    model = Categoria
+    form_class = CategoriaForm
+    template_name = 'inventario/categoria_form.html'
+    success_url = reverse_lazy('inventario:categoria_lista')
+
+    def form_valid(self, form):
+        respuesta = super().form_valid(form)
+        messages.success(self.request, f'La categoría «{self.object.nombre}» se actualizó correctamente.')
+        return respuesta
+
+
+class CategoriaEliminarView(LoginRequiredMixin, InventarioRegistroRequiredMixin, DeleteView):
+    model = Categoria
+    template_name = 'inventario/categoria_confirmar_eliminar.html'
+    context_object_name = 'categoria'
+    success_url = reverse_lazy('inventario:categoria_lista')
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['equipos_asociados'] = self.object.maquinarias.count()
+        return context
+
+    def form_valid(self, form):
+        nombre = self.object.nombre
+        try:
+            with transaction.atomic():
+                self.object.delete()
+        except ProtectedError:
+            messages.error(
+                self.request,
+                f'No se puede eliminar la categoría «{nombre}» porque tiene maquinaria asociada. '
+                'Reasigna sus equipos a otra categoría antes de eliminarla.',
+            )
+        else:
+            messages.success(self.request, f'La categoría «{nombre}» se eliminó correctamente.')
+        return HttpResponseRedirect(self.get_success_url())
 
 
 # --- Vistas de Maquinaria / Unidad Física ---

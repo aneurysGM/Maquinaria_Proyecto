@@ -7,6 +7,8 @@ urlpatterns = [
     # Categorías
     path('categorias/', views.CategoriaListaView.as_view(), name='categoria_lista'),
     path('categorias/nuevo/', views.CategoriaCrearView.as_view(), name='categoria_crear'),
+    path('categorias/<int:pk>/editar/', views.CategoriaEditarView.as_view(), name='categoria_editar'),
+    path('categorias/<int:pk>/eliminar/', views.CategoriaEliminarView.as_view(), name='categoria_eliminar'),
     
     # Maquinarias / Unidades
     path('maquinarias/', views.MaquinariaListaView.as_view(), name='maquinaria_lista'),
