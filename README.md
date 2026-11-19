@@ -28,6 +28,26 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Acciones de categorías de maquinaria — 19 de noviembre de 2026
+
+El lápiz de `/inventario/categorias/` apuntaba a `#` y no tenía una vista de
+edición conectada. Cada fila dispone ahora de **Editar** y **Eliminar** para
+su categoría. La edición carga y guarda el nombre y la descripción; el borrado
+requiere confirmación por POST y conserva las categorías con maquinaria
+asociada, incluidos equipos inactivos. Ambos accesos son del Administrador.
+
+Se añade `apps/inventario/templates/inventario/categoria_confirmar_eliminar.html`
+para revisar la categoría y cancelar o confirmar su eliminación. La
+[guía de revisión de categorías](docs/categorias.md) recoge la causa, los cambios,
+las comprobaciones y los pasos de aceptación.
+
+Pasaron las **12 pruebas locales nuevas** de categorías, `manage.py check`,
+`makemigrations --check --dry-run` y `git diff --check`. La suite de inventario
+ejecutó 34 pruebas y conservó los mismos cuatro fallos de expectativas de la
+barra lateral del catálogo que se reprodujeron en una copia de HEAD sin el
+arreglo. El usuario confirmó que probó el arreglo en Edge y quedó bien, con
+**Editar** y **Eliminar** visibles en cada fila. No se requieren migraciones.
+
 ### Cambio inmediato de correo en Mi perfil
 
 Administrador, Cliente y Técnico pueden cambiar su propio correo con la
