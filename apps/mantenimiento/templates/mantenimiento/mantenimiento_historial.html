@@ -119,7 +119,9 @@
                                 {% endif %}
                             </td>
                             <td class="pe-4">
-                                <a class="btn btn-sm btn-outline-primary" href="{% url 'ordenes_trabajo:detalle' mantenimiento.pk %}">Ver orden</a>
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'ordenes_trabajo:detalle' mantenimiento.pk %}">
+                                    {% if es_administrador %}Ver detalle técnico{% else %}Ver orden{% endif %}
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}

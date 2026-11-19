@@ -40,6 +40,14 @@ def _es_personal(usuario):
     return permisos.get('es_administrador', False)
 
 
+def _requiere_tecnico(usuario):
+    permisos = permisos_panel(usuario)
+    if not permisos.get('es_tecnico'):
+        raise PermissionDenied(
+            'Solo el técnico asignado puede trabajar y registrar avances en la orden.'
+        )
+
+
 def _ordenes_visibles(usuario):
     ordenes = Mantenimiento.objects.select_related(
         'unidad__maquinaria__categoria', 'tecnico', 'registrado_por',
@@ -139,7 +147,7 @@ def orden_detalle(request, mantenimiento_id):
 @login_required(login_url='cuentas:login')
 @require_POST
 def orden_actualizar(request, mantenimiento_id):
-    _es_personal(request.user)
+    _requiere_tecnico(request.user)
     form = ActualizarOrdenForm(request.POST)
     if not form.is_valid():
         _mensaje_error(
@@ -183,7 +191,7 @@ def orden_actualizar(request, mantenimiento_id):
 @login_required(login_url='cuentas:login')
 @require_POST
 def orden_comentar(request, mantenimiento_id):
-    _es_personal(request.user)
+    _requiere_tecnico(request.user)
     form = ComentarioOrdenForm(request.POST)
     if not form.is_valid():
         _mensaje_error(
@@ -211,7 +219,7 @@ def orden_comentar(request, mantenimiento_id):
 @login_required(login_url='cuentas:login')
 @require_POST
 def orden_guardar_checklist(request, mantenimiento_id):
-    _es_personal(request.user)
+    _requiere_tecnico(request.user)
     try:
         with transaction.atomic():
             orden = _obtener_orden(request.user, mantenimiento_id, bloquear=True)
@@ -241,7 +249,7 @@ def orden_guardar_checklist(request, mantenimiento_id):
 @login_required(login_url='cuentas:login')
 @require_POST
 def orden_finalizar(request, mantenimiento_id):
-    _es_personal(request.user)
+    _requiere_tecnico(request.user)
     observaciones = request.POST.get('observaciones', '').strip()
     if not observaciones or len(observaciones) > 2000:
         messages.error(request, 'Escribe las observaciones finales (máximo 2000 caracteres).')
@@ -317,7 +325,7 @@ def orden_finalizar(request, mantenimiento_id):
 @login_required(login_url='cuentas:login')
 @require_POST
 def orden_solicitar_repuestos(request, mantenimiento_id):
-    _es_personal(request.user)
+    _requiere_tecnico(request.user)
     formset = SolicitudRepuestoFormSet(request.POST, prefix='repuestos')
     if not formset.is_valid():
         errores = [
@@ -447,7 +455,7 @@ def solicitud_repuesto_resolver(request, solicitud_id, accion):
 @login_required(login_url='cuentas:login')
 @require_POST
 def orden_registrar_consumo(request, mantenimiento_id):
-    _es_personal(request.user)
+    _requiere_tecnico(request.user)
     form = ConsumoRepuestoForm(request.POST)
     if not form.is_valid():
         _mensaje_error(

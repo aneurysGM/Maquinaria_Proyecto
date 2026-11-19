@@ -190,6 +190,51 @@ class OrdenTrabajoTests(TestCase):
             'Se detectó desgaste en la manguera hidráulica.',
         )
 
+    def test_administrador_solo_consulta_el_detalle_de_la_orden(self):
+        self.client.force_login(self.administrador)
+        respuesta = self.client.get(
+            reverse('ordenes_trabajo:detalle', args=[self.orden.pk]),
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, 'Esta vista es de solo lectura')
+        self.assertContains(respuesta, 'Técnico asignado')
+        self.assertNotContains(respuesta, 'Guardar avance')
+        self.assertNotContains(respuesta, 'Enviar solicitud')
+        self.assertNotContains(respuesta, 'Marcar como finalizada')
+
+        respuesta = self.client.post(
+            reverse('ordenes_trabajo:actualizar', args=[self.orden.pk]),
+            {
+                'estado': 'reparacion',
+                'horas_trabajo': '2.0',
+                'horometro': '110.0',
+                'observaciones': 'El administrador no debe registrar avances.',
+            },
+        )
+        self.assertEqual(respuesta.status_code, 403)
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'pendiente')
+        self.assertEqual(self.orden.registros_trabajo.count(), 0)
+        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+
+        acciones_tecnicas = (
+            'ordenes_trabajo:comentar',
+            'ordenes_trabajo:checklist',
+            'ordenes_trabajo:finalizar',
+            'ordenes_trabajo:solicitar_repuestos',
+            'ordenes_trabajo:consumir_repuesto',
+        )
+        for nombre_ruta in acciones_tecnicas:
+            with self.subTest(ruta=nombre_ruta):
+                respuesta = self.client.post(
+                    reverse(nombre_ruta, args=[self.orden.pk]),
+                )
+                self.assertEqual(respuesta.status_code, 403)
+        self.assertEqual(ComentarioOrden.objects.count(), 0)
+        self.assertEqual(SolicitudRepuesto.objects.count(), 0)
+
     def test_tecnico_puede_consultar_inventario_sin_acciones_administrativas(self):
         Repuesto.objects.create(
             codigo='REP-T-001',
