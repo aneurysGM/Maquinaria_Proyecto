@@ -489,18 +489,23 @@ def orden_registrar_consumo(request, mantenimiento_id):
 @login_required(login_url='cuentas:login')
 @require_safe
 def repuesto_lista(request):
-    if not _es_personal(request.user):
-        raise PermissionDenied
-    if not request.user.es_administrador:
-        raise PermissionDenied('Solo el administrador puede consultar el inventario de repuestos.')
-    solicitudes = SolicitudRepuesto.objects.filter(
-        estado__in=('pendiente', 'aprobada'),
-    ).select_related(
+    if not (request.user.es_administrador or request.user.es_tecnico):
+        raise PermissionDenied('Solo el personal administrativo y técnico puede consultar repuestos.')
+    es_administrador = request.user.es_administrador
+    solicitudes = SolicitudRepuesto.objects.select_related(
         'mantenimiento__unidad__maquinaria', 'solicitada_por',
-    ).prefetch_related('detalles').order_by('creada_en', 'pk')
+    ).prefetch_related('detalles')
+    if es_administrador:
+        solicitudes = solicitudes.filter(
+            estado__in=('pendiente', 'aprobada'),
+        )
+    else:
+        solicitudes = solicitudes.filter(solicitada_por=request.user)
+    solicitudes = solicitudes.order_by('creada_en', 'pk')
     return render(request, 'ordenes_trabajo/repuestos_lista.html', {
         'repuestos': Repuesto.objects.order_by('codigo'),
         'solicitudes': solicitudes,
+        'es_administrador': es_administrador,
     })
 
 

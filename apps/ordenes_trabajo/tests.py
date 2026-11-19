@@ -190,6 +190,21 @@ class OrdenTrabajoTests(TestCase):
             'Se detectó desgaste en la manguera hidráulica.',
         )
 
+    def test_tecnico_puede_consultar_inventario_sin_acciones_administrativas(self):
+        Repuesto.objects.create(
+            codigo='REP-T-001',
+            nombre='Filtro de prueba',
+            existencia=Decimal('4.00'),
+        )
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.get(reverse('ordenes_trabajo:repuestos'))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, 'REP-T-001')
+        self.assertContains(respuesta, 'Consulta')
+        self.assertNotContains(respuesta, 'Nuevo repuesto')
+        self.assertNotContains(respuesta, 'Confirmar recepción')
+
     def test_recepcion_suma_existencia_y_consumo_la_descuenta(self):
         self.client.force_login(self.tecnico)
         datos_solicitud = {

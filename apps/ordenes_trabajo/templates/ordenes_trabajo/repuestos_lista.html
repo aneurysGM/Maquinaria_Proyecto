@@ -14,7 +14,9 @@
             <a class="btn btn-outline-secondary" href="{% url 'ordenes_trabajo:lista' %}">
                 Volver a órdenes
             </a>
+            {% if es_administrador %}
             <a class="btn btn-primary" href="{% url 'ordenes_trabajo:repuesto_crear' %}">Nuevo repuesto</a>
+            {% endif %}
         </div>
     </div>
 
@@ -32,11 +34,15 @@
                         <td>{% for detalle in solicitud.detalles.all %}{{ detalle.codigo }} — {{ detalle.cantidad }} {{ detalle.unidad_medida }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
                         <td>{{ solicitud.get_estado_display }}</td>
                         <td>
+                            {% if es_administrador %}
                             {% if solicitud.estado == 'pendiente' %}
                             <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'aprobar' %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-primary" type="submit">Aprobar</button></form>
                             <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'rechazar' %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Rechazar</button></form>
                             {% else %}
                             <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'recibir' %}">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Confirmar recepción</button></form>
+                            {% endif %}
+                            {% else %}
+                            <span class="small text-secondary">Solo seguimiento</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -57,12 +63,16 @@
                         <td class="ps-4 fw-semibold">{{ repuesto.codigo }}</td><td>{{ repuesto.nombre }}</td>
                         <td>{{ repuesto.existencia }}</td><td>{{ repuesto.unidad_medida }}</td>
                         <td>
+                            {% if es_administrador %}
                             <form method="post" action="{% url 'ordenes_trabajo:repuesto_entrada' repuesto.pk %}" class="d-flex gap-2">
                                 {% csrf_token %}
                                 <label class="visually-hidden" for="entrada-{{ repuesto.pk }}">Cantidad recibida</label>
                                 <input class="form-control form-control-sm" id="entrada-{{ repuesto.pk }}" name="cantidad" type="number" min="0.01" step="0.01" required>
                                 <button class="btn btn-sm btn-outline-primary" type="submit">Registrar</button>
                             </form>
+                            {% else %}
+                            <span class="small text-secondary">Consulta</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}<tr><td colspan="5" class="text-center text-secondary py-4">Todavía no hay repuestos registrados.</td></tr>{% endfor %}

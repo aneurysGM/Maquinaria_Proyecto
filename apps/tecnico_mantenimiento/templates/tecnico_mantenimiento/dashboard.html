@@ -80,9 +80,14 @@
                     <span class="text-muted small text-uppercase fw-bold">Servicio</span>
                     <h2 class="h4 fw-bold mt-2">Mantenimiento</h2>
                     <p class="text-secondary">Registra intervenciones y consulta el historial técnico de cada unidad.</p>
-                    <a class="btn btn-warning" href="{% url 'mantenimiento:mantenimiento_lista' %}">
-                        Ir a mantenimiento
-                    </a>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-warning" href="{% url 'mantenimiento:mantenimiento_lista' %}">
+                            Ir a mantenimiento
+                        </a>
+                        <a class="btn btn-outline-primary" href="{% url 'ordenes_trabajo:repuestos' %}">
+                            Consultar repuestos
+                        </a>
+                    </div>
                 </div>
             </article>
         </div>
