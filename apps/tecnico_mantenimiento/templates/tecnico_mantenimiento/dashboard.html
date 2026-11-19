@@ -84,14 +84,52 @@
                         <a class="btn btn-warning" href="{% url 'mantenimiento:mantenimiento_lista' %}">
                             Ir a mantenimiento
                         </a>
-                        <a class="btn btn-outline-primary" href="{% url 'ordenes_trabajo:repuestos' %}">
-                            Consultar repuestos
-                        </a>
                     </div>
                 </div>
             </article>
         </div>
     </div>
+
+    <section class="mt-4" aria-label="Módulos técnicos">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <article class="card h-100 border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <span class="text-muted small text-uppercase fw-bold">Trabajo técnico</span>
+                        <h2 class="h5 fw-bold mt-2">Órdenes de trabajo</h2>
+                        <p class="text-secondary">Consulta las órdenes asignadas y actualiza su estado.</p>
+                        <a class="btn btn-outline-primary" href="{% url 'ordenes_trabajo:lista' %}">
+                            Abrir órdenes
+                        </a>
+                    </div>
+                </article>
+            </div>
+            <div class="col-md-4">
+                <article class="card h-100 border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <span class="text-muted small text-uppercase fw-bold">Almacén</span>
+                        <h2 class="h5 fw-bold mt-2">Repuestos e Inventario</h2>
+                        <p class="text-secondary">Revisa existencias y las solicitudes enviadas a administración.</p>
+                        <a class="btn btn-outline-primary" href="{% url 'Repuestos_Inventario:lista' %}">
+                            Consultar repuestos
+                        </a>
+                    </div>
+                </article>
+            </div>
+            <div class="col-md-4">
+                <article class="card h-100 border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <span class="text-muted small text-uppercase fw-bold">Análisis técnico</span>
+                        <h2 class="h5 fw-bold mt-2">Reportes</h2>
+                        <p class="text-secondary">Consulta reportes de maquinaria y mantenimientos.</p>
+                        <a class="btn btn-outline-primary" href="{% url 'reportes:indice' %}">
+                            Abrir reportes
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
 
     <section class="mt-5" aria-labelledby="assigned-orders-title">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">

@@ -33,6 +33,7 @@ urlpatterns = [
     path('marcas/', include('apps.marca.urls')),
     path('alquileres/', include('apps.alquileres.urls')),
     path('mantenimiento/ordenes/', include('apps.ordenes_trabajo.urls')),
+    path('mantenimiento/repuestos/', include('apps.Repuestos_Inventario.urls')),
     path('mantenimiento/', include('apps.mantenimiento.urls')),
     path('tecnicos/', include('apps.tecnico_mantenimiento.urls')),
     path('configuraciones/', include('apps.configuraciones.urls')),

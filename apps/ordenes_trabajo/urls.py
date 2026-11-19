@@ -15,8 +15,5 @@ urlpatterns = [
     path('<int:mantenimiento_id>/repuestos/solicitar/', views.orden_solicitar_repuestos, name='solicitar_repuestos'),
     path('<int:mantenimiento_id>/repuestos/consumir/', views.orden_registrar_consumo, name='consumir_repuesto'),
     path('solicitudes-repuestos/<int:solicitud_id>/<str:accion>/', views.solicitud_repuesto_resolver, name='resolver_solicitud_repuesto'),
-    path('repuestos/', views.repuesto_lista, name='repuestos'),
-    path('repuestos/nuevo/', views.repuesto_crear, name='repuesto_crear'),
-    path('repuestos/guardar/', views.repuesto_guardar, name='repuesto_guardar'),
-    path('repuestos/<int:repuesto_id>/entrada/', views.repuesto_entrada, name='repuesto_entrada'),
+    path('repuestos/', views.repuesto_redireccion, name='repuestos'),
 ]

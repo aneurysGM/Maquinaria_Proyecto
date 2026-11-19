@@ -197,7 +197,7 @@ class OrdenTrabajoTests(TestCase):
             existencia=Decimal('4.00'),
         )
         self.client.force_login(self.tecnico)
-        respuesta = self.client.get(reverse('ordenes_trabajo:repuestos'))
+        respuesta = self.client.get(reverse('Repuestos_Inventario:lista'))
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'REP-T-001')
