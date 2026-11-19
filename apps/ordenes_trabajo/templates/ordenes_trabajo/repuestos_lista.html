@@ -7,7 +7,15 @@
 <div class="container-fluid px-0">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div><h1 class="h3 fw-bold mb-1">Inventario de repuestos</h1><p class="text-secondary mb-0">Administra el catálogo, las existencias y solicitudes de técnicos.</p></div>
-        <a class="btn btn-primary" href="{% url 'ordenes_trabajo:repuesto_crear' %}">Nuevo repuesto</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'mantenimiento:mantenimiento_lista' %}">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a mantenimiento
+            </a>
+            <a class="btn btn-outline-secondary" href="{% url 'ordenes_trabajo:lista' %}">
+                Volver a órdenes
+            </a>
+            <a class="btn btn-primary" href="{% url 'ordenes_trabajo:repuesto_crear' %}">Nuevo repuesto</a>
+        </div>
     </div>
 
     <section class="card border-0 shadow-sm rounded-4 mb-4">
