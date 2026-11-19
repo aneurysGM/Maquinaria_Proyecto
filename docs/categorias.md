@@ -69,7 +69,7 @@ inventario ejecutó 34 pruebas y reportó cuatro fallos anteriores en
 `CatalogoPanelTests`: una expectativa de ausencia de barra lateral en
 `test_cliente_ve_tarifas_y_deposito_pero_no_costo_adquisicion` y tres subcasos
 por rol de `test_detalle_desde_catalogo_no_muestra_panel_lateral_a_ningun_rol`.
-Una copia temporal de HEAD, sin este arreglo, ejecutó las 22 pruebas existentes
+Una copia temporal del HEAD anterior al arreglo (`f177fff`) ejecutó las 22 pruebas existentes
 y reprodujo exactamente esos mismos fallos. No aparecieron fallos nuevos.
 
 Los datos ficticios se crearon y eliminaron únicamente en las bases de pruebas;
@@ -79,6 +79,14 @@ permanecen en `test/`, excluido de Git por la configuración del proyecto.
 `categorias_base.log` y `categorias_corregida.log` conservan la comparación;
 `test/evidencias/verificar_categorias_base.py` permite repetirla sin modificar
 el checkout actual.
+
+Para preparar la publicación se integró `origin/main` (`e27118f`) conservando el
+commit original del arreglo, `44f05aa`. Se resolvió el conflicto de `README.md`
+conservando las notas de ambas ramas y retirando los marcadores de conflicto
+anteriores que ya contenía `main`. Tras integrar, volvieron a pasar las 12
+pruebas de categorías, `manage.py check`, la comprobación de migraciones y
+`git diff --check`. Se instaló en el entorno virtual la dependencia
+`qrcode==8.2` que ya declaraba `main`; no se aplicaron migraciones a la base local.
 
 ## Revisión visual
 

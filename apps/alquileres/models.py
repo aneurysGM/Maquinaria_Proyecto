@@ -1,6 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
@@ -98,6 +99,22 @@ class SolicitudAlquiler(models.Model):
     def pago_inicial_completo(self):
         from .reservas import pago_inicial_completo
         return pago_inicial_completo(self)
+
+    @property
+    def tiene_pagos_registrados(self):
+        try:
+            return self.presupuesto.pagos.exists()
+        except ObjectDoesNotExist:
+            return False
+
+    @property
+    def puede_cancelar_cliente(self):
+        return (
+            self.estado in ('Pendiente', 'Aprobada', 'Rechazada', 'Vencida')
+            and self.fecha_salida is None
+            and self.fecha_retorno is None
+            and not self.tiene_pagos_registrados
+        )
 
     @property
     def estado_cliente(self):

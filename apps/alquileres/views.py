@@ -18,7 +18,10 @@ from apps.cuentas.models import permisos_panel
 from apps.inventario.models import Unidad
 from apps.ventas.models import PagoAlquiler, PresupuestoAlquiler
 from .bloqueos import bloquear_unidad
-from .forms import RetornoMaquinariaForm, SolicitudAlquilerForm, SolicitudFiltroForm
+from .forms import (
+    RetornoMaquinariaForm, SolicitudAlquilerForm, SolicitudAplazarForm,
+    SolicitudFiltroForm,
+)
 from .models import SolicitudAlquiler
 from .reservas import (
     liberar_unidad_si_no_reservada,
@@ -254,7 +257,11 @@ def solicitud_lista(request):
     return render(
         request,
         'alquileres/solicitud_lista.html',
-        {'solicitudes': solicitudes, 'filtros': filtros},
+        {
+            'solicitudes': solicitudes,
+            'filtros': filtros,
+            'hoy': timezone.localdate().isoformat(),
+        },
     )
 
 
@@ -262,7 +269,11 @@ def solicitud_lista(request):
 @require_safe
 def solicitud_detalle(request, solicitud_id):
     solicitud = get_object_or_404(solicitudes_consultables(request.user), pk=solicitud_id)
-    return render(request, 'alquileres/solicitud_detalle.html', {'solicitud': solicitud})
+    return render(
+        request,
+        'alquileres/solicitud_detalle.html',
+        {'solicitud': solicitud, 'hoy': timezone.localdate().isoformat()},
+    )
 
 
 @login_required(login_url='cuentas:login')
@@ -375,40 +386,87 @@ def solicitud_responder_disponibilidad(request, solicitud_id):
     solicitud, _unidad = bloquear_movimiento(solicitud_id)
     if solicitud.cliente_id != request.user.pk:
         raise Http404
+
+    accion = request.POST.get('accion')
+    if accion == 'cancelar':
+        if not solicitud.puede_cancelar_cliente:
+            if PagoAlquiler.objects.filter(presupuesto__solicitud=solicitud).exists():
+                messages.error(
+                    request,
+                    'No puedes cancelar en línea porque esta solicitud tiene pagos registrados. '
+                    'Contacta al administrador para revisar el reembolso.',
+                )
+            else:
+                messages.warning(request, 'Esta solicitud ya no se puede cancelar.')
+            return redirect('alquileres:solicitud_lista')
+
+        solicitud.estado = 'Cancelada'
+        solicitud.aplazada = False
+        solicitud.fecha_aviso_disponibilidad = None
+        solicitud.motivo_disponibilidad = ''
+        solicitud.save(update_fields=[
+            'estado', 'aplazada', 'fecha_aviso_disponibilidad',
+            'motivo_disponibilidad',
+        ])
+        messages.success(
+            request,
+            'La solicitud fue cancelada.',
+        )
+        return redirect('alquileres:solicitud_lista')
+
+    if accion != 'aplazar':
+        messages.error(request, 'La respuesta seleccionada no es válida.')
+        return redirect('alquileres:solicitud_lista')
+
     if (
         solicitud.estado not in ('Pendiente', 'Aprobada')
         or solicitud.fecha_aviso_disponibilidad is None
         or solicitud.aplazada
+        or solicitud.fecha_salida is not None
     ):
         messages.warning(request, 'Esta solicitud ya no espera una respuesta.')
         return redirect('alquileres:solicitud_lista')
 
-    accion = request.POST.get('accion')
-    if accion == 'aplazar':
-        solicitud.aplazada = True
-        campos = ['aplazada']
-        if solicitud.estado == 'Aprobada':
-            solicitud.estado = 'Pendiente'
-            solicitud.fecha_revision = None
-            campos.extend(['estado', 'fecha_revision'])
-        solicitud.save(update_fields=campos)
-        messages.success(
+    form = SolicitudAplazarForm(request.POST)
+    if not form.is_valid():
+        messages.error(
             request,
-            'Aceptaste aplazar la solicitud. Te avisaremos cuando se programe la nueva fecha.',
+            ' '.join(error for errores in form.errors.values() for error in errores),
         )
-    elif accion == 'cancelar':
-        if PagoAlquiler.objects.filter(presupuesto__solicitud=solicitud).exists():
-            messages.error(
-                request,
-                'No puedes cancelar en línea porque esta solicitud tiene pagos registrados. '
-                'Contacta al administrador para revisar el reembolso.',
-            )
-            return redirect('alquileres:solicitud_lista')
-        solicitud.estado = 'Cancelada'
-        solicitud.save(update_fields=['estado'])
-        messages.success(request, 'La solicitud fue cancelada.')
-    else:
-        messages.error(request, 'La respuesta seleccionada no es válida.')
+        return redirect('alquileres:solicitud_lista')
+
+    fecha_inicio = form.cleaned_data['fecha_inicio']
+    duracion = solicitud.fecha_fin - solicitud.fecha_inicio
+    try:
+        fecha_fin = fecha_inicio + duracion
+    except OverflowError as error:
+        raise ValidationError('La duración del alquiler excede el rango de fechas.') from error
+
+    if cruces_confirmados(
+        solicitud.unidad_id, fecha_inicio, fecha_fin, excluir=solicitud.pk,
+    ).exists():
+        raise ValidationError(
+            'La fecha elegida coincide con una reserva confirmada. Elige otra fecha.'
+        )
+
+    solicitud.fecha_inicio = fecha_inicio
+    solicitud.fecha_fin = fecha_fin
+    solicitud.estado = 'Pendiente'
+    solicitud.aplazada = False
+    solicitud.fecha_aviso_disponibilidad = None
+    solicitud.motivo_disponibilidad = ''
+    solicitud.fecha_revision = None
+    solicitud.revisado_por = None
+    solicitud.fecha_confirmacion = None
+    solicitud.save(update_fields=[
+        'fecha_inicio', 'fecha_fin', 'estado', 'aplazada',
+        'fecha_aviso_disponibilidad', 'motivo_disponibilidad',
+        'fecha_revision', 'revisado_por', 'fecha_confirmacion',
+    ])
+    messages.success(
+        request,
+        'Se actualizaron las fechas solicitadas. La solicitud quedó pendiente de revisión.',
+    )
     return redirect('alquileres:solicitud_lista')
 
 

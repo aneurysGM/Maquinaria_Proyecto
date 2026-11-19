@@ -111,6 +111,19 @@ class MaquinariaIntegralForm(forms.ModelForm):
     numero_serie = forms.CharField(label='Número de serie', max_length=50, widget=forms.TextInput(attrs={'class': 'form-control'}))
     estado = forms.ChoiceField(label='Estado', choices=Unidad.ESTADOS, initial='Disponible', widget=forms.Select(attrs={'class': 'form-select'}))
     horas_uso = forms.DecimalField(label='Horas de uso', max_digits=10, decimal_places=1, initial=0, widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}))
+    intervalo_mantenimiento_horas = forms.DecimalField(
+        label='Intervalo de mantenimiento preventivo (horas)',
+        max_digits=10,
+        decimal_places=1,
+        min_value=0.1,
+        required=False,
+        help_text='Opcional. Al configurarlo, el próximo servicio se calculará por horómetro.',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '0.1',
+            'step': '0.1',
+        }),
+    )
     fecha_adquisicion = forms.DateField(label='Fecha de adquisición', required=False, widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
     anio_fabricacion = forms.IntegerField(label='Año de fabricación', required=False, widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1980'}))
     ubicacion_actual = forms.CharField(label='Ubicación actual', max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -131,7 +144,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Describe las características principales de la maquinaria.',
             }),
-            'marca': forms.TextInput(attrs={'class': 'form-control'}),
+            'marca': forms.Select(attrs={'class': 'form-select'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
             'costo_adquisicion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'tarifa_diaria': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -156,6 +169,9 @@ class MaquinariaIntegralForm(forms.ModelForm):
             self.fields['numero_serie'].initial = self.unidad_instancia.numero_serie
             self.fields['estado'].initial = self.unidad_instancia.estado
             self.fields['horas_uso'].initial = self.unidad_instancia.horas_uso
+            self.fields['intervalo_mantenimiento_horas'].initial = (
+                self.unidad_instancia.intervalo_mantenimiento_horas
+            )
             self.fields['fecha_adquisicion'].initial = self.unidad_instancia.fecha_adquisicion
             self.fields['anio_fabricacion'].initial = self.unidad_instancia.anio_fabricacion
             self.fields['ubicacion_actual'].initial = self.unidad_instancia.ubicacion_actual
@@ -268,6 +284,20 @@ class MaquinariaIntegralForm(forms.ModelForm):
                 ),
             })
 
+    def _guardar_intervalo_mantenimiento(self, unidad):
+        intervalo = self.cleaned_data['intervalo_mantenimiento_horas']
+        if intervalo is None:
+            unidad.intervalo_mantenimiento_horas = None
+            unidad.proximo_mantenimiento_horas = None
+            return
+
+        if (
+            unidad.intervalo_mantenimiento_horas != intervalo
+            or unidad.proximo_mantenimiento_horas is None
+        ):
+            unidad.proximo_mantenimiento_horas = unidad.horas_uso + intervalo
+        unidad.intervalo_mantenimiento_horas = intervalo
+
     @transaction.atomic
     def save(self, commit=True):
         unidad_bloqueada = None
@@ -289,6 +319,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
                 unidad.numero_serie = self.cleaned_data['numero_serie']
                 unidad.estado = self.cleaned_data['estado']
                 unidad.horas_uso = self.cleaned_data['horas_uso']
+                self._guardar_intervalo_mantenimiento(unidad)
                 unidad.fecha_adquisicion = self.cleaned_data['fecha_adquisicion']
                 unidad.anio_fabricacion = self.cleaned_data['anio_fabricacion']
                 unidad.ubicacion_actual = self.cleaned_data['ubicacion_actual']
@@ -304,6 +335,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
                     unidad.activo = True
                     unidad.estado = self.cleaned_data['estado']
                     unidad.horas_uso = self.cleaned_data['horas_uso']
+                    self._guardar_intervalo_mantenimiento(unidad)
                     unidad.fecha_adquisicion = self.cleaned_data['fecha_adquisicion']
                     unidad.anio_fabricacion = self.cleaned_data['anio_fabricacion']
                     unidad.ubicacion_actual = self.cleaned_data['ubicacion_actual']
@@ -315,6 +347,15 @@ class MaquinariaIntegralForm(forms.ModelForm):
                         numero_serie=self.cleaned_data['numero_serie'],
                         estado=self.cleaned_data['estado'],
                         horas_uso=self.cleaned_data['horas_uso'],
+                        intervalo_mantenimiento_horas=(
+                            self.cleaned_data['intervalo_mantenimiento_horas']
+                        ),
+                        proximo_mantenimiento_horas=(
+                            self.cleaned_data['horas_uso']
+                            + self.cleaned_data['intervalo_mantenimiento_horas']
+                            if self.cleaned_data['intervalo_mantenimiento_horas'] is not None
+                            else None
+                        ),
                         fecha_adquisicion=self.cleaned_data['fecha_adquisicion'],
                         anio_fabricacion=self.cleaned_data['anio_fabricacion'],
                         ubicacion_actual=self.cleaned_data['ubicacion_actual']

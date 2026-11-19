@@ -315,6 +315,25 @@
                         {% endif %}
                     </div>
                 </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="{{ form.intervalo_mantenimiento_horas.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.intervalo_mantenimiento_horas.label }}
+                        </label>
+                        {{ form.intervalo_mantenimiento_horas }}
+                        {% if form.intervalo_mantenimiento_horas.errors %}
+                        <div class="invalid-feedback d-block small">{% for error in form.intervalo_mantenimiento_horas.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                        {% if form.intervalo_mantenimiento_horas.help_text %}
+                        <div class="form-text small">{{ form.intervalo_mantenimiento_horas.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    {% if unidad and unidad.proximo_mantenimiento_horas != None %}
+                    <div class="col-md-6 align-self-end">
+                        <p class="form-text mb-2">Próximo servicio programado al llegar a {{ unidad.proximo_mantenimiento_horas }} horas.</p>
+                    </div>
+                    {% endif %}
+                </div>
 
                 <!-- Botones de Acción -->
                 <div class="d-flex justify-content-between gap-2 pt-3 border-top">

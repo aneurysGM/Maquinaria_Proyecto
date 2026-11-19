@@ -32,14 +32,9 @@
             </p>
         </div>
         
-        <div class="d-flex gap-2 flex-wrap">
-            <!-- Si la unidad está en mantenimiento, mostramos el botón para abrir el modal de confirmación -->
-            {% if unidad.estado == 'Mantenimiento' and puede_registrar_mantenimiento %}
-                <button type="button" class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalFinalizarMantenimiento">
-                    <i class="bi bi-check-circle-fill me-1"></i> Finalizar Mantenimiento
-                </button>
-            {% endif %}
-
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <img src="{% url 'mantenimiento:unidad_qr' unidad.pk %}" width="88" height="88"
+                 alt="Código QR de la ficha técnica de la unidad {{ unidad.numero_serie }}">
             {% if puede_registrar_mantenimiento and unidad.activo and unidad.maquinaria.activo %}
                 {% if unidad.estado == 'Disponible' or unidad.estado == 'Mantenimiento' %}
                 <a href="{% url 'mantenimiento:mantenimiento_registrar' %}?unidad={{ unidad.pk }}" class="btn btn-warning fw-bold text-dark" style="background-color: var(--mq-amber); border: none;">
@@ -64,10 +59,13 @@
                         <tr>
                             <th class="py-3 ps-4">Fecha</th>
                             <th class="py-3">Tipo</th>
+                            <th class="py-3">Estado</th>
                             <th class="py-3">Descripción</th>
+                            <th class="py-3">Mano de obra</th>
                             <th class="py-3">Costo</th>
                             <th class="py-3 pe-4">Técnico responsable</th>
                             <th class="py-3 pe-4">Registrado por</th>
+                            <th class="py-3 pe-4">Orden</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,9 +75,21 @@
                             <td>
                                 <span class="badge bg-light text-dark border">{{ mantenimiento.get_tipo_display }}</span>
                             </td>
+                            <td>
+                                <span class="badge {% if mantenimiento.estado == 'finalizada' %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                                    {{ mantenimiento.get_estado_display }}
+                                </span>
+                            </td>
                             <td class="text-secondary">
                                 {{ mantenimiento.descripcion|default:"No especificada" }}
+                                {% for comentario in mantenimiento.comentarios_tecnicos.all|slice:":3" %}
+                                <div class="small mt-1"><strong>Comentario:</strong> {{ comentario.comentario|truncatechars:100 }}</div>
+                                {% endfor %}
+                                {% for registro in mantenimiento.registros_trabajo.all|slice:":3" %}
+                                <div class="small mt-1"><strong>{{ registro.get_estado_display }}:</strong> {{ registro.observaciones|truncatechars:120 }}</div>
+                                {% endfor %}
                             </td>
+                            <td>{{ mantenimiento.horas_mano_obra_total }} h</td>
                             <td class="fw-semibold text-dark">${{ mantenimiento.costo|floatformat:2 }}</td>
                             <td class="pe-4">
                                 {% if mantenimiento.tecnico %}
@@ -108,6 +118,9 @@
                                     No registrado
                                 {% endif %}
                             </td>
+                            <td class="pe-4">
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'ordenes_trabajo:detalle' mantenimiento.pk %}">Ver orden</a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -125,31 +138,5 @@
         </div>
     </div>
     {% endif %}
-</div>
-
-<!-- MODAL DE CONFIRMACIÓN PARA FINALIZAR MANTENIMIENTO -->
-<div class="modal fade" id="modalFinalizarMantenimiento" tabindex="-1" aria-labelledby="modalFinalizarLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="modalFinalizarLabel">
-                    <i class="bi bi-check-circle-fill text-success me-2"></i> Confirmar finalización
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body py-4">
-                <p class="text-secondary mb-1">¿Estás seguro de que deseas finalizar los trabajos de taller para la unidad <strong>N° Serie: {{ unidad.numero_serie }}</strong>?</p>
-                <p class="text-muted small mb-0">Esto cambiará automáticamente su estado a <strong>Disponible</strong> para que pueda volver a ser alquilada.</p>
-            </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-outline-secondary px-3 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
-                
-                <form action="{% url 'mantenimiento:mantenimiento_finalizar' unidad.pk %}" method="POST" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-success fw-bold px-4">Sí, finalizar</button>
-                </form>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}

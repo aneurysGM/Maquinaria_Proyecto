@@ -1,0 +1,84 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Inventario de repuestos | MaquiRent{% endblock %}
+{% block page_name %}Inventario de repuestos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><h1 class="h3 fw-bold mb-1">Inventario de repuestos</h1><p class="text-secondary mb-0">Administra el catálogo, las existencias y solicitudes de técnicos.</p></div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'mantenimiento:mantenimiento_lista' %}">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a mantenimiento
+            </a>
+            <a class="btn btn-outline-secondary" href="{% url 'ordenes_trabajo:lista' %}">
+                Volver a órdenes
+            </a>
+            {% if es_administrador %}
+            <a class="btn btn-primary" href="{% url 'ordenes_trabajo:repuesto_crear' %}">Nuevo repuesto</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <section class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white pt-4 px-4"><h2 class="h5 fw-bold">Solicitudes por gestionar</h2></div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th class="ps-4">Orden</th><th>Técnico</th><th>Solicitado</th><th>Piezas</th><th>Estado</th><th>Acción</th></tr></thead>
+                <tbody>
+                    {% for solicitud in solicitudes %}
+                    <tr>
+                        <td class="ps-4"><a href="{% url 'ordenes_trabajo:detalle' solicitud.mantenimiento_id %}">#{{ solicitud.mantenimiento_id }} · {{ solicitud.mantenimiento.unidad.numero_serie }}</a></td>
+                        <td>{{ solicitud.solicitada_por.get_full_name|default:solicitud.solicitada_por.email }}</td>
+                        <td>{{ solicitud.creada_en|date:"d/m/Y H:i" }}</td>
+                        <td>{% for detalle in solicitud.detalles.all %}{{ detalle.codigo }} — {{ detalle.cantidad }} {{ detalle.unidad_medida }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+                        <td>{{ solicitud.get_estado_display }}</td>
+                        <td>
+                            {% if es_administrador %}
+                            {% if solicitud.estado == 'pendiente' %}
+                            <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'aprobar' %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-primary" type="submit">Aprobar</button></form>
+                            <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'rechazar' %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Rechazar</button></form>
+                            {% else %}
+                            <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'recibir' %}">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Confirmar recepción</button></form>
+                            {% endif %}
+                            {% else %}
+                            <span class="small text-secondary">Solo seguimiento</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">No hay solicitudes pendientes de gestión.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white pt-4 px-4"><h2 class="h5 fw-bold">Catálogo y existencias</h2></div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th class="ps-4">Código</th><th>Nombre</th><th>Existencia</th><th>Unidad</th><th>Entrada manual</th></tr></thead>
+                <tbody>
+                    {% for repuesto in repuestos %}
+                    <tr>
+                        <td class="ps-4 fw-semibold">{{ repuesto.codigo }}</td><td>{{ repuesto.nombre }}</td>
+                        <td>{{ repuesto.existencia }}</td><td>{{ repuesto.unidad_medida }}</td>
+                        <td>
+                            {% if es_administrador %}
+                            <form method="post" action="{% url 'ordenes_trabajo:repuesto_entrada' repuesto.pk %}" class="d-flex gap-2">
+                                {% csrf_token %}
+                                <label class="visually-hidden" for="entrada-{{ repuesto.pk }}">Cantidad recibida</label>
+                                <input class="form-control form-control-sm" id="entrada-{{ repuesto.pk }}" name="cantidad" type="number" min="0.01" step="0.01" required>
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Registrar</button>
+                            </form>
+                            {% else %}
+                            <span class="small text-secondary">Consulta</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td colspan="5" class="text-center text-secondary py-4">Todavía no hay repuestos registrados.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

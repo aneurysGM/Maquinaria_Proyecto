@@ -48,6 +48,79 @@ barra lateral del catálogo que se reprodujeron en una copia de HEAD sin el
 arreglo. El usuario confirmó que probó el arreglo en Edge y quedó bien, con
 **Editar** y **Eliminar** visibles en cada fila. No se requieren migraciones.
 
+### Gestión de marcas de maquinaria — 18 de noviembre de 2026
+
+- Se creó `apps/marca/` para administrar marcas mediante el panel: crear,
+  editar y borrar las que no estén asignadas. La tabla SQL `Marca` evita nombres
+  repetidos incluso si solo cambia el uso de mayúsculas. Una marca relacionada
+  con maquinaria queda protegida contra borrado para conservar la referencia.
+- `Maquinaria.marca` ahora es una relación opcional con `Marca`, y el formulario
+  de registro y edición usa un selector con marcas existentes, no texto libre.
+  La opción **Gestionar Marcas** está en la lista de maquinaria junto a
+  **Gestionar Categorías**; no se añadió al menú lateral. Solo el Administrador
+  puede administrar marcas.
+- `apps/inventario/migrations/0004_maquinaria_marca_fk.py` transfiere los
+  nombres de marca que ya estaban escritos en maquinaria a la nueva tabla y
+  los vincula, agrupando variantes que solo difieren en espacios exteriores o
+  mayúsculas.
+  Las migraciones `marca.0001_initial` e `inventario.0004_maquinaria_marca_fk`
+  se aplicaron a la base local. También se aplicó `cuentas.0006`, que estaba
+  pendiente.
+- Verificación: las 4 pruebas de `apps.marca.tests` pasaron; también pasaron
+  `manage.py check`, `makemigrations --check --dry-run` y `git diff --check`.
+  La migración se comprobó en SQLite; para otra instalación hay que ejecutar
+  `manage.py migrate` con su conexión de base de datos configurada.
+
+### Aplazamiento y cancelación de solicitudes — 17 de noviembre de 2026
+
+- Cuando una solicitud recibe un aviso de indisponibilidad, el cliente puede
+  elegir la nueva fecha de inicio. El sistema conserva la duración del alquiler,
+  rechaza fechas pasadas y períodos que se cruzan con reservas confirmadas, y
+  devuelve la solicitud a revisión administrativa con las nuevas fechas.
+- El cliente puede cancelar sus solicitudes impagas en estado Pendiente,
+  Aprobada, Rechazada o Vencida, siempre que la maquinaria no haya sido
+  entregada. La operación cambia el estado a **Cancelada**. Si existe algún
+  pago, la cancelación en línea se bloquea y se indica contactar al administrador.
+- `apps/alquileres/forms.py`, `views.py` y
+  `templates/alquileres/solicitud_acciones.html` implementan la fecha y las
+  acciones; `apps/alquileres/tests.py` cubre el aplazamiento, los cruces de
+  reservas, los estados cancelables y la protección de solicitudes con pagos.
+  Pasaron 5 pruebas de alquileres y `manage.py check`.
+
+### Cierres e historial mensual de ingresos — 17 de noviembre de 2026
+
+- Se creó `apps/cierre_mensual/` con el modelo SQL `CierreMensual`, que registra
+  el inicio de cada período. El indicador **Ingresos del Mes** consulta los pagos
+  reales de renta y mora desde ese inicio; excluye depósitos y no borra ni pone
+  en cero facturas o pagos.
+- En **Ventas y Presupuestos**, el Administrador puede cerrar el período y
+  descargar un Excel. El historial organiza cada mes en cuatro secciones:
+  días 1–7, 8–14, 15–21 y 22 hasta el último día. El detalle muestra clientes,
+  maquinaria, fechas, conceptos, pagos, referencias y saldos; los depósitos se
+  presentan por separado de los ingresos.
+- El comando `manage.py cerrar_mes` crea el respaldo Excel en
+  `media/cierres_mensuales/` e inicia un nuevo período. Está diseñado para
+  ejecutarse el último día del mes y evita duplicar el cierre automático del
+  mismo día. Django no crea la tarea del Programador de tareas de Windows: debe
+  configurarse por separado para ejecutar el comando.
+- La ejecución conjunta más reciente de las pruebas de cierres y alquileres
+  detectó una prueba de cierre con una etiqueta desactualizada: espera
+  «Cerrar mes y descargar Excel», mientras el botón actual dice «Cerrar mes».
+  La prueba se detiene en esa comprobación de texto y no alcanza a comprobar el
+  enlace al historial ni la descarga. Queda pendiente alinear la prueba o el
+  texto del botón.
+
+### Ajustes de interfaz y base de datos local — 17 de noviembre de 2026
+
+- Se corrigió el aviso de Bloq Mayús en el registro para que solo aparezca
+  cuando la tecla esté activada. En el panel del Administrador, **Solicitudes
+  por revisar** usa el estilo claro de **Equipos disponibles**, y el panel
+  lateral permanece visible al abrir detalles de maquinaria con sesión iniciada.
+- Se aplicaron a la base SQLite local las migraciones Django que estaban
+  pendientes y se comprobó la creación de `django_session`. Para reproducir la
+  actualización en otra instalación, configura la base correspondiente y ejecuta
+  `manage.py migrate`.
+
 ### Cambio inmediato de correo en Mi perfil
 
 Administrador, Cliente y Técnico pueden cambiar su propio correo con la

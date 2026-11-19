@@ -1,0 +1,71 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Gestionar Marcas | MaquiRent{% endblock %}
+{% block page_name %}Gestionar Marcas{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Gestionar Marcas</h1>
+            <p class="text-secondary mb-0">Administra las marcas disponibles al registrar maquinaria.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-outline-secondary fw-semibold">
+                Volver a Maquinaria
+            </a>
+            <a href="{% url 'marca:marca_crear' %}" class="btn btn-primary fw-semibold">
+                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Nueva marca
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase small">
+                    <tr>
+                        <th class="py-3 ps-4">Marca</th>
+                        <th class="py-3 text-center">Maquinarias asociadas</th>
+                        <th class="py-3 text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for marca in marcas %}
+                    <tr>
+                        <td class="ps-4 fw-semibold">{{ marca.nombre }}</td>
+                        <td class="text-center">{{ marca.cantidad_maquinarias }}</td>
+                        <td class="text-end pe-4">
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'marca:marca_editar' marca.pk %}">
+                                Editar
+                            </a>
+                            {% if marca.cantidad_maquinarias %}
+                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled
+                                    title="No se puede borrar una marca asignada a maquinaria">
+                                En uso
+                            </button>
+                            {% else %}
+                            <form method="post" action="{% url 'marca:marca_eliminar' marca.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger" type="submit"
+                                        onclick="return confirm('¿Borrar la marca {{ marca.nombre|escapejs }}?');">
+                                    Borrar
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-5 text-muted">
+                            No hay marcas registradas. Crea la primera para seleccionarla al registrar maquinaria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="small text-secondary mt-3 mb-0">Las marcas asignadas a maquinaria no se pueden borrar, para conservar sus datos.</p>
+</div>
+{% endblock %}

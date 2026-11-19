@@ -60,10 +60,13 @@ INSTALLED_APPS = [
     # Aplicaciones del sistema de maquinaria pesada
     'apps.cuentas',
     'apps.inventario',
+    'apps.marca',
     'apps.ventas',
     'apps.cierre_mensual',
     'apps.alquileres',
     'apps.mantenimiento',
+    'apps.ordenes_trabajo',
+    'apps.Repuestos_Inventario',
     'apps.tecnico_mantenimiento',
     'apps.configuraciones',
     'apps.reportes',
