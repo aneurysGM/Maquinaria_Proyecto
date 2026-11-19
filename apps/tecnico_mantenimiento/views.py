@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Unidad
+from apps.mantenimiento.models import Mantenimiento
 
 from .forms import TecnicoCreacionForm, TecnicoPerfilForm
 
@@ -18,11 +19,21 @@ def dashboard(request):
         activo=True,
         maquinaria__activo=True,
     )
+    ordenes_asignadas = Mantenimiento.objects.filter(
+        tecnico=request.user,
+        fecha_fin__isnull=True,
+    ).select_related(
+        'unidad__maquinaria',
+    ).order_by('fecha', 'pk')
     return render(request, 'tecnico_mantenimiento/dashboard.html', {
         'cantidad_unidades': unidades_activas.count(),
         'unidades_mantenimiento': unidades_activas.filter(
             estado='Mantenimiento',
         ).count(),
+        'cantidad_pendientes': ordenes_asignadas.filter(estado='pendiente').count(),
+        'cantidad_diagnostico': ordenes_asignadas.filter(estado='diagnostico').count(),
+        'cantidad_reparacion': ordenes_asignadas.filter(estado='reparacion').count(),
+        'cantidad_esperando_repuestos': ordenes_asignadas.filter(estado='esperando_repuestos').count(),
         'unidades_destacadas': unidades_activas.select_related(
             'maquinaria__categoria',
         ).prefetch_related(
@@ -30,6 +41,8 @@ def dashboard(request):
         ).order_by(
             '-maquinaria__fecha_modificacion',
         )[:6],
+        'ordenes_preventivas': ordenes_asignadas.filter(tipo='Preventivo'),
+        'ordenes_correctivas': ordenes_asignadas.filter(tipo='Correctivo'),
     })
 
 

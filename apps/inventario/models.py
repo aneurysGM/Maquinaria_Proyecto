@@ -197,6 +197,24 @@ class Unidad(models.Model):
         db_column='HorasUso',
         verbose_name='Horas de uso'
     )
+    intervalo_mantenimiento_horas = models.DecimalField(
+        max_digits=10,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        validators=(MinValueValidator(0.1),),
+        db_column='IntervaloMantenimientoHoras',
+        verbose_name='Intervalo de mantenimiento (horas)',
+    )
+    proximo_mantenimiento_horas = models.DecimalField(
+        max_digits=10,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        validators=(MinValueValidator(0),),
+        db_column='ProximoMantenimientoHoras',
+        verbose_name='Próximo mantenimiento (horómetro)',
+    )
     fecha_adquisicion = models.DateField(
         blank=True, null=True, db_column='FechaAdquisicion', verbose_name='Fecha de adquisición'
     )
@@ -223,6 +241,22 @@ class Unidad(models.Model):
         verbose_name = 'unidad de maquinaria'
         verbose_name_plural = 'unidades de maquinaria'
         ordering = ('maquinaria__codigo', 'numero_serie')
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(intervalo_mantenimiento_horas__isnull=True)
+                    | models.Q(intervalo_mantenimiento_horas__gt=0)
+                ),
+                name='CK_Unidad_IntervaloMantenimiento_Positivo',
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(proximo_mantenimiento_horas__isnull=True)
+                    | models.Q(proximo_mantenimiento_horas__gte=0)
+                ),
+                name='CK_Unidad_ProximoMantenimiento_NoNegativo',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.maquinaria.codigo} / Serie: {self.numero_serie}'

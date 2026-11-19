@@ -140,6 +140,10 @@
                     <div class="spec-tile">
                         <div class="lbl"><i class="bi bi-speedometer2 me-1" aria-hidden="true"></i>Horas de uso</div>
                         <div class="val">{{ unidad.horas_uso|floatformat:1 }} h</div>
+                        {% if unidad.intervalo_mantenimiento_horas %}
+                        <div class="lbl mt-2">Próximo mantenimiento</div>
+                        <div class="val">{{ unidad.proximo_mantenimiento_horas|floatformat:1 }} h</div>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="col-6 col-md-3">

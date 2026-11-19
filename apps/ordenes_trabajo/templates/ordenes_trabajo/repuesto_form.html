@@ -1,0 +1,28 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Nuevo repuesto | MaquiRent{% endblock %}
+{% block page_name %}Inventario de repuestos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 700px;">
+    <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'ordenes_trabajo:repuestos' %}">Volver al inventario</a>
+    <section class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3 fw-bold mb-2">Registrar repuesto</h1>
+            <p class="text-secondary">El repuesto se crea sin existencias. Registra una entrada o confirma la recepción de una solicitud para aumentar el stock.</p>
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            <form method="post" action="{% url 'ordenes_trabajo:repuesto_guardar' %}">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                {% endfor %}
+                <button class="btn btn-primary" type="submit">Guardar repuesto</button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
