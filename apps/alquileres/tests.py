@@ -157,3 +157,38 @@ class AccionesClienteSolicitudTests(TestCase):
         self.assertRedirects(respuesta, reverse('alquileres:solicitud_lista'))
         solicitud.refresh_from_db()
         self.assertEqual(solicitud.estado, 'Pendiente')
+
+    def test_retorno_tardio_no_inactiva_al_cliente(self):
+        hoy = timezone.localdate()
+        self.crear_solicitud(
+            estado='Aprobada',
+            fecha_inicio=hoy - timedelta(days=30),
+            fecha_fin=hoy - timedelta(days=25),
+            fecha_salida=timezone.now() - timedelta(days=30),
+            entregado_por=self.administrador,
+            fecha_retorno=timezone.now() - timedelta(days=20),
+            recibido_por=self.administrador,
+            dias_atraso=5,
+        )
+        solicitud = self.crear_solicitud(
+            estado='Aprobada',
+            fecha_inicio=hoy - timedelta(days=10),
+            fecha_fin=hoy - timedelta(days=6),
+            fecha_salida=timezone.now() - timedelta(days=10),
+            entregado_por=self.administrador,
+            fecha_confirmacion=timezone.now() - timedelta(days=11),
+        )
+        self.unidad.estado = 'Alquilado'
+        self.unidad.save(update_fields=['estado'])
+        self.client.force_login(self.administrador)
+
+        respuesta = self.client.post(
+            reverse('alquileres:solicitud_retorno', args=[solicitud.pk]),
+            {'horas_uso_actualizadas': '5.0', 'observaciones_retorno': ''},
+        )
+
+        self.assertRedirects(respuesta, reverse('alquileres:solicitud_lista'))
+        solicitud.refresh_from_db()
+        self.cliente.refresh_from_db()
+        self.assertGreater(solicitud.dias_atraso, 3)
+        self.assertTrue(self.cliente.is_active)

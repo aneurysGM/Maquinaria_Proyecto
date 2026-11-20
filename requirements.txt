@@ -20,7 +20,6 @@ pycparser==3.12
 PyJWT==2.15.1
 pyodbc==5.5.0
 python-dotenv==1.2.4
-qrcode==8.2
 requests==2.34.2
 sqlparse==0.6.1
 typing_extensions==4.16.0

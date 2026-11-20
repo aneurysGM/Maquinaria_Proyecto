@@ -158,10 +158,11 @@
     </section>
 
     <!-- ALERTAS -->
-    {% if not cliente.is_active and cliente.suspension_hasta %}
+    {% if not cliente.is_active %}
     <div class="alert mr-alert mr-alert-danger" role="alert">
         <i class="bi bi-person-lock me-1" aria-hidden="true"></i>
-        Cuenta suspendida por devoluciones tardías hasta el {{ cliente.suspension_hasta|date:"d/m/Y" }}.
+        Cuenta inactivada manualmente.
+        {% if cliente.motivo_inactivacion %}<strong>Motivo:</strong> {{ cliente.motivo_inactivacion }}{% endif %}
     </div>
     {% endif %}
     {% if devoluciones_tardias or alquileres_vencidos %}
@@ -169,9 +170,33 @@
         <strong><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Warning en la cuenta.</strong>
         {{ devoluciones_tardias }} devolución(es) tardía(s) registrada(s) y
         {{ alquileres_vencidos }} alquiler(es) actualmente vencido(s).
-        {{ infracciones_graves }} devolución(es) superaron los 3 días; la segunda infracción grave suspende la cuenta por 6 meses.
     </div>
     {% endif %}
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            {% if cliente.is_active %}
+            <h2 class="h5 fw-bold">Inactivar cliente</h2>
+            <p class="text-secondary mb-3">La inactivación es manual y no se aplicará por devoluciones tardías.</p>
+            <form method="post" action="{% url 'clientes:cliente_cambiar_estado' cliente.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="inactivar">
+                <label class="form-label fw-semibold" for="motivo-inactivacion">Motivo</label>
+                <textarea class="form-control mb-3" id="motivo-inactivacion" name="motivo" rows="3" required
+                          placeholder="Indica el motivo para inactivar esta cuenta"></textarea>
+                <button class="btn btn-danger" type="submit">Inactivar cliente</button>
+            </form>
+            {% else %}
+            <h2 class="h5 fw-bold">Activar cliente</h2>
+            <p class="text-secondary mb-3">Puedes volver a habilitar esta cuenta cuando corresponda.</p>
+            <form method="post" action="{% url 'clientes:cliente_cambiar_estado' cliente.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="activar">
+                <button class="btn btn-success" type="submit">Activar cliente</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
 
     <!-- DATOS DEL CLIENTE -->
     <div class="row g-4 mb-5">

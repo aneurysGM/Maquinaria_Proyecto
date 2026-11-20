@@ -24,8 +24,6 @@
             <a class="btn btn-sm btn-outline-secondary" href="{% url 'mantenimiento:mantenimiento_historial' orden.unidad.pk %}">
                 Historial técnico
             </a>
-            <img src="{% url 'mantenimiento:unidad_qr' orden.unidad.pk %}" width="68" height="68"
-                 alt="Código QR de la unidad {{ orden.unidad.numero_serie }}">
             <span class="badge fs-6 text-bg-primary">{{ orden.get_estado_display }}</span>
         </div>
     </div>

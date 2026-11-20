@@ -1,9 +1,12 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Count, Q
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.generic import DetailView, ListView
+from django.views.decorators.http import require_POST
 
-from apps.cuentas.backends import reactivar_suspensiones_vencidas
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.alquileres.models import SolicitudAlquiler
 
@@ -22,29 +25,8 @@ class ClienteListaView(AdministradorRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        hoy = timezone.localdate()
-        reactivar_suspensiones_vencidas()
         clientes = UsuarioPersonalizado.objects.filter(
             rol=RolUsuario.CLIENTE
-        ).annotate(
-            devoluciones_tardias=Count(
-                'solicitudes_alquiler',
-                filter=Q(
-                    solicitudes_alquiler__politica_mora_aplica=True,
-                    solicitudes_alquiler__dias_atraso__gt=0,
-                ),
-                distinct=True,
-            ),
-            alquileres_vencidos=Count(
-                'solicitudes_alquiler',
-                filter=Q(
-                    solicitudes_alquiler__politica_mora_aplica=True,
-                    solicitudes_alquiler__fecha_salida__isnull=False,
-                    solicitudes_alquiler__fecha_retorno__isnull=True,
-                    solicitudes_alquiler__fecha_fin__lt=hoy,
-                ),
-                distinct=True,
-            ),
         )
 
         estado = self.request.GET.get('estado', '')
@@ -84,10 +66,6 @@ class ClienteDetalleView(AdministradorRequiredMixin, DetailView):
             'recibido_por',
             'presupuesto',
         ).order_by('-fecha_creacion', '-id')
-        context['infracciones_graves'] = context['solicitudes'].filter(
-            politica_mora_aplica=True,
-            dias_atraso__gt=3,
-        ).count()
         context['devoluciones_tardias'] = context['solicitudes'].filter(
             politica_mora_aplica=True,
             dias_atraso__gt=0,
@@ -107,3 +85,30 @@ class ClienteDetalleView(AdministradorRequiredMixin, DetailView):
                 else 0
             )
         return context
+
+
+@require_POST
+def cliente_cambiar_estado(request, pk):
+    if not request.user.is_authenticated or not request.user.es_administrador:
+        raise PermissionDenied('Solo los administradores pueden cambiar el estado de clientes.')
+
+    cliente = get_object_or_404(UsuarioPersonalizado, pk=pk, rol=RolUsuario.CLIENTE)
+    accion = request.POST.get('accion')
+    if accion == 'inactivar':
+        motivo = request.POST.get('motivo', '').strip()
+        if not motivo:
+            messages.error(request, 'Debes indicar el motivo de la inactivación.')
+            return redirect('clientes:cliente_detalle', pk=cliente.pk)
+        cliente.is_active = False
+        cliente.motivo_inactivacion = motivo
+        messages.success(request, 'El cliente fue inactivado manualmente.')
+    elif accion == 'activar':
+        cliente.is_active = True
+        cliente.motivo_inactivacion = ''
+        messages.success(request, 'El cliente fue activado nuevamente.')
+    else:
+        messages.error(request, 'La acción solicitada no es válida.')
+        return redirect('clientes:cliente_detalle', pk=cliente.pk)
+
+    cliente.save(update_fields=['is_active', 'motivo_inactivacion'])
+    return redirect('clientes:cliente_detalle', pk=cliente.pk)

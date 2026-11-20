@@ -1,9 +1,7 @@
-from calendar import monthrange
 from datetime import timedelta
 from functools import partial, wraps
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
@@ -33,14 +31,6 @@ from .reservas import (
 def dias_del_plan(plan, cantidad):
     dias_por_plan = {'diario': 1, 'semanal': 7, 'mensual': 30}
     return dias_por_plan[plan] * cantidad
-
-
-def sumar_seis_meses(fecha):
-    mes = fecha.month + 6
-    anio = fecha.year + (mes - 1) // 12
-    mes = (mes - 1) % 12 + 1
-    ultimo_dia = monthrange(anio, mes)[1]
-    return fecha.replace(year=anio, month=mes, day=min(fecha.day, ultimo_dia))
 
 
 def bloquear_movimiento(solicitud_id):
@@ -567,10 +557,6 @@ def solicitud_registrar_retorno(request, solicitud_id):
         (timezone.localtime(fecha_retorno).date() - solicitud.fecha_fin).days,
         0,
     )
-    aplica_suspension = dias_atraso > 3 and solicitud.politica_mora_aplica
-    if aplica_suspension:
-        # Una segunda devolución tardía puede llegar desde otra unidad.
-        cliente = get_user_model().objects.select_for_update().get(pk=solicitud.cliente_id)
     solicitud.fecha_retorno = fecha_retorno
     solicitud.recibido_por = request.user
     solicitud.dias_atraso = dias_atraso
@@ -618,30 +604,4 @@ def solicitud_registrar_retorno(request, solicitud_id):
             messages.success, request, 'La maquinaria fue devuelta dentro del plazo.',
         ))
 
-    if not aplica_suspension:
-        return redirect('alquileres:solicitud_lista')
-
-    infraccion_anterior = SolicitudAlquiler.objects.filter(
-        cliente=cliente,
-        politica_mora_aplica=True,
-        dias_atraso__gt=3,
-    ).exclude(pk=solicitud.pk).exists()
-    if infraccion_anterior:
-        cliente.is_active = False
-        cliente.suspension_hasta = sumar_seis_meses(timezone.localdate())
-        cliente.save(update_fields=['is_active', 'suspension_hasta'])
-        transaction.on_commit(partial(
-            messages.error,
-            request,
-            f'La cuenta de {cliente.email} quedó suspendida hasta '
-            f'{cliente.suspension_hasta:%d/%m/%Y} por su segunda devolución '
-            'con más de 3 días de atraso.',
-        ))
-    else:
-        transaction.on_commit(partial(
-            messages.warning,
-            request,
-            'Advertencia: esta es la primera devolución con más de 3 días de atraso. '
-            'Una segunda infracción de este tipo suspenderá la cuenta por 6 meses.',
-        ))
     return redirect('alquileres:solicitud_lista')

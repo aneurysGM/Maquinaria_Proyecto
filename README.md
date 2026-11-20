@@ -393,9 +393,9 @@ en sus rutas originales, sin cambios de contenido.
   se enlaza en `templates/dashboard/base_dashboard.html` para administradores.
 - Los movimientos siguen tomando fecha y responsable del servidor y de la sesión;
   no se admiten fechas manuales. Se conserva la lectura acumulada del horómetro y
-  la fórmula de mora de Aneurys. La segunda infracción suspende seis meses
-  calendario, ajustando al último día del mes cuando sea necesario. Los registros
-  con `politica_mora_aplica=False` no cobran mora ni cuentan para la suspensión.
+  la fórmula de mora de Aneurys. Las devoluciones tardías pueden generar mora,
+  pero no suspenden ni inactivan cuentas. Los registros históricos con
+  `politica_mora_aplica=False` no cobran mora.
 - La protección de unidades con entrega pendiente se aplica también en
   `apps/inventario/models.py`, `forms.py` y `views.py`; el guardado vuelve a validar
   bajo bloqueo para impedir que una edición antigua libere una unidad entregada.
@@ -580,13 +580,11 @@ ni se crearon registros en la base de trabajo.
 - Se añadieron acciones administrativas para registrar salida y retorno de la
   unidad. El warning aparece desde el primer día posterior a la fecha
   programada. La mora se calcula sobre la tarifa diaria equivalente: 10% por
-  cada uno de los días 1–3 y 20% por cada día posterior. La segunda devolución
-  con más de 3 días de atraso inactiva la cuenta durante 6 meses.
-- La cuenta suspendida se reactiva automáticamente al vencer el plazo cuando
-  el cliente intenta iniciar sesión o cuando el administrador abre el listado
-  de clientes. Las desactivaciones sin fecha de suspensión no se reactivan por
-  este mecanismo. El historial de clientes muestra fechas programadas y reales,
-  atrasos, warnings, presupuestos y saldos.
+  cada uno de los días 1–3 y 20% por cada día posterior. Una devolución tardía
+  nunca cambia el estado de la cuenta del cliente.
+- El administrador puede inactivar o activar manualmente a un cliente desde su
+  ficha. Para inactivar una cuenta se debe registrar un motivo. El historial
+  muestra fechas programadas y reales, atrasos, presupuestos y saldos.
 - Se añadieron migraciones en `apps/alquileres/migrations/`,
   `apps/cuentas/migrations/` y `apps/ventas/migrations/`. Los registros
   anteriores conservan sus fechas; la migración deriva la cantidad histórica

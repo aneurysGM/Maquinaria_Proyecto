@@ -10,19 +10,6 @@
         <h1 class="h2 mb-1">{% if request.GET.vencidos == '1' %}Pagos vencidos{% else %}Ventas y presupuestos{% endif %}</h1>
         <p class="text-muted mb-0">{% if request.GET.vencidos == '1' %}Presupuestos con plazo de pago inicial vencido y saldo pendiente.{% else %}Consulta los alquileres aprobados, los pagos registrados y los saldos pendientes.{% endif %}</p>
         {% if request.GET.vencidos == '1' %}<a class="btn btn-sm btn-outline-secondary mt-2" href="{% url 'ventas:presupuesto_lista' %}">Ver todos los presupuestos</a>{% endif %}
-        <div class="d-flex flex-wrap gap-2 mt-3">
-            <a class="btn btn-outline-dark" href="{% url 'cierre_mensual:historial' %}">
-                <i class="bi bi-folder2-open me-1" aria-hidden="true"></i>Historial mensual
-            </a>
-            <form method="post" action="{% url 'cierre_mensual:cerrar_mes' %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-primary"
-                        onclick="return confirm('¿Cerrar el periodo de ingresos y descargar el Excel?');">
-                    <i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true"></i>
-                    Cerrar mes
-                </button>
-            </form>
-        </div>
     </div>
 
     <div class="card border-0 shadow-sm">

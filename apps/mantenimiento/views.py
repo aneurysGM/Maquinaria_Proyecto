@@ -1,16 +1,9 @@
-from io import BytesIO
-
-import qrcode
-from qrcode.image.svg import SvgPathImage
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError
 from django.db.models import Q
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -123,20 +116,6 @@ def mantenimiento_historial(request, unidad_id):
         'ordenes_activas': unidad.mantenimientos.filter(fecha_fin__isnull=True),
     })
 
-
-@login_required
-def unidad_qr(request, unidad_id):
-    permisos = permisos_panel(request.user)
-    if not (permisos.get('es_administrador') or permisos.get('es_tecnico')):
-        raise PermissionDenied('Solo el personal técnico puede consultar el QR del historial.')
-    unidad = get_object_or_404(Unidad, pk=unidad_id)
-    destino = request.build_absolute_uri(
-        reverse('mantenimiento:mantenimiento_historial', args=[unidad.pk])
-    )
-    imagen = qrcode.make(destino, image_factory=SvgPathImage, box_size=6, border=2)
-    salida = BytesIO()
-    imagen.save(salida)
-    return HttpResponse(salida.getvalue(), content_type='image/svg+xml')
 
 @login_required
 @require_POST

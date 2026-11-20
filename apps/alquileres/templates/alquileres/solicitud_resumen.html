@@ -48,8 +48,7 @@
             {% if solicitud.fecha_retorno %}Mora registrada: ${{ solicitud.presupuesto.mora_total|floatformat:2 }}.
             {% else %}Mora estimada hasta hoy: ${{ solicitud.presupuesto.mora_aplicable|floatformat:2 }}; se incrementa cada día.{% endif %}
         {% endif %}
-        {% if solicitud.fecha_retorno and solicitud.dias_atraso > 3 %}Esta devolución cuenta como infracción grave; una segunda infracción grave suspende la cuenta por 6 meses.{% endif %}
-    {% else %}Registro histórico exento de mora y suspensión.{% endif %}
+    {% else %}Registro histórico exento de mora.{% endif %}
 </div>
 {% endif %}
 <div class="d-flex flex-wrap gap-2 mt-3">

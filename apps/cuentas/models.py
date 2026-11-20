@@ -69,11 +69,10 @@ class UsuarioPersonalizado(AbstractUser):
         verbose_name='Disponible para mantenimiento',
         db_column='Disponible',
     )
-    suspension_hasta = models.DateField(
-        null=True,
+    motivo_inactivacion = models.TextField(
         blank=True,
-        verbose_name='Suspensión hasta',
-        db_column='SuspensionHasta',
+        verbose_name='Motivo de inactivación',
+        db_column='MotivoInactivacion',
     )
     primer_inicio_sesion = models.BooleanField(
         default=False,

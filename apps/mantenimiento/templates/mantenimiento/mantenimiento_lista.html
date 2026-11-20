@@ -1,6 +1,4 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% load static %}
-
 {% block title %}Mantenimientos{% endblock %}
 {% block page_name %}Mantenimientos{% endblock %}
 
@@ -54,14 +52,6 @@
             <a class="btn btn-outline-secondary" href="{% url 'mantenimiento:mantenimiento_lista' %}">Limpiar</a>
             {% endif %}
         </form>
-        <div class="px-3 pt-3">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="iniciar-lector-qr">
-                <i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i>Escanear QR de unidad
-            </button>
-            <p class="small text-secondary mt-2 mb-2" id="estado-lector-qr" role="status" aria-live="polite"></p>
-            <video id="video-lector-qr" class="w-100 rounded mb-3" style="max-width: 480px;" playsinline hidden></video>
-        </div>
-
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -134,8 +124,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-{% block extra_js %}
-{{ block.super }}
-<script src="{% static 'mantenimiento/lector_qr.js' %}" defer></script>
 {% endblock %}

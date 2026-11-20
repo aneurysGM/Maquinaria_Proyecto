@@ -78,12 +78,6 @@ class OrdenTrabajoTests(TestCase):
             reverse('mantenimiento:mantenimiento_historial', args=[self.unidad.pk]),
         )
         self.assertEqual(respuesta.status_code, 200)
-        respuesta = self.client.get(
-            reverse('mantenimiento:unidad_qr', args=[self.unidad.pk]),
-        )
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertEqual(respuesta['Content-Type'], 'image/svg+xml')
-
         self.client.force_login(self.administrador)
         respuesta = self.client.get(reverse('ordenes_trabajo:lista'))
         self.assertContains(respuesta, 'SERIE-OT-001')

@@ -33,8 +33,6 @@
         </div>
         
         <div class="d-flex gap-2 flex-wrap align-items-center">
-            <img src="{% url 'mantenimiento:unidad_qr' unidad.pk %}" width="88" height="88"
-                 alt="Código QR de la ficha técnica de la unidad {{ unidad.numero_serie }}">
             {% if puede_registrar_mantenimiento and unidad.activo and unidad.maquinaria.activo %}
                 {% if unidad.estado == 'Disponible' or unidad.estado == 'Mantenimiento' %}
                 <a href="{% url 'mantenimiento:mantenimiento_registrar' %}?unidad={{ unidad.pk }}" class="btn btn-warning fw-bold text-dark" style="background-color: var(--mq-amber); border: none;">

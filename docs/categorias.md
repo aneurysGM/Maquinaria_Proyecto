@@ -85,8 +85,7 @@ commit original del arreglo, `44f05aa`. Se resolvió el conflicto de `README.md`
 conservando las notas de ambas ramas y retirando los marcadores de conflicto
 anteriores que ya contenía `main`. Tras integrar, volvieron a pasar las 12
 pruebas de categorías, `manage.py check`, la comprobación de migraciones y
-`git diff --check`. Se instaló en el entorno virtual la dependencia
-`qrcode==8.2` que ya declaraba `main`; no se aplicaron migraciones a la base local.
+`git diff --check`. No se aplicaron migraciones a la base local.
 
 ## Revisión visual
 
