@@ -65,6 +65,11 @@ class SolicitudAlquiler(models.Model):
     fecha_revision = models.DateTimeField(null=True, blank=True, editable=False)
     
     # Datos logísticos de entrega y retorno
+    # Copia independiente de la libreta; nunca se resuelve por una FK editable.
+    direccion_entrega = models.CharField(max_length=500, blank=True, default='', editable=False)
+    referencia_entrega = models.CharField(max_length=300, blank=True, default='', editable=False)
+    nombre_direccion_entrega = models.CharField(max_length=100, blank=True, default='', editable=False)
+    fecha_direccion_confirmada = models.DateTimeField(null=True, blank=True, editable=False)
     fecha_salida = models.DateTimeField(null=True, blank=True, editable=False)
     entregado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, models.PROTECT, null=True, blank=True, editable=False,
@@ -101,6 +106,20 @@ class SolicitudAlquiler(models.Model):
         return pago_inicial_completo(self)
 
     @property
+    def direccion_entrega_confirmada(self):
+        return bool(self.fecha_direccion_confirmada and self.direccion_entrega.strip())
+
+    @property
+    def pendiente_direccion_entrega(self):
+        return (
+            self.estado == 'Aprobada'
+            and self.fecha_salida is None
+            and self.fecha_retorno is None
+            and not self.direccion_entrega_confirmada
+            and self.pago_inicial_completo
+        )
+
+    @property
     def tiene_pagos_registrados(self):
         try:
             return self.presupuesto.pagos.exists()
@@ -135,6 +154,8 @@ class SolicitudAlquiler(models.Model):
         if self.estado == 'Pendiente':
             return 'Pendiente de aprobación'
         if self.pago_inicial_completo:
+            if not self.direccion_entrega_confirmada:
+                return 'Pendiente de dirección de entrega'
             return 'Pendiente de entrega'
         if self.fecha_limite_pago and self.fecha_limite_pago <= timezone.now():
             return 'Vencido'

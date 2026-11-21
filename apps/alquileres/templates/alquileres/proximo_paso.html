@@ -4,6 +4,7 @@
     {% elif estado == 'Requiere respuesta' %}La maquinaria no estará disponible en estas fechas. Lee el motivo y elige aplazar o cancelar la solicitud.
     {% elif estado == 'Aplazada' %}Aceptaste aplazar la solicitud. Te avisaremos cuando se programe una nueva fecha.
     {% elif estado == 'Pendiente de pago' %}Consulta cuánto te falta por pagar en <strong>Ver presupuesto</strong>.
+    {% elif estado == 'Pendiente de dirección de entrega' %}{% if es_administrador %}El cliente debe indicar la dirección de entrega antes de registrar la salida.{% else %}Tu pago está confirmado. Indica la dirección de entrega para continuar.{% endif %}
     {% elif estado == 'Pendiente de entrega' %}Tu reserva está confirmada. La entrega está pendiente.
     {% elif estado == 'En uso' %}Fecha prevista de devolución: <strong>{{ solicitud.fecha_fin|date:"d/m/Y" }}</strong>.
     {% elif estado == 'Devuelto' %}Puedes consultar el detalle de este alquiler en el historial.

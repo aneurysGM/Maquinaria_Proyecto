@@ -24,6 +24,12 @@
         {% include 'alquileres/estado_cliente.html' %}
     </div>
     <div class="mb-4">{% include 'alquileres/proximo_paso.html' %}</div>
+    {% if solicitud.pendiente_direccion_entrega %}
+    {% include 'alquileres/direccion_entrega_resumen.html' %}
+    {% if es_cliente and not es_administrador %}
+    <a class="btn btn-primary mb-4" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar dirección de entrega</a>
+    {% endif %}
+    {% endif %}
 
     <div class="row g-4">
         <div class="col-lg-7">
