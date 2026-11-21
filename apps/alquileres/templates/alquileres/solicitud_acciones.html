@@ -10,9 +10,11 @@
     </div>
     {% include 'alquileres/solicitud_rechazo_modal.html' %}
     {% elif solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and solicitud.pago_inicial_completo %}
+    {% if solicitud.direccion_entrega_confirmada %}
     <form method="post" action="{% url 'alquileres:solicitud_salida' solicitud.pk %}" class="mt-3 pt-3 border-top">
         {% csrf_token %}<button class="btn btn-sm btn-primary" type="submit">Registrar entrega de maquinaria</button>
     </form>
+    {% endif %}
     {% elif solicitud.estado == 'Aprobada' and solicitud.fecha_salida and not solicitud.fecha_retorno %}
     <form method="post" action="{% url 'alquileres:solicitud_retorno' solicitud.pk %}" class="row g-2 align-items-end mt-3 pt-3 border-top">
         {% csrf_token %}
@@ -28,6 +30,9 @@
     </form>
     {% endif %}
 {% elif es_cliente %}
+    {% if solicitud.pendiente_direccion_entrega %}
+    <a class="btn btn-primary mt-3" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar dirección de entrega</a>
+    {% endif %}
     {% if solicitud.fecha_aviso_disponibilidad and not solicitud.aplazada %}
         {% if solicitud.estado == 'Pendiente' or solicitud.estado == 'Aprobada' %}
         <div class="mt-3 pt-3 border-top">

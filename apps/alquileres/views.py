@@ -10,15 +10,15 @@ from django.db.models.functions import Concat
 from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_safe
+from django.views.decorators.http import require_http_methods, require_safe
 
-from apps.cuentas.models import permisos_panel
+from apps.cuentas.models import DireccionCliente, permisos_panel
 from apps.inventario.models import Unidad
 from apps.ventas.models import PagoAlquiler, PresupuestoAlquiler
 from .bloqueos import bloquear_unidad
 from .forms import (
     RetornoMaquinariaForm, SolicitudAlquilerForm, SolicitudAplazarForm,
-    SolicitudFiltroForm,
+    SolicitudFiltroForm, DireccionEntregaForm,
 )
 from .models import SolicitudAlquiler
 from .reservas import (
@@ -267,6 +267,64 @@ def solicitud_detalle(request, solicitud_id):
 
 
 @login_required(login_url='cuentas:login')
+@require_http_methods(['GET', 'POST'])
+def solicitud_direccion_entrega(request, solicitud_id):
+    if not permisos_panel(request.user).get('es_cliente') or request.user.es_administrador:
+        raise PermissionDenied('Solo el cliente titular puede confirmar la dirección de entrega.')
+    solicitud = get_object_or_404(solicitudes_consultables(request.user), pk=solicitud_id)
+    if not solicitud.pendiente_direccion_entrega:
+        messages.warning(request, 'La dirección solo se puede confirmar después del pago inicial y antes de la salida; una vez confirmada se conserva en el alquiler.')
+        return redirect('alquileres:solicitud_detalle', solicitud_id=solicitud.pk)
+
+    form = DireccionEntregaForm(
+        request.POST if request.method == 'POST' else None,
+        cliente=request.user, tipo=request.GET.get('tipo'),
+    )
+    if request.method == 'POST' and form.is_valid():
+        try:
+            with transaction.atomic():
+                # Mismo orden de bloqueo que el pago y la salida. Relee el estado.
+                solicitud, _unidad = bloquear_movimiento(solicitud_id)
+                if solicitud.cliente_id != request.user.pk:
+                    raise Http404
+                if not solicitud.pendiente_direccion_entrega:
+                    raise ValidationError('El alquiler ya no está pendiente de dirección. Vuelve a su detalle.')
+                datos = form.cleaned_data
+                if datos['tipo'] == 'guardada':
+                    direccion = DireccionCliente.objects.select_for_update().filter(
+                        pk=datos['direccion_guardada'].pk, cliente=request.user,
+                    ).first()
+                    if direccion is None:
+                        raise ValidationError('La dirección guardada ya no existe. Elige otra dirección o escribe una nueva.')
+                    texto, referencia, nombre = direccion.direccion, direccion.referencia, direccion.nombre
+                    if not texto.strip():
+                        raise ValidationError('La dirección guardada está vacía. Corrígela en Mis direcciones.')
+                else:
+                    texto, referencia = datos['direccion'], datos['referencia']
+                    nombre = datos['nombre'] if datos['guardar'] else ''
+                    if datos['guardar']:
+                        DireccionCliente.objects.create(
+                            cliente=request.user, nombre=nombre, direccion=texto, referencia=referencia,
+                        )
+                solicitud.direccion_entrega = texto
+                solicitud.referencia_entrega = referencia
+                solicitud.nombre_direccion_entrega = nombre
+                solicitud.fecha_direccion_confirmada = timezone.now()
+                solicitud.save(update_fields=[
+                    'direccion_entrega', 'referencia_entrega',
+                    'nombre_direccion_entrega', 'fecha_direccion_confirmada',
+                ])
+        except ValidationError as error:
+            form.add_error(None, error)
+        except DatabaseError:
+            form.add_error(None, 'No se guardaron cambios. Actualiza e inténtalo de nuevo.')
+        else:
+            messages.success(request, 'Dirección de entrega confirmada. La entrega está pendiente.')
+            return redirect('alquileres:solicitud_detalle', solicitud_id=solicitud.pk)
+    return render(request, 'alquileres/direccion_entrega_form.html', {'solicitud': solicitud, 'form': form})
+
+
+@login_required(login_url='cuentas:login')
 @require_safe
 def entrega_lista(request):
     if not permisos_panel(request.user).get('es_administrador'):
@@ -478,6 +536,9 @@ def solicitud_registrar_salida(request, solicitud_id):
     if not solicitud.pago_inicial_completo:
         messages.error(request, 'Completa la renta y el depósito inicial para confirmar la reserva antes de entregar.')
         return redirect('alquileres:solicitud_lista')
+    if not solicitud.direccion_entrega_confirmada:
+        messages.error(request, 'Pendiente de dirección de entrega: el cliente debe confirmarla antes de registrar la salida.')
+        return redirect('alquileres:solicitud_detalle', solicitud_id=solicitud.pk)
     # Las fechas proceden del servidor, como en el flujo original de Aneurys.
     fecha_salida = timezone.now()
     if solicitud.fecha_inicio > timezone.localdate(fecha_salida):

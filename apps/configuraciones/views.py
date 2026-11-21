@@ -3,15 +3,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 
-from apps.cuentas.models import UsuarioPersonalizado, puede_editar_su_perfil
-from .forms import CambioContrasenaForm, CambioCorreoForm, MiPerfilForm
+from apps.cuentas.models import DireccionCliente, UsuarioPersonalizado, puede_editar_su_perfil
+from .forms import CambioContrasenaForm, CambioCorreoForm, DireccionClienteForm, MiPerfilForm
 
 
 def usuario_configurable(usuario):
@@ -34,6 +34,65 @@ class ConfiguracionesRequiredMixin(LoginRequiredMixin):
 class IndiceConfiguracionesView(ConfiguracionesRequiredMixin, View):
     def get(self, request):
         return render(request, 'configuraciones/indice.html')
+
+
+class DireccionesClienteRequiredMixin(ConfiguracionesRequiredMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and (
+            not request.user.es_cliente or request.user.es_administrador
+        ):
+            raise PermissionDenied('Solo el Cliente puede administrar sus propias direcciones.')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class MisDireccionesView(DireccionesClienteRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'configuraciones/direccion_lista.html', {
+            'direcciones': DireccionCliente.objects.filter(cliente=request.user),
+        })
+
+
+class DireccionFormView(DireccionesClienteRequiredMixin, View):
+    def direccion_propia(self, request, direccion_id, *, bloquear=False):
+        if direccion_id is None:
+            return DireccionCliente(cliente=request.user)
+        direcciones = DireccionCliente.objects.filter(cliente=request.user)
+        if bloquear:
+            direcciones = direcciones.select_for_update()
+        return get_object_or_404(direcciones, pk=direccion_id)
+
+    def get(self, request, direccion_id=None):
+        direccion = self.direccion_propia(request, direccion_id)
+        return render(request, 'configuraciones/direccion_form.html', {
+            'form': DireccionClienteForm(instance=direccion), 'direccion': direccion,
+        })
+
+    @transaction.atomic
+    def post(self, request, direccion_id=None):
+        direccion = self.direccion_propia(request, direccion_id, bloquear=True)
+        form = DireccionClienteForm(request.POST, instance=direccion)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'La dirección se guardó correctamente.')
+            return redirect('configuraciones:mis_direcciones')
+        return render(request, 'configuraciones/direccion_form.html', {
+            'form': form, 'direccion': direccion,
+        })
+
+
+class DireccionEliminarView(DireccionesClienteRequiredMixin, View):
+    def get(self, request, direccion_id):
+        direccion = get_object_or_404(DireccionCliente, pk=direccion_id, cliente=request.user)
+        return render(request, 'configuraciones/direccion_confirmar_eliminar.html', {'direccion': direccion})
+
+    @transaction.atomic
+    def post(self, request, direccion_id):
+        direccion = get_object_or_404(
+            DireccionCliente.objects.select_for_update(), pk=direccion_id, cliente=request.user,
+        )
+        direccion.delete()
+        messages.success(request, 'La dirección se eliminó. Las direcciones de alquileres confirmados se conservan.')
+        return redirect('configuraciones:mis_direcciones')
 
 
 @method_decorator(never_cache, name='dispatch')
