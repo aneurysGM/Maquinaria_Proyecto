@@ -42,6 +42,8 @@
                                 {% else %}
                                 <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'recibir' %}">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Confirmar recepción</button></form>
                                 {% endif %}
+                            {% elif solicitud.estado == 'aprobada' and solicitud.mantenimiento.tecnico_id == request.user.pk and not solicitud.mantenimiento.fecha_fin %}
+                            <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'recibir' %}">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Marcar como recibida</button></form>
                             {% else %}
                             <span class="small text-secondary">Solo seguimiento</span>
                             {% endif %}

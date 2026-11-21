@@ -8,7 +8,10 @@ from django.utils import timezone
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Categoria, Maquinaria, Unidad
 from apps.mantenimiento.models import Mantenimiento
-from .models import BorradorOrden, ComentarioOrden, ConsumoRepuesto, PuntoChecklist, Repuesto, SolicitudRepuesto
+from .models import (
+    BorradorOrden, ComentarioOrden, ConsumoRepuesto, DetalleSolicitudRepuesto,
+    EntradaRepuesto, PuntoChecklist, Repuesto, SolicitudRepuesto,
+)
 
 
 class OrdenTrabajoTests(TestCase):
@@ -467,3 +470,131 @@ class OrdenTrabajoTests(TestCase):
         repuesto.refresh_from_db()
         self.assertEqual(repuesto.existencia, Decimal('1.50'))
         self.assertEqual(ConsumoRepuesto.objects.get().cantidad, Decimal('1.50'))
+
+    def test_tecnico_recibe_solicitud_aprobada_y_finaliza_orden(self):
+        self.client.force_login(self.tecnico)
+        self.client.post(
+            reverse('ordenes_trabajo:solicitar_repuestos', args=[self.orden.pk]),
+            {
+                'repuestos-TOTAL_FORMS': '1',
+                'repuestos-INITIAL_FORMS': '0',
+                'repuestos-0-codigo': 'NUEVO-01',
+                'repuestos-0-nombre': 'Pieza nueva',
+                'repuestos-0-unidad_medida': 'pieza',
+                'repuestos-0-cantidad': '2.00',
+            },
+        )
+        solicitud = SolicitudRepuesto.objects.get()
+        recibir = reverse(
+            'ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'recibir'],
+        )
+        self.client.post(recibir)
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'pendiente')
+        self.assertFalse(Repuesto.objects.filter(codigo='NUEVO-01').exists())
+
+        self.client.force_login(self.administrador)
+        self.client.post(reverse(
+            'ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'aprobar'],
+        ))
+        self.client.force_login(self.tecnico)
+        detalle = reverse('ordenes_trabajo:detalle', args=[self.orden.pk])
+        self.assertContains(self.client.get(detalle), recibir)
+        self.assertContains(self.client.get(reverse('Repuestos_Inventario:lista')), recibir)
+
+        datos = {**self.datos_informe(), 'accion': 'finalizar'}
+        self.assertContains(
+            self.client.post(reverse('ordenes_trabajo:informe', args=[self.orden.pk]), datos),
+            'aprobadas sin recibir',
+        )
+        self.client.post(recibir)
+        solicitud.refresh_from_db()
+        repuesto = Repuesto.objects.get(codigo='NUEVO-01')
+        self.assertEqual(solicitud.estado, 'recibida')
+        self.assertEqual(repuesto.existencia, Decimal('2.00'))
+        self.assertEqual(EntradaRepuesto.objects.get(solicitud=solicitud).registrado_por, self.tecnico)
+        self.assertEqual(solicitud.detalles.get().repuesto, repuesto)
+
+        self.client.post(recibir)
+        repuesto.refresh_from_db()
+        self.assertEqual(repuesto.existencia, Decimal('2.00'))
+        self.assertEqual(EntradaRepuesto.objects.filter(solicitud=solicitud).count(), 1)
+
+        self.client.post(reverse('ordenes_trabajo:informe', args=[self.orden.pk]), datos)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'finalizada')
+
+    def test_solo_tecnico_asignado_puede_recibir_y_no_puede_aprobar(self):
+        solicitud = SolicitudRepuesto.objects.create(
+            mantenimiento=self.orden, solicitada_por=self.tecnico, estado='pendiente',
+        )
+        DetalleSolicitudRepuesto.objects.create(
+            solicitud=solicitud, codigo='SEG-01', nombre='Pieza',
+            unidad_medida='pieza', cantidad=Decimal('1.00'),
+        )
+        aprobar = reverse(
+            'ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'aprobar'],
+        )
+        recibir = reverse(
+            'ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'recibir'],
+        )
+        self.client.force_login(self.tecnico)
+        self.assertEqual(self.client.post(aprobar).status_code, 403)
+        solicitud.estado = 'aprobada'
+        solicitud.save(update_fields=['estado'])
+        self.client.force_login(self.otro_tecnico)
+        self.assertEqual(self.client.post(recibir).status_code, 404)
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'aprobada')
+        self.assertFalse(EntradaRepuesto.objects.exists())
+
+    def test_error_de_unidad_revierte_recepcion_completa(self):
+        solicitud = SolicitudRepuesto.objects.create(
+            mantenimiento=self.orden, solicitada_por=self.tecnico, estado='aprobada',
+        )
+        DetalleSolicitudRepuesto.objects.create(
+            solicitud=solicitud, codigo='NUEVO-ROLLBACK', nombre='Pieza nueva',
+            unidad_medida='pieza', cantidad=Decimal('2.00'),
+        )
+        repuesto = Repuesto.objects.create(
+            codigo='EXISTENTE', nombre='Aceite', unidad_medida='litro',
+            existencia=Decimal('5.00'),
+        )
+        DetalleSolicitudRepuesto.objects.create(
+            solicitud=solicitud, codigo='EXISTENTE', nombre='Aceite',
+            unidad_medida='pieza', cantidad=Decimal('1.00'),
+        )
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.post(
+            reverse('ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'recibir']),
+            follow=True,
+        )
+        self.assertContains(respuesta, 'no coincide con el catálogo')
+        solicitud.refresh_from_db()
+        repuesto.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'aprobada')
+        self.assertEqual(repuesto.existencia, Decimal('5.00'))
+        self.assertFalse(Repuesto.objects.filter(codigo='NUEVO-ROLLBACK').exists())
+        self.assertFalse(EntradaRepuesto.objects.filter(solicitud=solicitud).exists())
+        self.assertFalse(solicitud.detalles.filter(repuesto__isnull=False).exists())
+
+    def test_tecnico_no_puede_recibir_en_orden_finalizada(self):
+        solicitud = SolicitudRepuesto.objects.create(
+            mantenimiento=self.orden, solicitada_por=self.tecnico, estado='aprobada',
+        )
+        DetalleSolicitudRepuesto.objects.create(
+            solicitud=solicitud, codigo='FIN-01', nombre='Pieza',
+            unidad_medida='pieza', cantidad=Decimal('1.00'),
+        )
+        self.orden.estado = 'finalizada'
+        self.orden.fecha_fin = timezone.localdate()
+        self.orden.save(update_fields=['estado', 'fecha_fin'])
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.post(
+            reverse('ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'recibir']),
+            follow=True,
+        )
+        self.assertContains(respuesta, 'orden finalizada')
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'aprobada')
+        self.assertFalse(EntradaRepuesto.objects.filter(solicitud=solicitud).exists())

@@ -46,6 +46,12 @@ y la separación entre quien registra un mantenimiento y su responsable.
   reparación. La fecha estimada se calcula desde la fecha local del envío.
   Los comentarios, las solicitudes de repuestos y los consumos se gestionan por
   separado; guarda el borrador antes de salir del formulario.
+- El administrador aprueba o rechaza las solicitudes de repuestos. Una vez
+  aprobada, el técnico asignado puede marcarla como recibida desde su orden o
+  desde Repuestos e Inventario cuando tenga las piezas. La recepción registra la
+  entrada en inventario, incluso si el repuesto no existía en el catálogo;
+  el consumo se registra por separado. El administrador conserva la opción de
+  confirmar la recepción.
 - El cierre exige resolver o recibir las solicitudes de repuestos pendientes.
   La unidad pasa a disponible solo si no tiene otra orden abierta ni una entrega
   activa y su estado actual es mantenimiento.

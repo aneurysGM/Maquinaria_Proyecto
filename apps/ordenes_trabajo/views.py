@@ -457,14 +457,23 @@ def orden_solicitar_repuestos(request, mantenimiento_id):
 @require_POST
 def solicitud_repuesto_resolver(request, solicitud_id, accion):
     administrador = _es_personal(request.user)
-    if not administrador:
-        raise PermissionDenied('Solo el administrador puede gestionar solicitudes de repuestos.')
+    if not administrador and accion != 'recibir':
+        raise PermissionDenied('Solo el administrador puede aprobar o rechazar solicitudes de repuestos.')
+    referencia = get_object_or_404(
+        SolicitudRepuesto.objects.only('mantenimiento_id'), pk=solicitud_id,
+    )
     try:
         with transaction.atomic():
+            ordenes = Mantenimiento.objects.select_for_update()
+            if not administrador:
+                ordenes = ordenes.filter(tecnico=request.user)
+            orden = get_object_or_404(ordenes, pk=referencia.mantenimiento_id)
             solicitud = get_object_or_404(
-                SolicitudRepuesto.objects.select_for_update().select_related('mantenimiento'),
-                pk=solicitud_id,
+                SolicitudRepuesto.objects.select_for_update(),
+                pk=solicitud_id, mantenimiento=orden,
             )
+            if not administrador and (orden.fecha_fin is not None or orden.estado == 'finalizada'):
+                raise ValidationError('No puedes registrar la recepción en una orden finalizada.')
             if accion == 'aprobar':
                 if solicitud.estado != 'pendiente':
                     raise ValidationError('Solo se puede aprobar una solicitud pendiente.')
@@ -525,7 +534,7 @@ def solicitud_repuesto_resolver(request, solicitud_id, accion):
         messages.success(request, mensaje)
     return redirect(
         'ordenes_trabajo:detalle',
-        mantenimiento_id=solicitud.mantenimiento_id,
+        mantenimiento_id=referencia.mantenimiento_id,
     )
 
 

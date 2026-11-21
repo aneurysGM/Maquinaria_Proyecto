@@ -54,7 +54,7 @@
                     <h2 class="h5 fw-bold">Informe de mantenimiento y cierre</h2>
                     <p class="small text-secondary">Completa el informe y envíalo una sola vez para finalizar la orden. Puedes guardar un borrador y retomarlo después; el borrador no cambia el estado de la orden.</p>
                     {% if hay_borrador %}<p class="text-info">Hay un borrador guardado para esta orden.</p>{% endif %}
-                    {% if hay_solicitudes_pendientes %}<div class="alert alert-warning">No se puede finalizar hasta que administración resuelva o reciba los repuestos pendientes.</div>{% endif %}
+                    {% if hay_solicitudes_pendientes %}<div class="alert alert-warning">No se puede finalizar hasta que administración resuelva las solicitudes y se confirme la recepción de los repuestos aprobados.</div>{% endif %}
                     <form method="post" action="{% url 'ordenes_trabajo:informe' orden.pk %}">
                         {% csrf_token %}
                         <h3 class="h6 fw-bold">Estado, horas y observaciones</h3>
@@ -180,7 +180,7 @@
             <section class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
                     <h2 class="h5 fw-bold">Solicitar repuestos o materiales</h2>
-                    <p class="small text-secondary">El administrador revisará la solicitud y registrará la recepción para aumentar las existencias.</p>
+                    <p class="small text-secondary">El administrador revisará la solicitud. Una vez aprobada, confirma la recepción cuando recibas las piezas para actualizar las existencias.</p>
                     <form method="post" action="{% url 'ordenes_trabajo:solicitar_repuestos' orden.pk %}" id="solicitud-repuestos">
                         {% csrf_token %}{{ solicitud_formset.management_form }}
                         <div id="lineas-repuestos">
@@ -259,6 +259,10 @@
                         {% elif es_administrador and solicitud.estado == 'aprobada' %}
                         <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'recibir' %}">
                             {% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Confirmar recepción y aumentar stock</button>
+                        </form>
+                        {% elif not es_administrador and not orden.fecha_fin and solicitud.estado == 'aprobada' %}
+                        <form method="post" action="{% url 'ordenes_trabajo:resolver_solicitud_repuesto' solicitud.pk 'recibir' %}">
+                            {% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Marcar como recibida</button>
                         </form>
                         {% endif %}
                     </article>
