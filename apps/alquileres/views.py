@@ -25,6 +25,7 @@ from .reservas import (
     liberar_unidad_si_no_reservada,
     puede_aprobar_reserva,
     cruces_confirmados, periodos_ocupados,
+    solicitudes_con_pago_inicial_completo,
 )
 
 
@@ -329,17 +330,28 @@ def solicitud_direccion_entrega(request, solicitud_id):
 def entrega_lista(request):
     if not permisos_panel(request.user).get('es_administrador'):
         raise PermissionDenied
-    estado = request.GET.get('estado', 'pendientes')
-    if estado not in ('pendientes', 'atrasadas', 'devueltas', 'todas'):
+    estado = request.GET.get('estado', 'programadas')
+    if estado not in ('programadas', 'pendientes', 'atrasadas', 'devueltas', 'todas'):
         return HttpResponseBadRequest('Filtro de entregas inválido.')
+    hoy = timezone.localdate()
+    salidas_programadas = solicitudes_con_pago_inicial_completo(
+        solicitudes_consultables(request.user).filter(
+            estado='Aprobada',
+            fecha_salida__isnull=True,
+            fecha_inicio__lte=hoy,
+            fecha_fin__gte=hoy,
+        )
+    )
     entregas_base = solicitudes_consultables(request.user).filter(
         fecha_salida__isnull=False,
     )
     entregas_atrasadas = entregas_base.filter(
         fecha_retorno__isnull=True,
-        fecha_fin__lt=timezone.localdate(),
+        fecha_fin__lt=hoy,
     )
-    if estado == 'atrasadas':
+    if estado == 'programadas':
+        entregas = salidas_programadas
+    elif estado == 'atrasadas':
         entregas = entregas_atrasadas
     elif estado == 'pendientes':
         entregas = entregas_base.filter(fecha_retorno__isnull=True)
@@ -353,6 +365,7 @@ def entrega_lista(request):
         {
             'entregas': entregas.order_by('-fecha_salida', '-id'),
             'estado': estado,
+            'salidas_programadas_count': salidas_programadas.count(),
             'entregas_atrasadas_count': entregas_atrasadas.count(),
         },
     )

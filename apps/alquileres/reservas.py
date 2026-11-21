@@ -22,14 +22,45 @@ def pago_inicial_completo(solicitud):
     )
 
 
+def anotar_pagos_iniciales(queryset):
+    cero = Value(
+        Decimal('0.00'),
+        output_field=DecimalField(max_digits=18, decimal_places=2),
+    )
+    return queryset.annotate(
+        renta_recibida=Coalesce(
+            Sum(
+                'presupuesto__pagos__monto',
+                filter=Q(presupuesto__pagos__concepto='renta'),
+            ),
+            cero,
+        ),
+        deposito_recibido=Coalesce(
+            Sum(
+                'presupuesto__pagos__monto',
+                filter=Q(presupuesto__pagos__concepto='deposito'),
+            ),
+            cero,
+        ),
+    )
+
+
+def solicitudes_con_pago_inicial_completo(queryset=None):
+    if queryset is None:
+        queryset = SolicitudAlquiler.objects.all()
+    return anotar_pagos_iniciales(queryset).filter(
+        renta_recibida__gte=F('presupuesto__importe_renta'),
+        deposito_recibido__gte=F('presupuesto__deposito_garantia'),
+    )
+
+
 def reservas_confirmadas():
     """Incluye pagos anteriores a la confirmación explícita y entregas históricas."""
-    cero = Value(Decimal('0.00'), output_field=DecimalField(max_digits=18, decimal_places=2))
-    return SolicitudAlquiler.objects.filter(
-        estado='Aprobada', fecha_retorno__isnull=True,
-    ).annotate(
-        renta_recibida=Coalesce(Sum('presupuesto__pagos__monto', filter=Q(presupuesto__pagos__concepto='renta')), cero),
-        deposito_recibido=Coalesce(Sum('presupuesto__pagos__monto', filter=Q(presupuesto__pagos__concepto='deposito')), cero),
+    return anotar_pagos_iniciales(
+        SolicitudAlquiler.objects.filter(
+            estado='Aprobada',
+            fecha_retorno__isnull=True,
+        )
     ).filter(
         Q(fecha_confirmacion__isnull=False) | Q(fecha_salida__isnull=False)
         | Q(renta_recibida__gte=F('presupuesto__importe_renta'), deposito_recibido__gte=F('presupuesto__deposito_garantia'))

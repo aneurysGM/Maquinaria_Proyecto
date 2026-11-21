@@ -39,7 +39,10 @@ presupuesto. Revalida disponibilidad y cruces y guarda pago, confirmación y avi
 en una transacción; solo después del commit intenta enviar los correos. Usa el
 bloqueo común existente: de fila en los motores que lo soportan y de escritura en
 SQLite. Ante contención se informa que no se guardaron cambios y se pide volver a
-revisar. Una entrega requiere renta y depósito completos.
+revisar. Una entrega requiere renta y depósito completos. En **Salidas y retornos**, la
+vista Salidas programadas hoy muestra las solicitudes aprobadas cuya renta y
+depósito están pagados y cuyo período solicitado incluye la fecha actual. Las
+solicitudes con fechas futuras no habilitan una salida anticipada.
 
 Al aceptar el aplazamiento, la solicitud queda en cola hasta el retorno real de la
 unidad. Después del retorno se programa una solicitud a la vez, evitando períodos
