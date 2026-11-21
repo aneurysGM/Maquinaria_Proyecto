@@ -35,13 +35,30 @@
         <div class="col-xl-7">
             {% if orden.fecha_fin %}
             <div class="alert alert-success">Orden finalizada el {{ orden.fecha_fin|date:"d/m/Y" }}.</div>
+            <section class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold">Checklist de inspección</h2>
+                    {% for punto in orden.puntos_checklist.all %}
+                    <div class="border-top py-2">
+                        <strong>{{ punto.get_punto_display }}:</strong> {{ punto.get_resultado_display }}
+                        {% if punto.observacion %}<div class="small text-secondary">{{ punto.observacion }}</div>{% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-secondary mb-0">No hay puntos de inspección registrados.</p>
+                    {% endfor %}
+                </div>
+            </section>
             {% elif not es_administrador %}
             <section class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
-                    <h2 class="h5 fw-bold">Actualizar estado, horas y observaciones</h2>
-                    <p class="small text-secondary">Las horas de mano de obra se suman a la bitácora; la lectura del horómetro no puede retroceder.</p>
-                    <form method="post" action="{% url 'ordenes_trabajo:actualizar' orden.pk %}">
+                    <h2 class="h5 fw-bold">Informe de mantenimiento y cierre</h2>
+                    <p class="small text-secondary">Completa el informe y envíalo una sola vez para finalizar la orden. Puedes guardar un borrador y retomarlo después; el borrador no cambia el estado de la orden.</p>
+                    {% if hay_borrador %}<p class="text-info">Hay un borrador guardado para esta orden.</p>{% endif %}
+                    {% if hay_solicitudes_pendientes %}<div class="alert alert-warning">No se puede finalizar hasta que administración resuelva o reciba los repuestos pendientes.</div>{% endif %}
+                    <form method="post" action="{% url 'ordenes_trabajo:informe' orden.pk %}">
                         {% csrf_token %}
+                        <h3 class="h6 fw-bold">Estado, horas y observaciones</h3>
+                        <p class="small text-secondary">Las horas se suman a la bitácora al finalizar; el horómetro no puede retroceder.</p>
                         <div class="row g-3">
                             {% for field in actualizar_form %}
                             <div class="{% if field.name == 'observaciones' %}col-12{% else %}col-md-6{% endif %}">
@@ -52,17 +69,8 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <button class="btn btn-primary mt-3" type="submit">Guardar avance</button>
-                    </form>
-                </div>
-            </section>
-
-            <section class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-bold">Checklist de inspección</h2>
-                    <p class="small text-secondary">Revisa fluidos, hidráulica, rodaje y componentes eléctricos. Completa todos los puntos para finalizar la orden.</p>
-                    <form method="post" action="{% url 'ordenes_trabajo:checklist' orden.pk %}">
-                        {% csrf_token %}
+                        <h3 class="h6 fw-bold mt-4">Checklist de inspección</h3>
+                        <p class="small text-secondary">Completa todos los puntos para finalizar la orden.</p>
                         <div class="row g-3">
                             {% for field in checklist_form %}
                             <div class="col-md-6">
@@ -72,7 +80,17 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <button class="btn btn-primary mt-3" type="submit">Guardar inspección</button>
+                        <div class="mt-4">
+                            {% for field in cierre_form %}
+                            <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                            {% endfor %}
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <button class="btn btn-outline-primary" type="submit" name="accion" value="borrador" formnovalidate>Guardar borrador</button>
+                            <button class="btn btn-success" type="submit" name="accion" value="finalizar">Enviar informe y finalizar orden</button>
+                        </div>
                     </form>
                 </div>
             </section>
@@ -209,18 +227,6 @@
                 </div>
             </section>
 
-            <section class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-bold">Finalizar orden</h2>
-                    <p class="small text-secondary">Requiere el checklist completo y no tener solicitudes de repuestos pendientes o sin recibir.</p>
-                    <form method="post" action="{% url 'ordenes_trabajo:finalizar' orden.pk %}">
-                        {% csrf_token %}
-                        <label class="form-label" for="observaciones-finales">Observaciones finales</label>
-                        <textarea class="form-control mb-3" id="observaciones-finales" name="observaciones" maxlength="2000" rows="3" required></textarea>
-                        <button class="btn btn-success" type="submit" {% if not checklist_completo or hay_solicitudes_pendientes %}disabled{% endif %}>Marcar como finalizada</button>
-                    </form>
-                </div>
-            </section>
             {% endif %}
 
             <section class="card border-0 shadow-sm rounded-4 mb-4">

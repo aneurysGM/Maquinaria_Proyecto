@@ -36,9 +36,19 @@ y la separación entre quien registra un mantenimiento y su responsable.
   cada reembolso en el presupuesto únicamente después de efectuarlo. No se realiza
   ninguna transferencia automática. Los informes y cierres existentes muestran
   ingresos brutos por pagos; no descuentan los reembolsos de renta.
-- El técnico asignado puede indicar días restantes en diagnóstico y debe indicarlos
-  al registrar avances en reparación. La fecha estimada se calcula desde la fecha
-  local del avance y se muestra al administrador en la orden y su listado.
+- En el detalle de su orden, el técnico asignado puede guardar el informe incompleto
+  como borrador y retomarlo después. El borrador no publica avances ni cambia el
+  estado de la unidad. Al completar avance, checklist y observaciones finales,
+  **Enviar informe y finalizar orden** registra todo en una sola operación.
+- En **Nuevo estado**, el técnico puede elegir **Finalizada**; la selección por sí
+  sola no cierra la orden. El cierre se realiza al enviar el informe completo.
+- El técnico puede indicar días restantes en diagnóstico y debe indicarlos en
+  reparación. La fecha estimada se calcula desde la fecha local del envío.
+  Los comentarios, las solicitudes de repuestos y los consumos se gestionan por
+  separado; guarda el borrador antes de salir del formulario.
+- El cierre exige resolver o recibir las solicitudes de repuestos pendientes.
+  La unidad pasa a disponible solo si no tiene otra orden abierta ni una entrega
+  activa y su estado actual es mantenimiento.
 
 ## Migraciones y datos existentes
 

@@ -8,7 +8,7 @@ from django.utils import timezone
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Categoria, Maquinaria, Unidad
 from apps.mantenimiento.models import Mantenimiento
-from .models import ComentarioOrden, ConsumoRepuesto, Repuesto, SolicitudRepuesto
+from .models import BorradorOrden, ComentarioOrden, ConsumoRepuesto, PuntoChecklist, Repuesto, SolicitudRepuesto
 
 
 class OrdenTrabajoTests(TestCase):
@@ -82,6 +82,145 @@ class OrdenTrabajoTests(TestCase):
         self.client.force_login(self.administrador)
         respuesta = self.client.get(reverse('ordenes_trabajo:lista'))
         self.assertContains(respuesta, 'SERIE-OT-001')
+
+    def datos_informe(self):
+        return {
+            'avance-estado': 'reparacion',
+            'avance-dias_estimados': '3',
+            'avance-horas_trabajo': '2.5',
+            'avance-horometro': '120',
+            'avance-observaciones': 'Se reparó la unidad.',
+            'checklist-resultado_fluidos': 'correcto',
+            'checklist-resultado_hidraulico': 'correcto',
+            'checklist-resultado_rodaje': 'no_aplica',
+            'checklist-resultado_electrico': 'correcto',
+            'cierre-observaciones': 'Equipo probado y operativo.',
+        }
+
+    def test_borrador_parcial_se_recupera_sin_publicar_y_se_finaliza_en_un_envio(self):
+        self.client.force_login(self.tecnico)
+        url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
+        datos = self.datos_informe()
+        datos.update({
+            'accion': 'borrador',
+            'avance-dias_estimados': '',
+            'checklist-resultado_electrico': '',
+        })
+        respuesta = self.client.post(url, datos)
+        self.assertRedirects(respuesta, reverse('ordenes_trabajo:detalle', args=[self.orden.pk]))
+        self.assertTrue(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'pendiente')
+        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+        self.assertEqual(self.orden.registros_trabajo.count(), 0)
+        self.assertEqual(self.orden.puntos_checklist.count(), 0)
+        respuesta = self.client.get(reverse('ordenes_trabajo:detalle', args=[self.orden.pk]))
+        self.assertContains(respuesta, 'Hay un borrador guardado')
+        self.assertContains(respuesta, 'Se reparó la unidad.')
+        self.assertContains(respuesta, 'Equipo probado y operativo.')
+
+        datos = self.datos_informe()
+        datos['accion'] = 'finalizar'
+        respuesta = self.client.post(url, datos)
+        self.assertRedirects(respuesta, reverse('ordenes_trabajo:detalle', args=[self.orden.pk]))
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'finalizada')
+        self.assertIsNotNone(self.orden.fecha_fin)
+        self.assertEqual(self.unidad.estado, 'Disponible')
+        self.assertEqual(self.unidad.horas_uso, Decimal('120.0'))
+        self.assertEqual(self.unidad.proximo_mantenimiento_horas, Decimal('170.0'))
+        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('2.5'))
+        self.assertEqual(self.orden.puntos_checklist.count(), len(PuntoChecklist.PUNTOS))
+        self.assertFalse(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
+        self.client.force_login(self.administrador)
+        respuesta = self.client.get(reverse('ordenes_trabajo:detalle', args=[self.orden.pk]))
+        self.assertContains(respuesta, 'Niveles de fluidos')
+        self.assertContains(respuesta, 'Equipo probado y operativo.')
+
+    def test_informe_incompleto_o_repuestos_pendientes_no_publican_nada(self):
+        self.client.force_login(self.tecnico)
+        url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
+        datos = self.datos_informe()
+        datos.update({'accion': 'finalizar', 'checklist-resultado_electrico': ''})
+        respuesta = self.client.post(url, datos)
+        self.assertContains(respuesta, 'Revisa los campos indicados')
+        self.assertContains(respuesta, 'Se reparó la unidad.')
+        self.assertEqual(self.orden.puntos_checklist.count(), 0)
+        solicitud = SolicitudRepuesto.objects.create(
+            mantenimiento=self.orden, solicitada_por=self.tecnico, estado='aprobada',
+        )
+        datos['checklist-resultado_electrico'] = 'correcto'
+        respuesta = self.client.post(url, datos)
+        self.assertContains(respuesta, 'aprobadas sin recibir')
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'pendiente')
+        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+        self.assertEqual(self.orden.registros_trabajo.count(), 0)
+        self.assertEqual(self.orden.puntos_checklist.count(), 0)
+
+        solicitud.estado = 'recibida'
+        solicitud.save(update_fields=['estado'])
+        self.orden.estado = 'esperando_repuestos'
+        self.orden.save(update_fields=['estado'])
+        datos['avance-estado'] = 'esperando_repuestos'
+        self.client.post(url, datos)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'finalizada')
+
+    def test_informe_respeta_asignacion_y_otras_ordenes_abiertas(self):
+        url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
+        datos = self.datos_informe()
+        datos['accion'] = 'finalizar'
+        self.client.force_login(self.otro_tecnico)
+        self.assertEqual(self.client.post(url, datos).status_code, 404)
+        self.client.force_login(self.administrador)
+        self.assertEqual(self.client.post(url, datos).status_code, 403)
+        Mantenimiento.objects.create(
+            unidad=self.unidad, fecha=date.today(), tipo='Preventivo',
+            descripcion='Otra orden', costo=Decimal('0'), tecnico=self.tecnico,
+        )
+        self.client.force_login(self.tecnico)
+        self.client.post(url, datos)
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.estado, 'Mantenimiento')
+
+    def test_estado_finalizada_en_borrador_y_cierre_controlado(self):
+        self.client.force_login(self.tecnico)
+        detalle = reverse('ordenes_trabajo:detalle', args=[self.orden.pk])
+        url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
+        self.assertContains(self.client.get(detalle), '<option value="finalizada">Finalizada</option>', html=True)
+        datos = self.datos_informe()
+        datos.update({'accion': 'borrador', 'avance-estado': 'finalizada'})
+        self.client.post(url, datos)
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'pendiente')
+        self.assertIsNone(self.orden.fecha_fin)
+        self.assertEqual(self.unidad.estado, 'Mantenimiento')
+        self.assertContains(self.client.get(detalle), '<option value="finalizada" selected>Finalizada</option>', html=True)
+
+        solicitud = SolicitudRepuesto.objects.create(
+            mantenimiento=self.orden, solicitada_por=self.tecnico, estado='pendiente',
+        )
+        datos['accion'] = 'finalizar'
+        respuesta = self.client.post(url, datos)
+        self.assertContains(respuesta, 'solicitudes de repuestos pendientes')
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'pendiente')
+        self.assertEqual(self.orden.registros_trabajo.count(), 0)
+        self.assertTrue(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
+        solicitud.estado = 'recibida'
+        solicitud.save(update_fields=['estado'])
+        self.client.post(url, datos)
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'finalizada')
+        self.assertIsNotNone(self.orden.fecha_fin)
+        self.assertEqual(self.unidad.estado, 'Disponible')
+        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('2.5'))
 
     def test_finalizacion_exige_checklist_y_programa_proximo_servicio(self):
         self.client.force_login(self.tecnico)

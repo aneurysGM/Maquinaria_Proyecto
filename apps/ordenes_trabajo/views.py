@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import F, Q
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_safe
@@ -16,6 +17,7 @@ from apps.mantenimiento.models import Mantenimiento
 from .forms import (
     ActualizarOrdenForm,
     ChecklistForm,
+    CierreOrdenForm,
     ComentarioOrdenForm,
     ConsumoRepuestoForm,
     EntradaRepuestoForm,
@@ -23,6 +25,7 @@ from .forms import (
     SolicitudRepuestoFormSet,
 )
 from .models import (
+    BorradorOrden,
     ComentarioOrden,
     ConsumoRepuesto,
     DetalleSolicitudRepuesto,
@@ -107,6 +110,10 @@ def orden_lista(request):
 @login_required(login_url='cuentas:login')
 @require_safe
 def orden_detalle(request, mantenimiento_id):
+    return _renderizar_detalle(request, mantenimiento_id)
+
+
+def _renderizar_detalle(request, mantenimiento_id, formularios=None):
     administrador = _es_personal(request.user)
     orden = get_object_or_404(
         _ordenes_visibles(request.user).prefetch_related(
@@ -125,26 +132,170 @@ def orden_detalle(request, mantenimiento_id):
         }
         for punto in orden.puntos_checklist.all()
     }
+    borrador = BorradorOrden.objects.filter(mantenimiento=orden).first() if not administrador else None
+    datos_borrador = borrador.datos if borrador else {}
+    avance_inicial = {
+        'estado': orden.estado if orden.estado != 'finalizada' else 'reparacion',
+        'horas_trabajo': Decimal('0.0'),
+        'horometro': orden.unidad.horas_uso,
+        'dias_estimados': max((orden.fecha_estimada_fin - timezone.localdate()).days, 1)
+        if orden.fecha_estimada_fin else None,
+    }
+    avance_inicial.update(datos_borrador.get('avance', {}))
+    formularios = formularios or {
+        'actualizar_form': ActualizarOrdenForm(
+            initial=avance_inicial, prefix='avance', permitir_finalizada=True,
+        ),
+        'checklist_form': ChecklistForm(
+            checklist_existente=checklist_existente,
+            initial=datos_borrador.get('checklist', {}),
+            prefix='checklist',
+        ),
+        'cierre_form': CierreOrdenForm(initial=datos_borrador.get('cierre', {}), prefix='cierre'),
+    }
     return render(request, 'ordenes_trabajo/detalle.html', {
         'orden': orden,
         'es_administrador': administrador,
-        'actualizar_form': ActualizarOrdenForm(initial={
-            'estado': orden.estado if orden.estado != 'finalizada' else 'reparacion',
-            'horas_trabajo': Decimal('0.0'),
-            'horometro': orden.unidad.horas_uso,
-            'dias_estimados': max((orden.fecha_estimada_fin - timezone.localdate()).days, 1)
-            if orden.fecha_estimada_fin else None,
-        }),
-        'checklist_form': ChecklistForm(checklist_existente=checklist_existente),
+        **formularios,
+        'hay_borrador': borrador is not None,
         'comentario_form': ComentarioOrdenForm(),
         'solicitud_formset': SolicitudRepuestoFormSet(prefix='repuestos'),
         'consumo_form': ConsumoRepuestoForm(),
-        'checklist_completo': len(checklist_existente) == len(PuntoChecklist.PUNTOS)
-        and all(punto.get('resultado') for punto in checklist_existente.values()),
         'hay_solicitudes_pendientes': orden.solicitudes_repuestos.filter(
             estado__in=('pendiente', 'aprobada'),
         ).exists(),
     })
+
+
+def _registrar_avance(orden, unidad, usuario, form):
+    horas_horometro = form.cleaned_data['horometro']
+    if horas_horometro < unidad.horas_uso:
+        raise ValidationError(
+            f'El horómetro no puede ser menor que la lectura actual ({unidad.horas_uso} h).'
+        )
+    unidad.horas_uso = horas_horometro
+    unidad.save(update_fields=['horas_uso', 'fecha_modificacion'])
+    estado = form.cleaned_data['estado']
+    if estado != 'finalizada':
+        orden.estado = estado
+    dias_estimados = form.cleaned_data['dias_estimados']
+    orden.fecha_estimada_fin = (
+        timezone.localdate() + timedelta(days=dias_estimados)
+        if dias_estimados is not None else None
+    )
+    orden.save(update_fields=['estado', 'fecha_estimada_fin'])
+    RegistroTrabajo.objects.create(
+        mantenimiento=orden,
+        tecnico=usuario,
+        estado=estado,
+        horas=form.cleaned_data['horas_trabajo'],
+        observaciones=form.cleaned_data['observaciones'],
+    )
+
+
+def _guardar_checklist(orden, usuario, form):
+    for punto, datos in form.resultados().items():
+        PuntoChecklist.objects.update_or_create(
+            mantenimiento=orden,
+            punto=punto,
+            defaults={**datos, 'revisado_por': usuario},
+        )
+
+
+def _finalizar_orden(orden, usuario, observaciones):
+    if orden.estado == 'finalizada' or orden.fecha_fin is not None:
+        raise ValidationError('La orden ya estaba finalizada.')
+    checklist = {
+        punto.punto
+        for punto in orden.puntos_checklist.all()
+        if punto.resultado in dict(PuntoChecklist.RESULTADOS)
+    }
+    if len(checklist) != len(PuntoChecklist.PUNTOS):
+        raise ValidationError('Completa todos los puntos del checklist antes de finalizar.')
+    if orden.solicitudes_repuestos.filter(estado__in=('pendiente', 'aprobada')).exists():
+        raise ValidationError(
+            'No puedes finalizar mientras haya solicitudes de repuestos pendientes '
+            'o aprobadas sin recibir.'
+        )
+
+    unidad = bloquear_unidad(pk=orden.unidad_id)
+    orden.estado = 'finalizada'
+    orden.fecha_fin = timezone.localdate()
+    orden.save(update_fields=['estado', 'fecha_fin'])
+    RegistroTrabajo.objects.create(
+        mantenimiento=orden,
+        tecnico=usuario,
+        estado='finalizada',
+        horas=Decimal('0.0'),
+        observaciones=observaciones,
+    )
+    quedan_ordenes = Mantenimiento.objects.filter(
+        unidad=unidad, fecha_fin__isnull=True,
+    ).exclude(pk=orden.pk).exists()
+    entrega_activa = unidad.solicitudes_alquiler.filter(
+        fecha_salida__isnull=False, fecha_retorno__isnull=True,
+    ).exists()
+    if not quedan_ordenes and not entrega_activa and unidad.estado == 'Mantenimiento':
+        unidad.estado = 'Disponible'
+        unidad.save(update_fields=['estado'])
+    if unidad.intervalo_mantenimiento_horas is not None:
+        unidad.proximo_mantenimiento_horas = (
+            unidad.horas_uso + unidad.intervalo_mantenimiento_horas
+        )
+        unidad.save(update_fields=['proximo_mantenimiento_horas'])
+    BorradorOrden.objects.filter(mantenimiento=orden).delete()
+
+
+@login_required(login_url='cuentas:login')
+@require_POST
+def orden_informe(request, mantenimiento_id):
+    _requiere_tecnico(request.user)
+    accion = request.POST.get('accion')
+    if accion not in ('borrador', 'finalizar'):
+        return HttpResponseBadRequest('La acción de la orden no es válida.')
+    parcial = accion == 'borrador'
+    formularios = {
+        'actualizar_form': ActualizarOrdenForm(
+            request.POST, prefix='avance', parcial=parcial, permitir_finalizada=True,
+        ),
+        'checklist_form': ChecklistForm(request.POST, prefix='checklist', parcial=parcial),
+        'cierre_form': CierreOrdenForm(request.POST, prefix='cierre', parcial=parcial),
+    }
+    validos = [form.is_valid() for form in formularios.values()]
+    if not all(validos):
+        messages.error(request, 'Revisa los campos indicados; no se guardaron cambios.')
+        return _renderizar_detalle(request, mantenimiento_id, formularios)
+
+    try:
+        with transaction.atomic():
+            orden = _obtener_orden(request.user, mantenimiento_id, bloquear=True)
+            if orden.fecha_fin is not None or orden.estado == 'finalizada':
+                raise ValidationError('La orden ya está finalizada y no admite cambios.')
+            if parcial:
+                datos = {
+                    form.prefix: {
+                        nombre: request.POST.get(form.add_prefix(nombre), '')
+                        for nombre in form.fields
+                    }
+                    for form in formularios.values()
+                }
+                BorradorOrden.objects.update_or_create(
+                    mantenimiento=orden, defaults={'datos': datos},
+                )
+            else:
+                unidad = bloquear_unidad(pk=orden.unidad_id)
+                _registrar_avance(orden, unidad, request.user, formularios['actualizar_form'])
+                _guardar_checklist(orden, request.user, formularios['checklist_form'])
+                _finalizar_orden(orden, request.user, formularios['cierre_form'].cleaned_data['observaciones'])
+    except (ValidationError, DatabaseError) as error:
+        _mensaje_error(request, error)
+        return _renderizar_detalle(request, mantenimiento_id, formularios)
+    messages.success(
+        request,
+        'Borrador guardado; todavía no se ha enviado la orden.'
+        if parcial else 'Orden finalizada y formulario enviado.',
+    )
+    return redirect('ordenes_trabajo:detalle', mantenimiento_id=mantenimiento_id)
 
 
 @login_required(login_url='cuentas:login')
@@ -167,28 +318,7 @@ def orden_actualizar(request, mantenimiento_id):
             if orden.fecha_fin is not None or orden.estado == 'finalizada':
                 raise ValidationError('La orden ya está finalizada y no admite cambios.')
             unidad = bloquear_unidad(pk=orden.unidad_id)
-            horas_horometro = form.cleaned_data['horometro']
-            if horas_horometro < unidad.horas_uso:
-                raise ValidationError(
-                    f'El horómetro no puede ser menor que la lectura actual '
-                    f'({unidad.horas_uso} h).'
-                )
-            unidad.horas_uso = horas_horometro
-            unidad.save(update_fields=['horas_uso', 'fecha_modificacion'])
-            orden.estado = form.cleaned_data['estado']
-            dias_estimados = form.cleaned_data['dias_estimados']
-            orden.fecha_estimada_fin = (
-                timezone.localdate() + timedelta(days=dias_estimados)
-                if dias_estimados is not None else None
-            )
-            orden.save(update_fields=['estado', 'fecha_estimada_fin'])
-            RegistroTrabajo.objects.create(
-                mantenimiento=orden,
-                tecnico=request.user,
-                estado=orden.estado,
-                horas=form.cleaned_data['horas_trabajo'],
-                observaciones=form.cleaned_data['observaciones'],
-            )
+            _registrar_avance(orden, unidad, request.user, form)
     except (ValidationError, DatabaseError) as error:
         _mensaje_error(request, error)
     else:
@@ -238,15 +368,7 @@ def orden_guardar_checklist(request, mantenimiento_id):
                 raise ValidationError([
                     error for errors in form.errors.values() for error in errors
                 ])
-            for punto, datos in form.resultados().items():
-                PuntoChecklist.objects.update_or_create(
-                    mantenimiento=orden,
-                    punto=punto,
-                    defaults={
-                        **datos,
-                        'revisado_por': request.user,
-                    },
-                )
+            _guardar_checklist(orden, request.user, form)
     except (ValidationError, DatabaseError) as error:
         _mensaje_error(request, error)
     else:
@@ -266,60 +388,7 @@ def orden_finalizar(request, mantenimiento_id):
     try:
         with transaction.atomic():
             orden = _obtener_orden(request.user, mantenimiento_id, bloquear=True)
-            if orden.estado == 'finalizada' or orden.fecha_fin is not None:
-                raise ValidationError('La orden ya estaba finalizada.')
-            if orden.estado not in ('diagnostico', 'reparacion'):
-                raise ValidationError(
-                    'Para finalizar, la orden debe estar en diagnóstico o reparación.'
-                )
-            checklist = {
-                punto.punto
-                for punto in orden.puntos_checklist.all()
-                if punto.resultado in dict(PuntoChecklist.RESULTADOS)
-            }
-            if len(checklist) != len(PuntoChecklist.PUNTOS):
-                raise ValidationError(
-                    'Completa todos los puntos del checklist antes de finalizar.'
-                )
-            if orden.solicitudes_repuestos.filter(
-                estado__in=('pendiente', 'aprobada'),
-            ).exists():
-                raise ValidationError(
-                    'No puedes finalizar mientras haya solicitudes de repuestos pendientes '
-                    'o aprobadas sin recibir.'
-                )
-
-            unidad = bloquear_unidad(pk=orden.unidad_id)
-            orden.estado = 'finalizada'
-            orden.fecha_fin = timezone.localdate()
-            orden.save(update_fields=['estado', 'fecha_fin'])
-            RegistroTrabajo.objects.create(
-                mantenimiento=orden,
-                tecnico=request.user,
-                estado='finalizada',
-                horas=Decimal('0.0'),
-                observaciones=observaciones,
-            )
-            quedan_ordenes = Mantenimiento.objects.filter(
-                unidad=unidad,
-                fecha_fin__isnull=True,
-            ).exclude(pk=orden.pk).exists()
-            entrega_activa = unidad.solicitudes_alquiler.filter(
-                fecha_salida__isnull=False,
-                fecha_retorno__isnull=True,
-            ).exists()
-            if (
-                not quedan_ordenes
-                and not entrega_activa
-                and unidad.estado == 'Mantenimiento'
-            ):
-                unidad.estado = 'Disponible'
-                unidad.save(update_fields=['estado'])
-            if unidad.intervalo_mantenimiento_horas is not None:
-                unidad.proximo_mantenimiento_horas = (
-                    unidad.horas_uso + unidad.intervalo_mantenimiento_horas
-                )
-                unidad.save(update_fields=['proximo_mantenimiento_horas'])
+            _finalizar_orden(orden, request.user, observaciones)
     except (ValidationError, DatabaseError) as error:
         _mensaje_error(request, error)
     else:

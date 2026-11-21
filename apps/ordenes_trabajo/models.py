@@ -41,6 +41,16 @@ class PuntoChecklist(models.Model):
         ]
 
 
+class BorradorOrden(models.Model):
+    mantenimiento = models.OneToOneField(
+        'mantenimiento.Mantenimiento',
+        on_delete=models.CASCADE,
+        related_name='borrador',
+    )
+    datos = models.JSONField(default=dict)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+
 class RegistroTrabajo(models.Model):
     mantenimiento = models.ForeignKey(
         'mantenimiento.Mantenimiento',

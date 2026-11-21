@@ -8,6 +8,7 @@ app_name = 'ordenes_trabajo'
 urlpatterns = [
     path('', views.orden_lista, name='lista'),
     path('<int:mantenimiento_id>/', views.orden_detalle, name='detalle'),
+    path('<int:mantenimiento_id>/informe/', views.orden_informe, name='informe'),
     path('<int:mantenimiento_id>/actualizar/', views.orden_actualizar, name='actualizar'),
     path('<int:mantenimiento_id>/comentar/', views.orden_comentar, name='comentar'),
     path('<int:mantenimiento_id>/checklist/', views.orden_guardar_checklist, name='checklist'),

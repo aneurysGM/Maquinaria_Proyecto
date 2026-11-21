@@ -55,15 +55,30 @@ class ActualizarOrdenForm(forms.Form):
         }),
     )
 
+    def __init__(self, *args, parcial=False, permitir_finalizada=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.parcial = parcial
+        if permitir_finalizada:
+            self.fields['estado'].choices = [
+                *self.fields['estado'].choices,
+                ('finalizada', 'Finalizada'),
+            ]
+            self.fields['estado'].help_text = (
+                'Seleccionar Finalizada no cierra la orden hasta enviar el informe.'
+            )
+        if parcial:
+            for field in self.fields.values():
+                field.required = False
+
     def clean(self):
         datos = super().clean()
-        if datos.get('estado') == 'reparacion' and datos.get('dias_estimados') is None:
+        if not self.parcial and datos.get('estado') == 'reparacion' and datos.get('dias_estimados') is None:
             self.add_error('dias_estimados', 'Indica los días estimados para la reparación.')
         return datos
 
 
 class ChecklistForm(forms.Form):
-    def __init__(self, *args, checklist_existente=None, **kwargs):
+    def __init__(self, *args, checklist_existente=None, parcial=False, **kwargs):
         super().__init__(*args, **kwargs)
         checklist_existente = checklist_existente or {}
         self.puntos = PuntoChecklist.PUNTOS
@@ -73,6 +88,7 @@ class ChecklistForm(forms.Form):
             self.fields[f'resultado_{codigo}'] = forms.ChoiceField(
                 label=etiqueta,
                 choices=opciones,
+                required=not parcial,
                 widget=forms.Select(attrs={'class': 'form-select'}),
                 initial=actual.get('resultado', ''),
             )
@@ -95,6 +111,20 @@ class ChecklistForm(forms.Form):
             }
             for codigo, _etiqueta in self.puntos
         }
+
+
+class CierreOrdenForm(forms.Form):
+    observaciones = forms.CharField(
+        label='Observaciones finales',
+        max_length=2000,
+        strip=True,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+    )
+
+    def __init__(self, *args, parcial=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if parcial:
+            self.fields['observaciones'].required = False
 
 
 class DetalleSolicitudRepuestoForm(forms.Form):
