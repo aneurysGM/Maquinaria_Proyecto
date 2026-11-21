@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Categoria, Maquinaria, Unidad
@@ -88,6 +89,7 @@ class OrdenTrabajoTests(TestCase):
             reverse('ordenes_trabajo:actualizar', args=[self.orden.pk]),
             {
                 'estado': 'reparacion',
+                'dias_estimados': '3',
                 'horas_trabajo': '2.5',
                 'horometro': '120.0',
                 'observaciones': 'Se corrigió la fuga hidráulica.',
@@ -166,6 +168,30 @@ class OrdenTrabajoTests(TestCase):
         self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
         self.assertEqual(self.orden.registros_trabajo.count(), 0)
         self.assertContains(respuesta, 'no puede ser menor')
+
+    def test_estimacion_en_diagnostico_y_reparacion(self):
+        self.client.force_login(self.tecnico)
+        url = reverse('ordenes_trabajo:actualizar', args=[self.orden.pk])
+        datos = {'estado': 'diagnostico', 'horas_trabajo': '0',
+                 'horometro': '100', 'observaciones': 'Revisión'}
+        self.client.post(url, datos)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'diagnostico')
+        self.assertIsNone(self.orden.fecha_estimada_fin)
+
+        datos['estado'] = 'reparacion'
+        respuesta = self.client.post(url, datos, follow=True)
+        self.assertContains(respuesta, 'Indica los días estimados')
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, 'diagnostico')
+
+        datos['dias_estimados'] = '4'
+        self.client.post(url, datos)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.fecha_estimada_fin, timezone.localdate() + timedelta(days=4))
+        self.client.force_login(self.administrador)
+        respuesta = self.client.get(reverse('ordenes_trabajo:detalle', args=[self.orden.pk]))
+        self.assertContains(respuesta, self.orden.fecha_estimada_fin.strftime('%d/%m/%Y'))
 
     def test_tecnico_puede_agregar_comentario_a_la_orden(self):
         self.client.force_login(self.tecnico)

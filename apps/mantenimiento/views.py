@@ -66,7 +66,7 @@ def mantenimiento_registrar(request):
         form = MantenimientoForm(request.POST, usuario=request.user)
         if 'filtrar' not in request.POST and form.is_valid():
             try:
-                mantenimiento = form.save()
+                mantenimiento = form.save(request=request)
             except ValidationError as error:
                 for msg in error.messages:
                     form.add_error(None, msg)

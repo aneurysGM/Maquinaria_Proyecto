@@ -48,6 +48,7 @@ class SolicitudAlquiler(models.Model):
     comentario = models.CharField(max_length=500, blank=True, verbose_name='Comentario / Obra')
     motivo_rechazo = models.CharField(max_length=1000, blank=True, editable=False)
     motivo_disponibilidad = models.CharField(max_length=1000, blank=True, editable=False)
+    cancelada_por_mantenimiento = models.BooleanField(default=False, editable=False)
     fecha_aviso_disponibilidad = models.DateTimeField(null=True, blank=True, editable=False)
     aplazada = models.BooleanField(default=False, editable=False)
     fecha_confirmacion = models.DateTimeField(null=True, blank=True, editable=False)

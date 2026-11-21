@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -131,6 +132,8 @@ def orden_detalle(request, mantenimiento_id):
             'estado': orden.estado if orden.estado != 'finalizada' else 'reparacion',
             'horas_trabajo': Decimal('0.0'),
             'horometro': orden.unidad.horas_uso,
+            'dias_estimados': max((orden.fecha_estimada_fin - timezone.localdate()).days, 1)
+            if orden.fecha_estimada_fin else None,
         }),
         'checklist_form': ChecklistForm(checklist_existente=checklist_existente),
         'comentario_form': ComentarioOrdenForm(),
@@ -173,7 +176,12 @@ def orden_actualizar(request, mantenimiento_id):
             unidad.horas_uso = horas_horometro
             unidad.save(update_fields=['horas_uso', 'fecha_modificacion'])
             orden.estado = form.cleaned_data['estado']
-            orden.save(update_fields=['estado'])
+            dias_estimados = form.cleaned_data['dias_estimados']
+            orden.fecha_estimada_fin = (
+                timezone.localdate() + timedelta(days=dias_estimados)
+                if dias_estimados is not None else None
+            )
+            orden.save(update_fields=['estado', 'fecha_estimada_fin'])
             RegistroTrabajo.objects.create(
                 mantenimiento=orden,
                 tecnico=request.user,

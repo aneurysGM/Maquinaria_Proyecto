@@ -16,7 +16,7 @@ from apps.alquileres.bloqueos import bloquear_unidad
 from apps.alquileres.models import SolicitudAlquiler
 from apps.alquileres.notificaciones import notificar_indisponibilidad
 from apps.inventario.models import Unidad
-from .forms import PagoAlquilerForm, ReembolsoDepositoForm, MotivosReservaForm
+from .forms import PagoAlquilerForm, ReembolsoDepositoForm, ReembolsoRentaForm, MotivosReservaForm
 from .models import PresupuestoAlquiler, ReembolsoDeposito
 from .consultas import presupuestos_con_pago_vencido
 
@@ -64,6 +64,7 @@ class PresupuestoDetalleView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context.setdefault('pago_form', PagoAlquilerForm())
         context.setdefault('reembolso_form', ReembolsoDepositoForm())
+        context.setdefault('reembolso_renta_form', ReembolsoRentaForm(prefix='renta'))
         solicitud = self.object.solicitud
         context['mora_estimada'] = self.object.calcular_mora(
             solicitud.dias_atraso_actual
@@ -90,6 +91,20 @@ def mostrar_pago(request, presupuesto_id, form):
     vista.object = vista.get_object()
     extras = {'pago_form': form}
     return vista.render_to_response(vista.get_context_data(**extras))
+
+
+def _bloquear_presupuesto_reembolso(presupuesto_id):
+    referencia = SolicitudAlquiler.objects.filter(presupuesto__pk=presupuesto_id).values('unidad_id')
+    try:
+        bloquear_unidad(pk__in=referencia)
+    except Unidad.DoesNotExist:
+        raise Http404('Presupuesto no encontrado.')
+    solicitud = get_object_or_404(
+        SolicitudAlquiler.objects.select_for_update(), presupuesto__pk=presupuesto_id,
+    )
+    presupuesto = get_object_or_404(PresupuestoAlquiler.objects.select_for_update(), pk=presupuesto_id)
+    presupuesto.solicitud = solicitud
+    return presupuesto
 
 
 @login_required
@@ -187,17 +202,17 @@ def reembolso_registrar(request, presupuesto_id):
     if request.method != 'POST':
         return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto_id)
 
-    presupuesto = get_object_or_404(
-        PresupuestoAlquiler.objects.select_for_update().select_related('solicitud'),
-        pk=presupuesto_id,
-    )
-    if not presupuesto.solicitud.fecha_retorno:
+    presupuesto = _bloquear_presupuesto_reembolso(presupuesto_id)
+    if not presupuesto.solicitud.fecha_retorno and not (
+        presupuesto.solicitud.estado == 'Cancelada'
+        and presupuesto.solicitud.cancelada_por_mantenimiento
+        and presupuesto.solicitud.fecha_salida is None
+    ):
         messages.error(
             request,
             'El depósito solo se puede devolver después de registrar el retorno.',
         )
         return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto.pk)
-
     form = ReembolsoDepositoForm(request.POST)
     if form.is_valid():
         reembolso = form.save(commit=False)
@@ -218,4 +233,29 @@ def reembolso_registrar(request, presupuesto_id):
         for error in errores
     )
     messages.error(request, mensajes)
+    return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto.pk)
+
+
+@login_required
+@transaction.atomic
+def reembolso_renta_registrar(request, presupuesto_id):
+    if not request.user.es_administrador:
+        raise PermissionDenied('Solo los administradores pueden registrar reembolsos.')
+    if request.method != 'POST':
+        return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto_id)
+    presupuesto = _bloquear_presupuesto_reembolso(presupuesto_id)
+    form = ReembolsoRentaForm(request.POST, prefix='renta')
+    if form.is_valid():
+        reembolso = form.save(commit=False)
+        reembolso.presupuesto = presupuesto
+        reembolso.registrado_por = request.user
+        try:
+            reembolso.save()
+        except ValidationError as error:
+            for mensaje in error.messages:
+                form.add_error(None, mensaje)
+        else:
+            messages.success(request, 'El reembolso de la renta se registró correctamente.')
+            return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto.pk)
+    messages.error(request, '; '.join(error for errores in form.errors.values() for error in errores))
     return redirect('ventas:presupuesto_detalle', presupuesto_id=presupuesto.pk)

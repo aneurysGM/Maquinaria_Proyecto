@@ -15,6 +15,9 @@
                 Técnico asignado:
                 <strong>{{ orden.tecnico.get_full_name|default:orden.tecnico.email|default:"Sin asignar" }}</strong>
             </p>
+            <p class="text-secondary mb-0">Finalización estimada:
+                <strong>{% if orden.fecha_estimada_fin %}{{ orden.fecha_estimada_fin|date:"d/m/Y" }}{% else %}Sin estimar{% endif %}</strong>
+            </p>
             {% if orden.descripcion %}<p class="text-secondary mt-2 mb-0">{{ orden.descripcion }}</p>{% endif %}
         </div>
         <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
@@ -44,6 +47,7 @@
                             <div class="{% if field.name == 'observaciones' %}col-12{% else %}col-md-6{% endif %}">
                                 <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                 {{ field }}
+                                {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
                                 {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                             </div>
                             {% endfor %}

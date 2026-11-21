@@ -77,3 +77,19 @@ def notificar_reprogramacion(solicitud, *, request=None):
         'Saludos cordiales,\nEquipo de alquileres'
     )
     _enviar_correo(request, cliente.email, asunto, contenido)
+
+
+def notificar_cancelacion_mantenimiento(solicitud, *, request=None):
+    cliente = solicitud.cliente
+    nombre = cliente.get_full_name().strip() or cliente.email
+    asunto = f'Cancelación de tu solicitud de alquiler #{solicitud.pk}'
+    contenido = (
+        f'Hola {nombre},\n\n'
+        f'Tu solicitud de {solicitud.unidad.maquinaria.nombre} fue cancelada porque la unidad '
+        'requiere mantenimiento forzado y aún no se ha entregado.\n'
+        'Los importes pagados por renta y depósito quedan pendientes de devolución; '
+        'contacta al administrador para coordinarla. Puedes consultar el estado en Mis alquileres.\n\n'
+        'Puedes solicitar otra maquinaria o realizar una nueva solicitud cuando esta unidad '
+        'esté disponible.\n\nSaludos cordiales,\nEquipo de alquileres'
+    )
+    _enviar_correo(request, cliente.email, asunto, contenido)

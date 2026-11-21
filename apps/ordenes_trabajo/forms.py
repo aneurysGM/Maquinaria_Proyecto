@@ -14,6 +14,14 @@ class ActualizarOrdenForm(forms.Form):
         ),
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
+    dias_estimados = forms.IntegerField(
+        label='Días estimados restantes',
+        required=False,
+        min_value=1,
+        max_value=36500,
+        help_text='Obligatorio en reparación; opcional durante el diagnóstico.',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '36500'}),
+    )
     horas_trabajo = forms.DecimalField(
         label='Horas de mano de obra en esta actualización',
         max_digits=8,
@@ -46,6 +54,12 @@ class ActualizarOrdenForm(forms.Form):
             'placeholder': 'Describe qué encontraste, el trabajo realizado y cómo quedó el equipo.',
         }),
     )
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get('estado') == 'reparacion' and datos.get('dias_estimados') is None:
+            self.add_error('dias_estimados', 'Indica los días estimados para la reparación.')
+        return datos
 
 
 class ChecklistForm(forms.Form):

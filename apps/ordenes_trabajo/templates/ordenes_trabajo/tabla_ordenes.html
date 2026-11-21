@@ -17,7 +17,9 @@
                     <div class="small text-secondary">{{ orden.unidad.maquinaria.codigo }} · Serie {{ orden.unidad.numero_serie }}</div>
                 </td>
                 <td>{{ orden.fecha|date:"d/m/Y" }}</td>
-                <td><span class="badge text-bg-light border">{{ orden.get_estado_display }}</span></td>
+                <td><span class="badge text-bg-light border">{{ orden.get_estado_display }}</span>
+                    {% if orden.fecha_estimada_fin %}<div class="small text-secondary">Estimada: {{ orden.fecha_estimada_fin|date:"d/m/Y" }}</div>{% endif %}
+                </td>
                 {% if es_administrador %}<td>{{ orden.tecnico.get_full_name|default:orden.tecnico.email }}</td>{% endif %}
                 <td class="text-end pe-4">
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'ordenes_trabajo:detalle' orden.pk %}">

@@ -100,6 +100,19 @@ class PresupuestoAlquiler(models.Model):
         )
 
     @property
+    def renta_reembolsada(self):
+        return self.reembolsos_renta.aggregate(
+            total=Sum('monto')
+        )['total'] or Decimal('0.00')
+
+    @property
+    def renta_por_reembolsar(self):
+        return max(
+            self.pagado_por_concepto('renta') - self.renta_reembolsada,
+            Decimal('0.00'),
+        )
+
+    @property
     def tarifa_diaria_equivalente(self):
         if self.solicitud.plan == 'semanal':
             return self.tarifa_periodo / Decimal('7')
@@ -221,7 +234,14 @@ class ReembolsoDeposito(models.Model):
         if not self.presupuesto_id or self.monto is None:
             return
         presupuesto = self.presupuesto
-        if not presupuesto.solicitud.fecha_retorno:
+        if (
+            not presupuesto.solicitud.fecha_retorno
+            and not (
+                presupuesto.solicitud.estado == 'Cancelada'
+                and presupuesto.solicitud.cancelada_por_mantenimiento
+                and not presupuesto.solicitud.fecha_salida
+            )
+        ):
             raise ValidationError(
                 'El depósito solo se puede reembolsar después de registrar el retorno.'
             )
@@ -242,3 +262,61 @@ class ReembolsoDeposito(models.Model):
 
     def __str__(self):
         return f'Reembolso de {self.monto} para el presupuesto #{self.presupuesto_id}'
+
+
+class ReembolsoRenta(models.Model):
+    METODOS = PagoAlquiler.METODOS
+
+    presupuesto = models.ForeignKey(
+        PresupuestoAlquiler,
+        on_delete=models.PROTECT,
+        related_name='reembolsos_renta',
+    )
+    monto = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    metodo = models.CharField(max_length=20, choices=METODOS)
+    referencia = models.CharField(max_length=120, blank=True)
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='reembolsos_renta_registrados',
+    )
+    creado_en = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = 'ReembolsoRenta'
+        ordering = ('-creado_en', '-id')
+        verbose_name = 'reembolso de renta'
+        verbose_name_plural = 'reembolsos de renta'
+
+    def clean(self):
+        super().clean()
+        if not self.presupuesto_id or self.monto is None:
+            return
+        solicitud = self.presupuesto.solicitud
+        if not (
+            solicitud.estado == 'Cancelada'
+            and solicitud.cancelada_por_mantenimiento
+            and solicitud.fecha_salida is None
+        ):
+            raise ValidationError('La renta solo se reembolsa por cancelación antes de la entrega por mantenimiento.')
+        pagos_renta = self.presupuesto.pagos.filter(
+            concepto='renta'
+        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        reembolsos_previos = self.presupuesto.reembolsos_renta.exclude(
+            pk=self.pk
+        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        if reembolsos_previos + self.monto > pagos_renta:
+            raise ValidationError({
+                'monto': 'El reembolso no puede superar la renta recibida y aún no devuelta.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Reembolso de renta de {self.monto} para el presupuesto #{self.presupuesto_id}'

@@ -22,4 +22,9 @@ urlpatterns = [
         views.reembolso_registrar,
         name='reembolso_registrar',
     ),
+    path(
+        'presupuestos/<int:presupuesto_id>/reembolsos-renta/',
+        views.reembolso_renta_registrar,
+        name='reembolso_renta_registrar',
+    ),
 ]

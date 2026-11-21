@@ -16,6 +16,13 @@
     {% endif %}
 </dl>
 {% include 'alquileres/proximo_paso.html' %}
+{% if solicitud.cancelada_por_mantenimiento %}
+<div class="alert alert-warning mt-3" role="status">
+    Esta solicitud fue cancelada por mantenimiento forzado. Los pagos de renta y depósito pendientes de devolución se muestran en el presupuesto; contacta al administrador para coordinar el reembolso.
+    Puedes solicitar otra maquinaria o hacer una nueva solicitud cuando esta unidad esté disponible.
+    {% if es_cliente %}<a href="{% url 'inventario:maquinaria_lista' %}">Ver maquinaria disponible</a>{% endif %}
+</div>
+{% endif %}
 {% if solicitud.fecha_aviso_disponibilidad %}
 <div class="alert {% if es_administrador %}alert-secondary{% else %}alert-warning{% endif %} mt-3 mb-0" role="status">
     <strong>{% if es_administrador %}Aviso enviado al cliente{% else %}Mensaje del administrador{% endif %}</strong>

@@ -24,6 +24,21 @@ y la separación entre quien registra un mantenimiento y su responsable.
   aunque se envíe otro identificador en el formulario. **No disponible** limita las
   asignaciones del administrador; el técnico puede registrar su propio trabajo.
 - La aceptación o el rechazo de solicitudes por técnicos queda pendiente.
+- En el listado de técnicos, el administrador puede inactivar o reactivar cuentas.
+  Una cuenta con órdenes abiertas no puede inactivarse hasta finalizar esas órdenes.
+  La eliminación solo procede si no hay historial protegido; en otro caso se conserva
+  la cuenta y se puede inactivar.
+- Para una unidad reservada, el administrador o técnico puede confirmar **Forzar
+  mantenimiento**. Se cancelan las solicitudes aprobadas vigentes o futuras sin entregar, incluso con
+  pagos parciales, y se notifica a los clientes por correo y en Mis alquileres.
+  Una unidad entregada debe retornar antes del mantenimiento. Los pagos recibidos
+  de renta y depósito quedan pendientes de devolución; el administrador registra
+  cada reembolso en el presupuesto únicamente después de efectuarlo. No se realiza
+  ninguna transferencia automática. Los informes y cierres existentes muestran
+  ingresos brutos por pagos; no descuentan los reembolsos de renta.
+- El técnico asignado puede indicar días restantes en diagnóstico y debe indicarlos
+  al registrar avances en reparación. La fecha estimada se calcula desde la fecha
+  local del avance y se muestra al administrador en la orden y su listado.
 
 ## Migraciones y datos existentes
 

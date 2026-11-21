@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import PagoAlquiler, ReembolsoDeposito
+from .models import PagoAlquiler, ReembolsoDeposito, ReembolsoRenta
 
 
 class MotivosReservaForm(forms.Form):
@@ -45,3 +45,8 @@ class ReembolsoDepositoForm(forms.ModelForm):
                 'placeholder': 'Número de recibo o referencia (opcional)',
             }),
         }
+
+
+class ReembolsoRentaForm(ReembolsoDepositoForm):
+    class Meta(ReembolsoDepositoForm.Meta):
+        model = ReembolsoRenta

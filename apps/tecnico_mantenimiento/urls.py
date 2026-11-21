@@ -10,4 +10,6 @@ urlpatterns = [
     path('gestion/', views.lista, name='lista'),
     path('gestion/crear/', views.crear, name='crear'),
     path('gestion/<int:tecnico_id>/', views.perfil, name='perfil'),
+    path('gestion/<int:tecnico_id>/estado/', views.cambiar_estado, name='cambiar_estado'),
+    path('gestion/<int:tecnico_id>/eliminar/', views.eliminar, name='eliminar'),
 ]

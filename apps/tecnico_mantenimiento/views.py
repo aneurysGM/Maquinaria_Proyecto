@@ -1,7 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Unidad
@@ -92,3 +95,43 @@ def perfil(request, tecnico_id):
         messages.success(request, 'Perfil técnico actualizado.')
         return redirect('tecnico_mantenimiento:perfil', tecnico_id=tecnico.pk)
     return render(request, 'tecnico_mantenimiento/perfil.html', {'tecnico': tecnico, 'form': form})
+
+
+@login_required(login_url='cuentas:login')
+@require_POST
+def cambiar_estado(request, tecnico_id):
+    if not request.user.es_administrador:
+        raise PermissionDenied
+    with transaction.atomic():
+        tecnico = get_object_or_404(
+            UsuarioPersonalizado.objects.select_for_update(), pk=tecnico_id, rol=RolUsuario.TECNICO,
+        )
+        if tecnico.is_superuser or tecnico.is_staff:
+            messages.error(request, 'No se puede cambiar el estado de una cuenta con privilegios administrativos.')
+        elif tecnico.is_active and Mantenimiento.objects.filter(tecnico=tecnico, fecha_fin__isnull=True).exists():
+            messages.error(request, 'No se puede inactivar al técnico mientras tenga órdenes abiertas. Finalízalas primero.')
+        else:
+            tecnico.is_active = not tecnico.is_active
+            tecnico.save(update_fields=['is_active'])
+            messages.success(request, 'Estado de la cuenta técnica actualizado.')
+    return redirect('tecnico_mantenimiento:lista')
+
+
+@login_required(login_url='cuentas:login')
+@require_POST
+def eliminar(request, tecnico_id):
+    if not request.user.es_administrador:
+        raise PermissionDenied
+    tecnico = get_object_or_404(UsuarioPersonalizado, pk=tecnico_id, rol=RolUsuario.TECNICO)
+    if tecnico.is_superuser or tecnico.is_staff:
+        messages.error(request, 'No se puede eliminar una cuenta con privilegios administrativos.')
+    elif tecnico.maquinarias_registradas.exists():
+        messages.error(request, 'El técnico tiene historial asociado y no se puede eliminar. Puedes inactivarlo.')
+    else:
+        try:
+            tecnico.delete()
+        except ProtectedError:
+            messages.error(request, 'El técnico tiene historial asociado y no se puede eliminar. Puedes inactivarlo.')
+        else:
+            messages.success(request, 'Cuenta técnica eliminada.')
+    return redirect('tecnico_mantenimiento:lista')

@@ -31,6 +31,13 @@ class Mantenimiento(models.Model):
     )
     fecha = models.DateField(db_column='FechaInicio', verbose_name='Fecha de mantenimiento')
     fecha_fin = models.DateField(null=True, blank=True, editable=False, db_column='FechaFin')
+    fecha_estimada_fin = models.DateField(
+        null=True,
+        blank=True,
+        editable=False,
+        db_column='FechaEstimadaFin',
+        verbose_name='Fecha estimada de finalización',
+    )
     tipo = models.CharField(max_length=12, choices=TIPOS, db_column='Tipo', verbose_name='Tipo')
     descripcion = models.CharField(max_length=300, null=True, blank=True, db_column='Descripcion', verbose_name='Descripción')
     estado = models.CharField(
