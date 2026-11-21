@@ -1,0 +1,18 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Eliminar dirección | MaquiRent{% endblock %}
+{% block page_name %}Mis direcciones{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <h1 class="h3 fw-bold mb-4">Eliminar dirección</h1>
+    <section class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+        <h2 class="h5">{{ direccion.nombre }}</h2>
+        <p class="text-break">{{ direccion.direccion|linebreaksbr }}</p>
+        {% if direccion.referencia %}<p class="text-break"><strong>Referencia:</strong> {{ direccion.referencia|linebreaksbr }}</p>{% endif %}
+        <p>Se eliminará de Mis direcciones. Los alquileres conservan su dirección confirmada.</p>
+        <form method="post" class="d-flex gap-2">
+            {% csrf_token %}<button class="btn btn-danger" type="submit">Eliminar dirección</button>
+            <a class="btn btn-outline-secondary" href="{% url 'configuraciones:mis_direcciones' %}">Cancelar</a>
+        </form>
+    </div></section>
+</div>
+{% endblock %}

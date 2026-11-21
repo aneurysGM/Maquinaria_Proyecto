@@ -1,7 +1,22 @@
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 
-from apps.cuentas.models import UsuarioPersonalizado
+from apps.cuentas.models import DireccionCliente, UsuarioPersonalizado
+
+
+class DireccionClienteForm(forms.ModelForm):
+    class Meta:
+        model = DireccionCliente
+        fields = ('nombre', 'direccion', 'referencia')
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Obra en San Luis'}),
+            'direccion': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Calle, número, sector, municipio y provincia',
+                'autocomplete': 'street-address',
+            }),
+            'referencia': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
 
 
 class MiPerfilForm(forms.ModelForm):

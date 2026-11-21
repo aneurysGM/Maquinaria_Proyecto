@@ -28,6 +28,27 @@ su propósito. Los cambios pequeños que no alteren comportamiento ni estructura
 no necesitan una entrada individual. Si el detalle requiere más espacio, se
 puede documentar en una guía específica y enlazarla desde aquí.
 
+### Dirección de entrega del Cliente — 21 de noviembre de 2026
+
+Después del pago inicial confirmado, Mis alquileres solicita una dirección de
+entrega persistente. El Cliente puede escribir una nueva o elegir una propia
+guardada, y administrar su libreta en Configuraciones → Mis direcciones. Cada
+alquiler conserva una copia independiente; el Administrador ve el aviso o la
+dirección completa y no puede registrar una salida sin dirección confirmada.
+Los alquileres anteriores con salida mantienen su historial sin pedir direcciones
+retroactivas.
+
+Se agregan las migraciones `cuentas.0008_direccioncliente` y
+`alquileres.0007_solicitudalquiler_direccion_entrega_and_more`. Pasaron 30 pruebas
+de alquileres (24 nuevas), 74 pruebas seleccionadas de regresión, la comprobación
+JavaScript, los controles de Django y Git, y la conservación de datos al migrar
+una copia de SQLite. Dos fallos ajenos relacionados con cierres mensuales se
+reprodujeron en `main`. El usuario confirmó manualmente que el Cliente puede
+confirmar la dirección, que el Administrador la ve en el alquiler y que queda
+guardada en Mis direcciones. La [guía de dirección de entrega](docs/direccion-entrega-cliente.md)
+incluye todos los archivos afectados, migraciones y pasos de prueba manual.
+Las comprobaciones automatizadas usaron bases temporales y una copia de SQLite.
+
 ### Acciones de categorías de maquinaria — 19 de noviembre de 2026
 
 El lápiz de `/inventario/categorias/` apuntaba a `#` y no tenía una vista de

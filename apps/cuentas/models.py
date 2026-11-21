@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
@@ -118,6 +119,26 @@ class UsuarioPersonalizado(AbstractUser):
     @property
     def puede_registrar_maquinaria(self):
         return self.puede_consultar_maquinaria and self.es_administrador
+
+
+class DireccionCliente(models.Model):
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='direcciones',
+    )
+    nombre = models.CharField('Nombre', max_length=100)
+    direccion = models.CharField('Dirección completa', max_length=500)
+    referencia = models.CharField('Referencia (opcional)', max_length=300, blank=True)
+
+    class Meta:
+        db_table = 'DireccionCliente'
+        ordering = ('nombre', 'pk')
+        verbose_name = 'dirección del cliente'
+        verbose_name_plural = 'direcciones de clientes'
+
+    def __str__(self):
+        texto = f'{self.nombre} · {self.direccion}'
+        return f'{texto} · Ref.: {self.referencia}' if self.referencia else texto
 
 
 class PerfilCliente(models.Model):

@@ -1,0 +1,60 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}Dirección de entrega | MaquiRent{% endblock %}
+{% block page_name %}Dirección de entrega{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <a class="btn btn-outline-secondary mb-3" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Volver al alquiler</a>
+    <h1 class="h3 fw-bold mb-1">Indicar dirección de entrega</h1>
+    <p class="text-secondary mb-4">Solicitud #{{ solicitud.pk }} · {{ solicitud.unidad.maquinaria.nombre }}</p>
+    <section class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+        {% if form.tiene_guardadas %}
+        <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Tipo de dirección">
+            <a class="btn {% if form.modo == 'guardada' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?tipo=guardada"{% if form.modo == 'guardada' %} aria-current="page"{% endif %}>Usar dirección guardada</a>
+            <a class="btn {% if form.modo == 'nueva' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?tipo=nueva"{% if form.modo == 'nueva' %} aria-current="page"{% endif %}>Escribir dirección nueva</a>
+        </nav>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}{{ form.tipo }}
+            {{ form.non_field_errors }}{{ form.tipo.errors }}
+            {% if form.modo == 'guardada' %}
+            <fieldset class="mb-3">
+                <legend class="h6 fw-semibold">{{ form.direccion_guardada.label }}</legend>
+                {% for opcion in form.direccion_guardada %}
+                <label class="d-flex gap-3 align-items-start border rounded-3 p-3 mb-2" for="{{ opcion.id_for_label }}">
+                    {{ opcion.tag }}<span class="text-break">{{ opcion.choice_label|linebreaksbr }}</span>
+                </label>
+                {% endfor %}
+                {{ form.direccion_guardada.errors }}
+                <p class="small text-secondary mt-2">Se copiarán la dirección completa y su referencia al alquiler.</p>
+            </fieldset>
+            {% else %}
+            <h2 class="h5 mb-3">Dirección nueva</h2>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="{{ form.direccion.id_for_label }}">{{ form.direccion.label }}</label>
+                {{ form.direccion }}{{ form.direccion.errors }}
+                <p class="small text-secondary mt-2">Incluye calle, número, sector, municipio y provincia.</p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="{{ form.referencia.id_for_label }}">{{ form.referencia.label }}</label>
+                {{ form.referencia }}{{ form.referencia.errors }}
+            </div>
+            <div class="form-check mb-3">{{ form.guardar }}<label class="form-check-label" for="{{ form.guardar.id_for_label }}">{{ form.guardar.label }}</label>{{ form.guardar.errors }}</div>
+            <div class="mb-3" id="nombre-direccion">
+                <label class="form-label fw-semibold" for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                {{ form.nombre }}{{ form.nombre.errors }}
+            </div>
+            {% endif %}
+            <p class="small text-secondary">Al confirmar, esta dirección queda registrada en el alquiler para organizar la entrega. Revisa los datos antes de continuar.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary" type="submit">Confirmar dirección de entrega</button>
+                <a class="btn btn-outline-secondary" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Cancelar</a>
+            </div>
+        </form>
+    </div></section>
+</div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'alquileres/direccion_entrega.js' %}" defer></script>
+{% endblock %}

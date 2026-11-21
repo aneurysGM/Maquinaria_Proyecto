@@ -1,0 +1,27 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Mis direcciones | MaquiRent{% endblock %}
+{% block page_name %}Mis direcciones{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+    <a class="btn btn-outline-secondary mb-3" href="{% url 'configuraciones:indice' %}">Volver a Configuraciones</a>
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div><h1 class="h3 fw-bold mb-1">Mis direcciones</h1><p class="text-secondary mb-0">Los cambios aquí no modifican las direcciones ya confirmadas en tus alquileres.</p></div>
+        <a class="btn btn-primary" href="{% url 'configuraciones:direccion_agregar' %}">Agregar dirección</a>
+    </div>
+    <div class="row g-3">
+        {% for direccion in direcciones %}
+        <div class="col-12 col-lg-6"><article class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4">
+            <h2 class="h5 fw-bold">{{ direccion.nombre }}</h2>
+            <p class="text-break">{{ direccion.direccion|linebreaksbr }}</p>
+            {% if direccion.referencia %}<p class="text-secondary text-break"><strong>Referencia:</strong> {{ direccion.referencia|linebreaksbr }}</p>{% endif %}
+            <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'configuraciones:direccion_editar' direccion.pk %}">Editar</a>
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'configuraciones:direccion_eliminar' direccion.pk %}">Eliminar</a>
+            </div>
+        </div></article></div>
+        {% empty %}
+        <div class="col-12"><p class="alert alert-light border" role="status">Todavía no tienes direcciones guardadas.</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
