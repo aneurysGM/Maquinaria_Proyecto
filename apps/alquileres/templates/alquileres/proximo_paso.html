@@ -1,34 +1,32 @@
 {% with estado=solicitud.estado_cliente %}
-<p class="text-secondary mt-3 mb-0">
-    {% if estado == 'Pendiente de aprobación' %}Tu solicitud está en revisión.
-    {% elif estado == 'Requiere respuesta' %}La maquinaria no estará disponible en estas fechas. Lee el motivo y elige aplazar o cancelar la solicitud.
-    {% elif estado == 'Aplazada' %}Aceptaste aplazar la solicitud. Te avisaremos cuando se programe una nueva fecha.
-    {% elif estado == 'Pendiente de pago' %}Consulta cuánto te falta por pagar en <strong>Ver presupuesto</strong>.
-    {% elif estado == 'Pendiente de dirección de entrega' %}{% if es_administrador %}El cliente debe indicar la dirección de entrega antes de registrar la salida.{% else %}Tu pago está confirmado. Indica la dirección de entrega para continuar.{% endif %}
-    {% elif estado == 'Pendiente de entrega' %}Tu reserva está confirmada. La entrega está pendiente.
-    {% elif estado == 'En uso' %}Fecha prevista de devolución: <strong>{{ solicitud.fecha_fin|date:"d/m/Y" }}</strong>.
-    {% elif estado == 'Devuelto' %}Puedes consultar el detalle de este alquiler en el historial.
-    {% elif estado == 'Rechazado' %}Consulta el motivo y las opciones para volver a solicitar.
-    {% elif estado == 'Cancelada' %}La solicitud fue cancelada.
-    {% elif estado == 'Vencido' %}Terminó el plazo para completar el pago inicial. Puedes volver a solicitar con nuevas fechas.
-    {% endif %}
-</p>
+{% if estado == 'Pendiente de aprobación' %}<p class="mr-msg mr-msg--info"><i class="bi bi-hourglass-split" aria-hidden="true"></i><span>Tu solicitud está en revisión.</span></p>
+{% elif estado == 'Requiere respuesta' %}<p class="mr-msg mr-msg--attn"><i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i><span>La maquinaria no estará disponible en estas fechas. Lee el motivo y elige aplazar o cancelar la solicitud.</span></p>
+{% elif estado == 'Aplazada' %}<p class="mr-msg mr-msg--info"><i class="bi bi-calendar-x" aria-hidden="true"></i><span>Aceptaste aplazar la solicitud. Te avisaremos cuando se programe una nueva fecha.</span></p>
+{% elif estado == 'Pendiente de pago' %}<p class="mr-msg mr-msg--attn"><i class="bi bi-credit-card" aria-hidden="true"></i><span>Consulta cuánto te falta por pagar en <strong>Ver presupuesto</strong>.</span></p>
+{% elif estado == 'Pendiente de dirección de entrega' %}<p class="mr-msg mr-msg--attn"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span>{% if es_administrador %}El cliente debe indicar la dirección de entrega antes de registrar la salida.{% else %}Tu pago está confirmado. Indica la dirección de entrega para continuar.{% endif %}</span></p>
+{% elif estado == 'Pendiente de entrega' %}<p class="mr-msg mr-msg--info"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Tu reserva está confirmada. La entrega está pendiente.</span></p>
+{% elif estado == 'En uso' %}<p class="mr-msg mr-msg--info"><i class="bi bi-truck" aria-hidden="true"></i><span>Fecha prevista de devolución: <strong>{{ solicitud.fecha_fin|date:"d/m/Y" }}</strong>.</span></p>
+{% elif estado == 'Devuelto' %}<p class="mr-msg"><i class="bi bi-check2-circle" aria-hidden="true"></i><span>Puedes consultar el detalle de este alquiler en el historial.</span></p>
+{% elif estado == 'Rechazado' %}<p class="mr-msg mr-msg--danger"><i class="bi bi-x-circle-fill" aria-hidden="true"></i><span>Consulta el motivo y las opciones para volver a solicitar.</span></p>
+{% elif estado == 'Cancelada' %}<p class="mr-msg"><i class="bi bi-slash-circle" aria-hidden="true"></i><span>La solicitud fue cancelada.</span></p>
+{% elif estado == 'Vencido' %}<p class="mr-msg mr-msg--danger"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Terminó el plazo para completar el pago inicial. Puedes volver a solicitar con nuevas fechas.</span></p>
+{% endif %}
 {% if estado == 'Rechazado' %}
 {% if es_detalle %}
-<button class="btn btn-sm btn-outline-danger mt-3" type="button" id="alternar-motivo-rechazo" aria-expanded="false" aria-controls="motivo-rechazo">Ver motivo</button>
-<section id="motivo-rechazo" class="alert alert-warning text-dark mt-3 mb-0" role="alert" hidden>
+<button class="btn btn-sm btn-outline-danger mt-3" type="button" id="alternar-motivo-rechazo" aria-expanded="false" aria-controls="motivo-rechazo"><i class="bi bi-eye me-1" aria-hidden="true"></i>Ver motivo</button>
+<section id="motivo-rechazo" class="mr-reject mt-3 mb-0" role="alert" hidden>
     <h2 class="h5">{% if es_administrador %}Solicitud de alquiler rechazada{% else %}Tu solicitud de alquiler fue rechazada{% endif %}</h2>
     <p><strong>Motivo:</strong><br>{{ solicitud.motivo_rechazo|default:"No se registró un motivo para esta solicitud anterior."|linebreaksbr }}</p>
     <p>Puedes buscar otro equipo o elegir nuevas fechas para esta misma maquinaria.</p>
     <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-outline-primary" href="{% url 'inventario:maquinaria_lista' %}?categoria={{ solicitud.unidad.maquinaria.categoria_id }}">Ver otras maquinarias</a>
-        <a class="btn btn-primary" href="{% url 'alquileres:solicitud_registrar' solicitud.unidad_id %}?plan={{ solicitud.plan }}&amp;cantidad={{ solicitud.cantidad }}">Ver fechas disponibles</a>
+        <a class="btn btn-primary" href="{% url 'alquileres:solicitud_registrar' solicitud.unidad_id %}?plan={{ solicitud.plan }}&amp;cantidad={{ solicitud.cantidad }}">Ver fechas disponibles <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
 </section>
 {% else %}
-<a class="btn btn-sm btn-outline-danger mt-3" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}#motivo-rechazo">Ver motivo</a>
+<a class="btn btn-sm btn-outline-danger mt-3" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}#motivo-rechazo"><i class="bi bi-eye me-1" aria-hidden="true"></i>Ver motivo</a>
 {% endif %}
 {% elif estado == 'Vencido' %}
-<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'alquileres:solicitud_registrar' solicitud.unidad_id %}?plan={{ solicitud.plan }}&amp;cantidad={{ solicitud.cantidad }}">Volver a solicitar</a>
+<a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'alquileres:solicitud_registrar' solicitud.unidad_id %}?plan={{ solicitud.plan }}&amp;cantidad={{ solicitud.cantidad }}"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a solicitar</a>
 {% endif %}
 {% endwith %}

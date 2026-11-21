@@ -1,31 +1,47 @@
-{% extends 'dashboard/base_dashboard.html' %}
-{% load static %}
-{% block title %}Solicitud #{{ solicitud.pk }} | MaquiRent{% endblock %}
-{% block page_name %}Detalle de solicitud{% endblock %}
-{% block content %}
-<div class="container-fluid px-0">
-    <a class="btn btn-outline-secondary mb-3" href="{% url 'alquileres:solicitud_lista' %}">Volver a solicitudes</a>
-    <h1 class="h3 mb-4">Detalle de solicitud #{{ solicitud.pk }}</h1>
-    <article class="card border-0 shadow-sm rounded-4 mb-4"><div class="card-body p-4">
-        {% include 'alquileres/solicitud_resumen.html' with es_detalle=True %}
-        {% include 'alquileres/solicitud_acciones.html' %}
-    </div></article>
-    {% include 'alquileres/direccion_entrega_resumen.html' %}
-    <section class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
-        <h2 class="h5">Revisión, salida y retorno</h2>
-        <p class="small text-secondary">Fechas y horas de Santo Domingo.</p>
-        <dl class="row g-2 mb-0">
-            <dt class="col-md-3">Revisión</dt><dd class="col-md-9">{% if solicitud.fecha_revision %}{{ solicitud.fecha_revision|date:"d/m/Y H:i" }} · {{ solicitud.revisado_por.get_full_name|default:solicitud.revisado_por.email }}{% else %}Pendiente de revisión{% endif %}</dd>
-            <dt class="col-md-3">Salida</dt><dd class="col-md-9">{% if solicitud.fecha_salida %}{{ solicitud.fecha_salida|date:"d/m/Y H:i" }} · Entregada por {{ solicitud.entregado_por.get_full_name|default:solicitud.entregado_por.email }}{% else %}Sin entregar{% endif %}</dd>
-            <dt class="col-md-3">Devolución programada</dt><dd class="col-md-9">{{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
-            <dt class="col-md-3">Retorno</dt><dd class="col-md-9">{% if solicitud.fecha_retorno %}{{ solicitud.fecha_retorno|date:"d/m/Y H:i" }} · Recibida por {{ solicitud.recibido_por.get_full_name|default:solicitud.recibido_por.email }}{% else %}Sin retorno registrado{% endif %}</dd>
-            {% if solicitud.observaciones_retorno %}<dt class="col-md-3">Observaciones del retorno</dt><dd class="col-md-9">{{ solicitud.observaciones_retorno }}</dd>{% endif %}
-            <dt class="col-md-3">Horómetro actual de la unidad</dt><dd class="col-md-9">{{ solicitud.unidad.horas_uso }} h</dd>
-        </dl>
-    </div></section>
-</div>
-{% endblock %}
-{% block extra_js %}
-{{ block.super }}
-<script src="{% static 'alquileres/motivo_rechazo.js' %}" defer></script>
-{% endblock %}
+<style>
+    /* Usa las variables --mr-* de base_dashboard.html (con valores de respaldo) */
+    .mr-addr-card { background: #fff; border: 0; border-top: 4px solid var(--mr-yellow, #ffc107); border-radius: 1.25rem; box-shadow: 0 .125rem .5rem rgba(0,0,0,.06); }
+    .mr-addr-icon { width: 2.75rem; height: 2.75rem; border-radius: .85rem; display: grid; place-items: center; background: var(--mr-black, #111); color: var(--mr-yellow, #ffc107); font-size: 1.25rem; flex-shrink: 0; }
+    .mr-addr-title { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; margin: 0; }
+    .mr-addr-box { background: #fffbe8; border-left: 5px solid var(--mr-yellow, #ffc107); border-radius: .85rem; padding: 1rem 1.25rem; }
+    .mr-addr-name { font-weight: 800; display: flex; align-items: center; gap: .4rem; }
+    .mr-addr-ref { background: var(--mr-bg, #f6f6f4); border-radius: .75rem; padding: .6rem .9rem; font-size: .92rem; }
+    .mr-addr-ok { font-size: .82rem; color: var(--mr-muted, #6b7280); }
+    .mr-addr-ok i { color: var(--mr-yellow-dark, #e0a800); }
+    .mr-addr-pending { background: var(--mr-black, #111); color: #fff; border-left: 6px solid var(--mr-yellow, #ffc107); border-radius: 1rem; padding: 1rem 1.25rem; display: flex; gap: .9rem; align-items: flex-start; }
+    .mr-addr-pending > i { color: var(--mr-yellow, #ffc107); font-size: 1.4rem; }
+    .mr-addr-pending strong { color: var(--mr-yellow, #ffc107); }
+    .mr-addr-pending p { color: rgba(255,255,255,.8); }
+    .mr-addr-muted { background: var(--mr-bg, #f6f6f4); border-radius: .85rem; padding: .9rem 1.1rem; color: var(--mr-muted, #6b7280); }
+</style>
+
+<section class="card mr-addr-card mb-4"><div class="card-body p-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="mr-addr-icon"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i></div>
+        <h2 class="h5 mr-addr-title">Dirección de entrega</h2>
+    </div>
+
+    {% if solicitud.direccion_entrega_confirmada %}
+    <div class="mr-addr-box mb-3">
+        {% if solicitud.nombre_direccion_entrega %}<p class="mr-addr-name mb-2"><i class="bi bi-bookmark-star-fill" aria-hidden="true"></i>{{ solicitud.nombre_direccion_entrega }}</p>{% endif %}
+        <p class="text-break mb-0">{{ solicitud.direccion_entrega|linebreaksbr }}</p>
+    </div>
+    {% if solicitud.referencia_entrega %}<p class="mr-addr-ref text-break"><strong>Referencia:</strong> {{ solicitud.referencia_entrega|linebreaksbr }}</p>{% endif %}
+    <p class="mr-addr-ok mb-0"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Confirmada el {{ solicitud.fecha_direccion_confirmada|date:"d/m/Y H:i" }}. Se conserva la dirección indicada para este alquiler.</p>
+
+    {% elif solicitud.pendiente_direccion_entrega %}
+    <div class="mr-addr-pending" role="status">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <div>
+            <strong>Pendiente de dirección de entrega</strong>
+            <p class="mb-0">{% if es_administrador %}El cliente debe confirmar la dirección antes de registrar la salida de la maquinaria.{% else %}Tu pago está confirmado. Indica dónde debemos entregar la maquinaria. Puedes completar este paso cuando vuelvas al detalle del alquiler.{% endif %}</p>
+        </div>
+    </div>
+
+    {% elif solicitud.fecha_salida or solicitud.fecha_retorno %}
+    <p class="mr-addr-muted mb-0"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>Dirección no registrada (alquiler anterior).</p>
+
+    {% else %}
+    <p class="mr-addr-muted mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>La dirección se solicitará al confirmar el pago inicial de una solicitud aprobada.</p>
+    {% endif %}
+</div></section>

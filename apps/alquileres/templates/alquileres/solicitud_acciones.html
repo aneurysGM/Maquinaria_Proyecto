@@ -1,23 +1,26 @@
 {% load l10n %}
 {% if es_administrador %}
     {% if solicitud.estado == 'Pendiente' and not solicitud.fecha_aviso_disponibilidad %}
-    <div class="d-flex align-items-center gap-2 mt-3 pt-3 border-top">
+    <div class="d-flex flex-wrap align-items-center gap-2 mr-actions">
         <form method="post" action="{% url 'alquileres:solicitud_resolver' solicitud.pk %}">
             {% csrf_token %}<input type="hidden" name="decision" value="Aprobada">
-            <button class="btn btn-sm btn-success" type="submit">Aprobar</button>
+            <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Aprobar</button>
         </form>
-        <button class="btn btn-sm btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#rechazar-solicitud-{{ solicitud.pk }}">Rechazar solicitud</button>
+        <button class="btn btn-sm btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#rechazar-solicitud-{{ solicitud.pk }}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Rechazar solicitud</button>
     </div>
     {% include 'alquileres/solicitud_rechazo_modal.html' %}
     {% elif solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and solicitud.pago_inicial_completo %}
     {% if solicitud.direccion_entrega_confirmada %}
-    <form method="post" action="{% url 'alquileres:solicitud_salida' solicitud.pk %}" class="mt-3 pt-3 border-top">
-        {% csrf_token %}<button class="btn btn-sm btn-primary" type="submit">Registrar entrega de maquinaria</button>
+    <form method="post" action="{% url 'alquileres:solicitud_salida' solicitud.pk %}" class="mr-actions">
+        {% csrf_token %}<button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Registrar entrega de maquinaria</button>
     </form>
     {% endif %}
     {% elif solicitud.estado == 'Aprobada' and solicitud.fecha_salida and not solicitud.fecha_retorno %}
-    <form method="post" action="{% url 'alquileres:solicitud_retorno' solicitud.pk %}" class="row g-2 align-items-end mt-3 pt-3 border-top">
+    <form method="post" action="{% url 'alquileres:solicitud_retorno' solicitud.pk %}" class="row g-2 align-items-end mr-return mt-3">
         {% csrf_token %}
+        <div class="col-12">
+            <p class="mr-return-title mb-1"><i class="bi bi-box-arrow-in-down-left me-1" aria-hidden="true"></i>Registrar retorno de la maquinaria</p>
+        </div>
         <div class="col-md-4">
             <label class="form-label small fw-semibold" for="horas-{{ solicitud.pk }}">Horas actuales del horómetro</label>
             <input id="horas-{{ solicitud.pk }}" class="form-control form-control-sm" type="number" name="horas_uso_actualizadas" min="{{ solicitud.unidad.horas_uso|unlocalize }}" step="0.1" value="{{ solicitud.unidad.horas_uso|unlocalize }}" required>
@@ -26,16 +29,16 @@
             <label class="form-label small fw-semibold" for="obs-{{ solicitud.pk }}">Observaciones del retorno</label>
             <input id="obs-{{ solicitud.pk }}" class="form-control form-control-sm" type="text" name="observaciones_retorno" maxlength="1000">
         </div>
-        <div class="col-md-2 d-grid"><button class="btn btn-sm btn-success" type="submit">Registrar retorno</button></div>
+        <div class="col-md-2 d-grid"><button class="btn btn-sm mr-btn-k" type="submit">Registrar retorno</button></div>
     </form>
     {% endif %}
 {% elif es_cliente %}
     {% if solicitud.pendiente_direccion_entrega %}
-    <a class="btn btn-primary mt-3" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar dirección de entrega</a>
+    <a class="btn btn-primary mt-3" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}"><i class="bi bi-geo-alt-fill me-1" aria-hidden="true"></i>Indicar dirección de entrega</a>
     {% endif %}
     {% if solicitud.fecha_aviso_disponibilidad and not solicitud.aplazada %}
         {% if solicitud.estado == 'Pendiente' or solicitud.estado == 'Aprobada' %}
-        <div class="mt-3 pt-3 border-top">
+        <div class="mr-actions">
             <form method="post" action="{% url 'alquileres:solicitud_responder_disponibilidad' solicitud.pk %}">
                 {% csrf_token %}
                 <input type="hidden" name="accion" value="aplazar">
@@ -44,22 +47,22 @@
                         <label class="form-label small fw-semibold mb-1" for="fecha-aplazamiento-{{ solicitud.pk }}">Nueva fecha de inicio</label>
                         <input class="form-control form-control-sm" id="fecha-aplazamiento-{{ solicitud.pk }}" type="date" name="fecha_inicio" min="{{ hoy }}" required>
                     </div>
-                    <button class="btn btn-sm btn-primary" type="submit">Solicitar nueva fecha</button>
+                    <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Solicitar nueva fecha</button>
                 </div>
             </form>
         </div>
         {% endif %}
         {% if solicitud.tiene_pagos_registrados %}
-        <p class="small text-muted mt-2 mb-0">Para cancelar una solicitud con pagos registrados, contacta al administrador para revisar el reembolso.</p>
+        <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Para cancelar una solicitud con pagos registrados, contacta al administrador para revisar el reembolso.</p>
         {% endif %}
     {% endif %}
     {% if solicitud.puede_cancelar_cliente %}
     <form method="post" action="{% url 'alquileres:solicitud_responder_disponibilidad' solicitud.pk %}" class="mt-2">
         {% csrf_token %}<input type="hidden" name="accion" value="cancelar">
-        <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar solicitud</button>
+        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancelar solicitud</button>
     </form>
     {% endif %}
     {% if solicitud.fecha_aviso_disponibilidad and solicitud.aplazada %}
-    <p class="small text-info-emphasis mt-3 mb-0">Tu solicitud está en espera para ser programada cuando la maquinaria esté disponible.</p>
+    <p class="mr-wait mt-3 mb-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Tu solicitud está en espera para ser programada cuando la maquinaria esté disponible.</p>
     {% endif %}
 {% endif %}
