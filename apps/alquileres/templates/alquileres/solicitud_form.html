@@ -37,8 +37,10 @@
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_semanal|floatformat:2 }}</dd>
                         <dt class="col-7">Tarifa mensual</dt>
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_mensual|floatformat:2 }}</dd>
-                        <dt class="col-7">Depósito de garantía</dt>
-                        <dd class="col-5 text-end">${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</dd>
+                        <dt class="col-7">Depósito base (1–7 días)</dt>
+                        <dd class="col-5 text-end">RD${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</dd>
+                        <dt class="col-7">Condición</dt>
+                        <dd class="col-5 text-end">Sin operador</dd>
                     </dl>
                 </div>
             </section>
@@ -56,7 +58,7 @@
                         data-tarifa-diaria="{{ unidad.maquinaria.tarifa_diaria|unlocalize }}"
                         data-tarifa-semanal="{{ unidad.maquinaria.tarifa_semanal|unlocalize }}"
                         data-tarifa-mensual="{{ unidad.maquinaria.tarifa_mensual|unlocalize }}"
-                        data-deposito="{{ unidad.maquinaria.deposito_garantia|unlocalize }}">
+                        data-deposito-base="{{ unidad.maquinaria.deposito_garantia|unlocalize }}">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
@@ -120,6 +122,7 @@
                             <div class="d-flex justify-content-between">
                                 <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">—</strong>
                             </div>
+                            <p class="small text-muted mb-0 mt-2">El depósito sin operador equivale al 8% del valor comercial, ajustado por la duración: 100% hasta 7 días, 85% de 8 a 29 días y 75% desde 30 días.</p>
                             <p class="small text-muted mb-0 mt-2">La mora, si aplica por atraso, se calcula aparte al devolver el equipo.</p>
                         </section>
 

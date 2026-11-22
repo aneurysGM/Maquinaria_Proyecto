@@ -133,7 +133,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
         fields = [
             'categoria', 'codigo', 'nombre', 'descripcion', 'marca', 'modelo',
             'costo_adquisicion', 'tarifa_diaria', 'tarifa_semanal',
-            'tarifa_mensual', 'deposito_garantia'
+            'tarifa_mensual'
         ]
         widgets = {
             'categoria': forms.Select(attrs={'class': 'form-select'}),
@@ -150,7 +150,6 @@ class MaquinariaIntegralForm(forms.ModelForm):
             'tarifa_diaria': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'tarifa_semanal': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'tarifa_mensual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'deposito_garantia': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
     def __init__(self, *args, **kwargs):

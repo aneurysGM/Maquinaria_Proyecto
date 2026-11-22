@@ -318,7 +318,7 @@
                         <td>{{ unidad.maquinaria.categoria.nombre }}</td>
                         <td>{{ unidad.maquinaria.marca|default:"—" }}</td>
                         <td class="text-end fw-semibold">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</td>
-                        <td class="text-end">${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</td>
+                        <td class="text-end">RD${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</td>
                         <td class="text-end text-secondary">${{ unidad.maquinaria.costo_adquisicion|floatformat:2 }}</td>
                         <td class="text-end pe-3"><a class="btn btn-sm btn-outline-primary" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">Ver</a></td>
                     </tr>
@@ -356,7 +356,7 @@
                         <p class="small text-secondary flex-grow-1">{{ unidad.maquinaria.descripcion|default:"Consulta los detalles de este equipo."|truncatechars:130 }}</p>
                         <div class="mr-price-box mb-3">
                             <div class="d-flex justify-content-between gap-2"><span>Alquiler por día</span><strong>${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</strong></div>
-                            <div class="d-flex justify-content-between gap-2 mt-1"><span>Depósito de garantía</span><strong>${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong></div>
+                            <div class="d-flex justify-content-between gap-2 mt-1"><span>Depósito base sin operador</span><strong>RD${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong></div>
                         </div>
                         <a class="btn btn-warning mt-auto" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">Ver detalle y alquilar <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>

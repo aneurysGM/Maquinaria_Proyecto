@@ -114,7 +114,8 @@
                     <div class="price-row"><span class="text-secondary">Tarifa diaria</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</strong></div>
                     <div class="price-row"><span class="text-secondary">Tarifa semanal</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_semanal|floatformat:2 }}</strong></div>
                     <div class="price-row"><span class="text-secondary">Tarifa mensual</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_mensual|floatformat:2 }}</strong></div>
-                    <div class="price-row"><span class="text-secondary">Depósito de garantía</span><strong class="fs-5 text-success">${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong></div>
+                    <div class="price-row"><span class="text-secondary">Depósito base (1–7 días, sin operador)</span><strong class="fs-5 text-success">RD${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong></div>
+                    <p class="small text-secondary mt-2 mb-0">Se ajusta automáticamente según la duración seleccionada.</p>
 
                     {% if puede_solicitar_alquiler %}
                     <a class="btn btn-warning fw-bold w-100 mt-3" href="{% url 'alquileres:solicitud_registrar' unidad.id %}">

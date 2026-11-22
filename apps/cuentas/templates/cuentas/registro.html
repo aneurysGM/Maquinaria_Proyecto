@@ -111,7 +111,7 @@
     </style>
 </head>
 
-<body>
+<body data-form-autosave-scope="visitante">
     <div class="mr-shell">
 
         <!-- Panel de marca (solo en pantallas grandes) -->
@@ -394,6 +394,7 @@
         })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/form_autosave.js' %}"></script>
 </body>
 
 </html>

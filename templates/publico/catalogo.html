@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -256,7 +257,7 @@
     </style>
 </head>
 
-<body>
+<body data-form-autosave-scope="{% if request.user.is_authenticated %}usuario-{{ request.user.pk }}{% else %}visitante{% endif %}">
 
     <!-- NAV -->
     <nav class="mr-nav sticky-top py-2" style="z-index: 20;">
@@ -392,6 +393,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/form_autosave.js' %}"></script>
 </body>
 
 </html>

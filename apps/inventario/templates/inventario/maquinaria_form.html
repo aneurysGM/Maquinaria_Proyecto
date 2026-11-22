@@ -191,31 +191,22 @@
                 <hr class="my-4 text-muted opacity-25">
                 <h5 class="fw-bold mb-3 text-dark">Información Financiera y Tarifas</h5>
 
-                <!-- Fila 4: Costo y Depósito -->
+                <!-- Fila 4: Valor comercial -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label for="{{ form.costo_adquisicion.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
-                            {{ form.costo_adquisicion.label }}
+                            Valor comercial en RD$
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">RD$</span>
                             {{ form.costo_adquisicion }}
                         </div>
                         {% if form.costo_adquisicion.errors %}
                             <div class="invalid-feedback d-block small">{% for error in form.costo_adquisicion.errors %}{{ error }}{% endfor %}</div>
                         {% endif %}
                     </div>
-                    <div class="col-md-6">
-                        <label for="{{ form.deposito_garantia.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
-                            {{ form.deposito_garantia.label }}
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            {{ form.deposito_garantia }}
-                        </div>
-                        {% if form.deposito_garantia.errors %}
-                            <div class="invalid-feedback d-block small">{% for error in form.deposito_garantia.errors %}{{ error }}{% endfor %}</div>
-                        {% endif %}
+                    <div class="col-md-6 d-flex align-items-end">
+                        <p class="form-text mb-2">El depósito se calcula automáticamente como el 8% del valor comercial y se ajusta según la duración del alquiler.</p>
                     </div>
                 </div>
 

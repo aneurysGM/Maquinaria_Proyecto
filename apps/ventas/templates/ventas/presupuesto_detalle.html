@@ -93,8 +93,8 @@
                         <strong>${{ presupuesto.importe_renta|floatformat:2 }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Depósito reembolsable</span>
-                        <strong>${{ presupuesto.deposito_garantia|floatformat:2 }}</strong>
+                        <span>Depósito reembolsable (sin operador, cálculo automático)</span>
+                        <strong>RD${{ presupuesto.deposito_garantia|floatformat:2 }}</strong>
                     </div>
                     {% if solicitud.fecha_retorno %}
                     <div class="d-flex justify-content-between mb-2">

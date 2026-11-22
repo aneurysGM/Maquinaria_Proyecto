@@ -213,7 +213,7 @@
 
 </head>
 
-<body>
+<body data-form-autosave-scope="{% if request.user.is_authenticated %}usuario-{{ request.user.pk }}{% else %}visitante{% endif %}">
 
     <div class="mq-app">
         {% if request.user.is_authenticated %}
@@ -390,6 +390,7 @@
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
         }
     </script>
+    <script src="{% static 'js/form_autosave.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 
