@@ -338,10 +338,9 @@
                 <!-- Botones de Acción -->
                 <div class="d-flex justify-content-between gap-2 pt-3 border-top">
                     {% if unidad %}
-                        <button type="submit" form="retirar-maquinaria" class="btn btn-outline-danger fw-semibold"
-                            onclick="return confirm('¿Retirar esta maquinaria del inventario? Sus registros se conservarán y podrá reactivarse con el mismo código.');">
+                        <a href="{% url 'inventario:maquinaria_eliminar' unidad.id %}?origen=editar" class="btn btn-outline-danger fw-semibold">
                             <i class="bi bi-trash"></i> Retirar del inventario
-                        </button>
+                        </a>
                     {% endif %}
                     <div class="d-flex justify-content-end gap-2 ms-auto">
                     <a href="{% url 'inventario:maquinaria_lista' %}" class="btn btn-light border px-4 fw-semibold">Cancelar</a>
@@ -352,12 +351,6 @@
                 </div>
 
             </form>
-            {% if unidad %}
-            <form id="retirar-maquinaria" method="post" action="{% url 'inventario:maquinaria_eliminar' unidad.id %}" class="d-none">
-                {% csrf_token %}
-            </form>
-            {% endif %}
-
         </div>
     </div>
 

@@ -45,13 +45,7 @@
                                 En uso
                             </button>
                             {% else %}
-                            <form method="post" action="{% url 'marca:marca_eliminar' marca.pk %}" class="d-inline">
-                                {% csrf_token %}
-                                <button class="btn btn-sm btn-outline-danger" type="submit"
-                                        onclick="return confirm('¿Borrar la marca {{ marca.nombre|escapejs }}?');">
-                                    Borrar
-                                </button>
-                            </form>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'marca:marca_eliminar' marca.pk %}">Borrar</a>
                             {% endif %}
                         </td>
                     </tr>

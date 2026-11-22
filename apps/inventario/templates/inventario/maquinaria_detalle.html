@@ -58,13 +58,9 @@
                    style="background-color: var(--mq-amber); border: none;">
                     <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar equipo
                 </a>
-                <form method="post" action="{% url 'inventario:maquinaria_eliminar' unidad.id %}"
-                      onsubmit="return confirm('¿Retirar esta maquinaria del inventario? Sus registros se conservarán y podrá reactivarse con el mismo código.');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger fw-semibold">
-                        <i class="bi bi-trash me-1" aria-hidden="true"></i>Retirar
-                    </button>
-                </form>
+                <a href="{% url 'inventario:maquinaria_eliminar' unidad.id %}?origen=detalle" class="btn btn-outline-danger fw-semibold">
+                    <i class="bi bi-trash me-1" aria-hidden="true"></i>Retirar
+                </a>
             </div>
             {% endif %}
         </div>

@@ -1,0 +1,27 @@
+{% extends 'dashboard/confirmar_eliminacion.html' %}
+{% block title %}Retirar maquinaria | MaquiRent{% endblock %}
+{% block page_name %}Inventario{% endblock %}
+{% block confirmacion_titulo %}Retirar maquinaria{% endblock %}
+{% block confirmacion_subtitulo %}Revisa la maquinaria seleccionada antes de confirmar.{% endblock %}
+{% block confirmacion_etiqueta %}Confirmar retiro{% endblock %}
+{% block confirmacion_datos %}
+    <div class="delete-field">
+        <dt>Nombre</dt>
+        <dd class="delete-value-name">{{ unidad.maquinaria.nombre }}</dd>
+    </div>
+    <div class="delete-field">
+        <dt>Código</dt>
+        <dd>{{ unidad.maquinaria.codigo }}</dd>
+    </div>
+    <div class="delete-field">
+        <dt>Número de serie</dt>
+        <dd>{{ unidad.numero_serie }}</dd>
+    </div>
+    <div class="delete-field">
+        <dt>Categoría</dt>
+        <dd>{{ unidad.maquinaria.categoria.nombre }}</dd>
+    </div>
+{% endblock %}
+{% block confirmacion_aviso %}¿Confirmas que deseas retirar esta maquinaria del inventario? Sus registros se conservarán y podrá reactivarse con el mismo código. Se retirarán todas las unidades de esta maquinaria.{% endblock %}
+{% block confirmacion_cancelar %}<a href="{{ cancelar_url }}" class="delete-action delete-action-cancel">Cancelar</a>{% endblock %}
+{% block confirmacion_boton %}Confirmar retiro{% endblock %}

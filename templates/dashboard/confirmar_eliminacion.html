@@ -1,0 +1,220 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block extra_css %}
+<style>
+    .delete-page {
+        --delete-black: #0d0d0d;
+        --delete-panel: #1a1a1a;
+        --delete-line: #333;
+        --delete-yellow: #ffc800;
+        --delete-yellow-soft: #2b2400;
+        --delete-text: #f4f4f0;
+        --delete-muted: #a3a39b;
+        --delete-danger: #e5384b;
+        max-width: 720px;
+        margin: 0 auto;
+        color: var(--delete-text);
+    }
+    .delete-page-stripe {
+        height: 14px;
+        margin-bottom: 28px;
+        border-radius: 3px;
+        background: repeating-linear-gradient(
+            -45deg,
+            var(--delete-yellow) 0 16px,
+            var(--delete-black) 16px 32px
+        );
+    }
+    .delete-page-title {
+        margin: 0 0 8px;
+        color: var(--delete-black);
+        font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        font-size: clamp(2.4rem, 7vw, 3.6rem);
+        font-weight: 800;
+        letter-spacing: -.01em;
+        line-height: 1;
+        text-transform: uppercase;
+    }
+    .delete-page-subtitle {
+        margin: 0 0 28px;
+        color: var(--mr-muted);
+    }
+    .delete-card {
+        overflow: hidden;
+        background: var(--delete-panel);
+        border: 1px solid var(--delete-line);
+        border-radius: 6px;
+        box-shadow: 0 16px 42px rgba(0, 0, 0, .18);
+    }
+    .delete-card-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 24px;
+        background: var(--delete-yellow);
+        color: var(--delete-black);
+        font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+    .delete-card-body {
+        padding: 28px 24px 8px;
+    }
+    .delete-fields {
+        margin: 0;
+    }
+    .delete-field {
+        margin-bottom: 22px;
+    }
+    .delete-field dt {
+        margin-bottom: 3px;
+        color: var(--delete-yellow);
+        font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        font-size: .95rem;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    .delete-field dd {
+        margin: 0;
+        color: var(--delete-text);
+        font-size: 1.05rem;
+        overflow-wrap: anywhere;
+    }
+    .delete-field dd.delete-value-name {
+        font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+    .delete-count {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+        font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        font-size: 1.6rem;
+        font-weight: 800;
+    }
+    .delete-count-note {
+        color: var(--delete-muted);
+        font-family: 'Barlow', system-ui, sans-serif;
+        font-size: .9rem;
+        font-weight: 500;
+    }
+    .delete-warning {
+        display: flex;
+        gap: 14px;
+        margin: 8px 0 24px;
+        padding: 16px;
+        background: var(--delete-yellow-soft);
+        border: 1px solid var(--delete-yellow);
+        border-left-width: 8px;
+        border-radius: 4px;
+        color: #ffe9a0;
+    }
+    .delete-warning i {
+        flex-shrink: 0;
+        color: var(--delete-yellow);
+        font-size: 1.2rem;
+    }
+    .delete-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 20px 24px;
+        background: #141414;
+        border-top: 1px solid var(--delete-line);
+    }
+    .delete-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 22px;
+        border: 2px solid transparent;
+        border-radius: 4px;
+        font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: .05em;
+        line-height: 1.2;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: background .15s, color .15s, border-color .15s;
+    }
+    .delete-action:focus-visible {
+        outline: 3px solid var(--delete-yellow);
+        outline-offset: 3px;
+    }
+    .delete-action-cancel {
+        background: transparent;
+        border-color: var(--delete-line);
+        color: var(--delete-text);
+    }
+    .delete-action-cancel:hover {
+        border-color: var(--delete-yellow);
+        color: var(--delete-yellow);
+    }
+    .delete-action-confirm {
+        background: var(--delete-danger);
+        border-color: var(--delete-danger);
+        color: #fff;
+    }
+    .delete-action-confirm:hover {
+        background: #ff4d61;
+        border-color: #ff4d61;
+        color: #fff;
+    }
+    @media (max-width: 575.98px) {
+        .delete-card-body {
+            padding: 24px 18px 6px;
+        }
+        .delete-actions {
+            align-items: stretch;
+            padding: 18px;
+        }
+        .delete-action {
+            flex: 1 1 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-page">
+    <div class="delete-page-stripe" aria-hidden="true"></div>
+    <h1 class="delete-page-title">{% block confirmacion_titulo %}{% endblock %}</h1>
+    <p class="delete-page-subtitle">{% block confirmacion_subtitulo %}{% endblock %}</p>
+
+    <section class="delete-card" aria-labelledby="delete-card-heading">
+        <div class="delete-card-head" id="delete-card-heading">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            {% block confirmacion_etiqueta %}Acción irreversible{% endblock %}
+        </div>
+
+        <div class="delete-card-body">
+            <dl class="delete-fields">{% block confirmacion_datos %}{% endblock %}</dl>
+            <div class="delete-warning" role="alert">
+                <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                <div>{% block confirmacion_aviso %}{% endblock %}</div>
+            </div>
+        </div>
+
+        {% block confirmacion_acciones %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="delete-actions">
+                {% block confirmacion_cancelar %}{% endblock %}
+                <button type="submit" class="delete-action delete-action-confirm">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                    {% block confirmacion_boton %}Confirmar eliminación{% endblock %}
+                </button>
+            </div>
+        </form>
+        {% endblock %}
+    </section>
+</div>
+{% endblock %}

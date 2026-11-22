@@ -73,6 +73,25 @@ class MarcaManagementTests(TestCase):
         maquinaria.refresh_from_db()
         self.assertEqual(maquinaria.marca, marca)
 
+    def test_confirmacion_de_marca_y_proteccion_de_asociadas(self):
+        marca = Marca.objects.create(nombre='Marca de prueba')
+        url = reverse('marca:marca_eliminar', args=[marca.pk])
+        lista = self.client.get(reverse('marca:marca_lista'))
+        self.assertContains(lista, f'href="{url}"')
+        self.assertNotContains(lista, 'confirm(')
+        respuesta = self.client.get(url)
+        self.assertContains(respuesta, marca.nombre)
+        self.assertContains(respuesta, 'Esta acción no se puede deshacer')
+        self.assertContains(respuesta, 'Confirmar eliminación')
+        self.assertContains(respuesta, reverse('marca:marca_lista'))
+        self.assertTrue(Marca.objects.filter(pk=marca.pk).exists())
+        self.crear_maquinaria(marca=marca)
+        respuesta = self.client.get(url)
+        self.assertContains(respuesta, 'No se puede borrar una marca asignada')
+        self.assertNotContains(respuesta, 'Confirmar eliminación')
+        self.client.force_login(self.cliente)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
     def test_formulario_de_maquinaria_ofrece_select_con_marcas_registradas(self):
         marca = Marca.objects.create(nombre='Komatsu')
 

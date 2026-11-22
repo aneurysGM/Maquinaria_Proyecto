@@ -4,7 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.inventario.models import Unidad
@@ -118,11 +118,16 @@ def cambiar_estado(request, tecnico_id):
 
 
 @login_required(login_url='cuentas:login')
-@require_POST
+@require_http_methods(['GET', 'POST'])
 def eliminar(request, tecnico_id):
     if not request.user.es_administrador:
         raise PermissionDenied
     tecnico = get_object_or_404(UsuarioPersonalizado, pk=tecnico_id, rol=RolUsuario.TECNICO)
+    if request.method == 'GET':
+        return render(request, 'tecnico_mantenimiento/confirmar_eliminar.html', {
+            'tecnico': tecnico,
+            'tiene_maquinarias': tecnico.maquinarias_registradas.exists(),
+        })
     if tecnico.is_superuser or tecnico.is_staff:
         messages.error(request, 'No se puede eliminar una cuenta con privilegios administrativos.')
     elif tecnico.maquinarias_registradas.exists():

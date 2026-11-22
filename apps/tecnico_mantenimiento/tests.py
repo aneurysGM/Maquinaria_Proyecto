@@ -57,3 +57,24 @@ class GestionTecnicosTests(TestCase):
         self.client.post(estado)
         self.tecnico.refresh_from_db()
         self.assertFalse(self.tecnico.is_active)
+
+    def test_confirmacion_de_cuenta_tecnica(self):
+        url = reverse('tecnico_mantenimiento:eliminar', args=[self.tecnico.pk])
+        lista = self.client.get(reverse('tecnico_mantenimiento:lista'))
+        self.assertContains(lista, f'href="{url}"')
+        self.assertNotContains(lista, 'confirm(')
+        respuesta = self.client.get(url)
+        self.assertContains(respuesta, self.tecnico.email)
+        self.assertContains(respuesta, 'Esta acción no se puede deshacer')
+        self.assertContains(respuesta, 'Confirmar eliminación')
+        self.assertContains(respuesta, reverse('tecnico_mantenimiento:lista'))
+        self.assertTrue(UsuarioPersonalizado.objects.filter(pk=self.tecnico.pk).exists())
+        self.client.force_login(self.tecnico)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_confirmacion_de_cuenta_administrativa_bloqueada(self):
+        self.tecnico.is_staff = True
+        self.tecnico.save(update_fields=['is_staff'])
+        respuesta = self.client.get(reverse('tecnico_mantenimiento:eliminar', args=[self.tecnico.pk]))
+        self.assertContains(respuesta, 'privilegios administrativos')
+        self.assertNotContains(respuesta, 'Confirmar eliminación')

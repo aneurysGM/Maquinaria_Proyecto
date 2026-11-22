@@ -3,7 +3,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -14,7 +14,7 @@ from django.views.generic import (
     View,
 )
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponseRedirect
 from .models import Categoria, Maquinaria, Unidad
 from .forms import (
@@ -403,7 +403,26 @@ class MaquinariaDetalleView(DetailView):
 
 
 class MaquinariaEliminarView(LoginRequiredMixin, InventarioRegistroRequiredMixin, View):
-    http_method_names = ['post']
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get(self, request, unidad_id):
+        unidad = get_object_or_404(
+            Unidad.objects.select_related('maquinaria__categoria'),
+            pk=unidad_id,
+            activo=True,
+            maquinaria__activo=True,
+        )
+        origen = request.GET.get('origen')
+        if origen == 'detalle':
+            cancelar_url = reverse('inventario:maquinaria_detalle', args=[unidad.pk])
+        elif origen == 'editar':
+            cancelar_url = reverse('inventario:maquinaria_editar', args=[unidad.pk])
+        else:
+            cancelar_url = reverse('inventario:maquinaria_lista')
+        return render(request, 'inventario/maquinaria_confirmar_eliminar.html', {
+            'unidad': unidad,
+            'cancelar_url': cancelar_url,
+        })
 
     @transaction.atomic
     def post(self, request, unidad_id):

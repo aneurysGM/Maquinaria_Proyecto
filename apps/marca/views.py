@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Count
 from django.db.models.deletion import ProtectedError
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
@@ -56,7 +56,14 @@ class MarcaEditarView(
 class MarcaEliminarView(
     LoginRequiredMixin, InventarioRegistroRequiredMixin, View
 ):
-    http_method_names = ['post']
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get(self, request, marca_id):
+        marca = get_object_or_404(Marca, pk=marca_id)
+        return render(request, 'marca/marca_confirmar_eliminar.html', {
+            'marca': marca,
+            'equipos_asociados': marca.maquinarias.count(),
+        })
 
     def post(self, request, marca_id):
         try:

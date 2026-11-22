@@ -1,0 +1,36 @@
+{% extends 'dashboard/confirmar_eliminacion.html' %}
+{% block title %}Eliminar cuenta técnica | MaquiRent{% endblock %}
+{% block page_name %}Técnicos{% endblock %}
+{% block confirmacion_titulo %}Eliminar cuenta técnica{% endblock %}
+{% block confirmacion_subtitulo %}Revisa la cuenta seleccionada antes de confirmar.{% endblock %}
+{% block confirmacion_datos %}
+    <div class="delete-field">
+        <dt>Nombre</dt>
+        <dd class="delete-value-name">{{ tecnico.get_full_name|default:tecnico.email }}</dd>
+    </div>
+    <div class="delete-field">
+        <dt>Correo electrónico</dt>
+        <dd>{{ tecnico.email }}</dd>
+    </div>
+    <div class="delete-field">
+        <dt>Especialidad</dt>
+        <dd>{{ tecnico.especialidad|default:"Sin especialidad" }}</dd>
+    </div>
+{% endblock %}
+{% block confirmacion_aviso %}
+    {% if tecnico.is_superuser or tecnico.is_staff %}
+    No se puede eliminar una cuenta con privilegios administrativos.
+    {% elif tiene_maquinarias %}
+    El técnico tiene historial asociado y no se puede eliminar. Puedes inactivarlo.
+    {% else %}
+    ¿Confirmas que deseas eliminar esta cuenta técnica? Esta acción no se puede deshacer.
+    {% endif %}
+{% endblock %}
+{% block confirmacion_acciones %}
+    {% if tecnico.is_superuser or tecnico.is_staff or tiene_maquinarias %}
+    <div class="delete-actions">
+        <a href="{% url 'tecnico_mantenimiento:lista' %}" class="delete-action delete-action-cancel">Volver a la lista</a>
+    </div>
+    {% else %}{{ block.super }}{% endif %}
+{% endblock %}
+{% block confirmacion_cancelar %}<a href="{% url 'tecnico_mantenimiento:lista' %}" class="delete-action delete-action-cancel">Cancelar</a>{% endblock %}

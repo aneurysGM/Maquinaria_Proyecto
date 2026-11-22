@@ -1,0 +1,32 @@
+{% extends 'dashboard/confirmar_eliminacion.html' %}
+{% block title %}Eliminar marca | MaquiRent{% endblock %}
+{% block page_name %}Gestionar Marcas{% endblock %}
+{% block confirmacion_titulo %}Eliminar marca{% endblock %}
+{% block confirmacion_subtitulo %}Revisa la marca seleccionada antes de confirmar.{% endblock %}
+{% block confirmacion_datos %}
+    <div class="delete-field">
+        <dt>Nombre</dt>
+        <dd class="delete-value-name">{{ marca.nombre }}</dd>
+    </div>
+    <div class="delete-field">
+        <dt>Maquinarias asociadas</dt>
+        <dd class="delete-count">
+            {{ equipos_asociados }}
+            <span class="delete-count-note">
+                {% if equipos_asociados %}No se puede eliminar una marca en uso{% else %}Se puede eliminar sin afectar maquinaria{% endif %}
+            </span>
+        </dd>
+    </div>
+{% endblock %}
+{% block confirmacion_aviso %}
+    {% if equipos_asociados %}No se puede borrar una marca asignada a maquinaria.
+    {% else %}¿Confirmas que deseas eliminar la marca «{{ marca.nombre }}»? Esta acción no se puede deshacer.{% endif %}
+{% endblock %}
+{% block confirmacion_acciones %}
+    {% if equipos_asociados %}
+    <div class="delete-actions">
+        <a href="{% url 'marca:marca_lista' %}" class="delete-action delete-action-cancel">Volver a la lista</a>
+    </div>
+    {% else %}{{ block.super }}{% endif %}
+{% endblock %}
+{% block confirmacion_cancelar %}<a href="{% url 'marca:marca_lista' %}" class="delete-action delete-action-cancel">Cancelar</a>{% endblock %}
