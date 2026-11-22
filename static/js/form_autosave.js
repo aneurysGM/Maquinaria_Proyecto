@@ -105,8 +105,8 @@
 
     function hasValues(fields) {
         return fields.some(function (field) {
-            if (field.checked === true) {
-                return true;
+            if (field.checked !== null) {
+                return field.checked;
             }
             return Array.isArray(field.value)
                 ? field.value.length > 0
@@ -187,6 +187,19 @@
         ));
     }
 
+    function hasFailureMessage() {
+        return Boolean(document.querySelector(
+            '.alert-danger, .alert-error, .alert-warning:not([hidden]), ' +
+            '[role="alert"][data-level="error"], [role="alert"][data-level="warning"], .errornote'
+        ));
+    }
+
+    function hasSuccessMessage() {
+        return Boolean(document.querySelector(
+            '.alert-success, [role="alert"][data-level="success"]'
+        ));
+    }
+
     function registerPending(key) {
         var pending = storageGet(window.sessionStorage, PENDING_KEY);
         if (!Array.isArray(pending)) {
@@ -207,11 +220,11 @@
         var remaining = pending.filter(function (key) {
             var form = formsByKey.get(key);
 
-            if (form && hasValidationErrors(form)) {
+            if (hasFailureMessage() || (form && hasValidationErrors(form))) {
                 return true;
             }
 
-            if (form && currentNavigationType() === 'reload' && !document.querySelector('.alert-success')) {
+            if (form && currentNavigationType() === 'reload' && !hasSuccessMessage()) {
                 return true;
             }
 
@@ -224,7 +237,8 @@
 
     var formsByKey = new Map();
     var forms = Array.prototype.slice.call(document.querySelectorAll('form')).filter(function (form) {
-        return form.method.toLowerCase() === 'post' && !form.hasAttribute('data-autosave-ignore');
+        var method = form.method.toLowerCase();
+        return (method === 'get' || method === 'post') && !form.hasAttribute('data-autosave-ignore');
     });
 
     forms.forEach(function (form, index) {
