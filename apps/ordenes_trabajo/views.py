@@ -1,4 +1,3 @@
-from decimal import Decimal
 from datetime import timedelta
 
 from django.contrib import messages
@@ -136,7 +135,6 @@ def _renderizar_detalle(request, mantenimiento_id, formularios=None):
     datos_borrador = borrador.datos if borrador else {}
     avance_inicial = {
         'estado': orden.estado if orden.estado != 'finalizada' else 'reparacion',
-        'horas_trabajo': Decimal('0.0'),
         'horometro': orden.unidad.horas_uso,
         'dias_estimados': max((orden.fecha_estimada_fin - timezone.localdate()).days, 1)
         if orden.fecha_estimada_fin else None,
@@ -169,6 +167,8 @@ def _renderizar_detalle(request, mantenimiento_id, formularios=None):
 
 def _registrar_avance(orden, unidad, usuario, form):
     horas_horometro = form.cleaned_data['horometro']
+    if horas_horometro is None:
+        horas_horometro = unidad.horas_uso
     if horas_horometro < unidad.horas_uso:
         raise ValidationError(
             f'El horómetro no puede ser menor que la lectura actual ({unidad.horas_uso} h).'
@@ -226,7 +226,7 @@ def _finalizar_orden(orden, usuario, observaciones):
         mantenimiento=orden,
         tecnico=usuario,
         estado='finalizada',
-        horas=Decimal('0.0'),
+        horas=0,
         observaciones=observaciones,
     )
     quedan_ordenes = Mantenimiento.objects.filter(
@@ -440,7 +440,7 @@ def orden_solicitar_repuestos(request, mantenimiento_id):
                 mantenimiento=orden,
                 tecnico=request.user,
                 estado='esperando_repuestos',
-                horas=Decimal('0.0'),
+                horas=0,
                 observaciones='Se solicitó uno o más repuestos para esta orden.',
             )
     except (ValidationError, DatabaseError) as error:
@@ -496,7 +496,7 @@ def solicitud_repuesto_resolver(request, solicitud_id, accion):
                             codigo=detalle.codigo,
                             nombre=detalle.nombre,
                             unidad_medida=detalle.unidad_medida,
-                            existencia=Decimal('0.00'),
+                            existencia=0,
                         )
                     elif repuesto.unidad_medida.casefold() != detalle.unidad_medida.casefold():
                         raise ValidationError(

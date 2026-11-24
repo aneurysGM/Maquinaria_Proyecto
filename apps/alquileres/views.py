@@ -31,7 +31,7 @@ from .reservas import (
 
 def dias_del_plan(plan, cantidad):
     dias_por_plan = {'diario': 1, 'semanal': 7, 'mensual': 30}
-    return dias_por_plan[plan] * cantidad
+    return max(dias_por_plan[plan] * cantidad, 1)
 
 
 def bloquear_movimiento(solicitud_id):
@@ -201,9 +201,7 @@ def solicitud_registrar(request, unidad_id):
         plan = request.GET.get('plan', 'diario')
         if plan not in dict(SolicitudAlquiler.PLANES):
             plan = 'diario'
-        cantidad = request.GET.get('cantidad', '1')
-        cantidad = int(cantidad) if cantidad.isdecimal() and len(cantidad) < 5 and 0 < int(cantidad) < 10000 else 1
-        form = SolicitudAlquilerForm(initial={'plan': plan, 'cantidad': cantidad})
+        form = SolicitudAlquilerForm(initial={'plan': plan})
 
     return render(
         request,
@@ -617,7 +615,11 @@ def solicitud_registrar_retorno(request, solicitud_id):
         )
         return redirect('alquileres:solicitud_lista')
 
-    horas_actualizadas = form.cleaned_data['horas_uso_actualizadas']
+    horas_actualizadas = (
+        form.cleaned_data['horas_uso_actualizadas']
+        if form.cleaned_data['horas_uso_actualizadas'] is not None
+        else unidad.horas_uso
+    )
     if horas_actualizadas < unidad.horas_uso:
         messages.error(
             request,

@@ -3,12 +3,12 @@
     const revision = document.getElementById('confirmacion-reserva');
     if (!form || !revision) return;
     const enviaAvisos = revision.querySelectorAll('textarea').length > 0;
-    const centavos = value => Math.round(Number(value) * 100);
+    const entero = value => Number(String(value).replace(/,/g, '')) || 0;
     function actualizar() {
         const concepto = form.elements.concepto.value;
-        const monto = centavos(form.elements.monto.value);
-        const renta = centavos(form.dataset.rentaPendiente);
-        const deposito = centavos(form.dataset.depositoPendiente);
+        const monto = entero(form.elements.monto.value);
+        const renta = entero(form.dataset.rentaPendiente);
+        const deposito = entero(form.dataset.depositoPendiente);
         const confirma = renta <= (concepto === 'renta' ? monto : 0)
             && deposito <= (concepto === 'deposito' ? monto : 0);
         revision.hidden = !confirma;

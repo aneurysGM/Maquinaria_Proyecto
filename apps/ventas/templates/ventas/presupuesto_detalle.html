@@ -19,7 +19,7 @@
             </a>
             {% endif %}
             <h1 class="h2 mt-2 mb-1">Presupuesto #{{ solicitud.pk }}</h1>
-            <p class="text-muted mb-0">{{ solicitud.unidad.maquinaria.nombre }} · Serie {{ solicitud.unidad.numero_serie }}</p>
+            <p class="text-muted mb-0">{{ solicitud.unidad.maquinaria.nombre }} Â· Serie {{ solicitud.unidad.numero_serie }}</p>
         </div>
         {% include 'alquileres/estado_cliente.html' %}
     </div>
@@ -27,7 +27,7 @@
     {% if solicitud.pendiente_direccion_entrega %}
     {% include 'alquileres/direccion_entrega_resumen.html' %}
     {% if es_cliente and not es_administrador %}
-    <a class="btn btn-primary mb-4" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar dirección de entrega</a>
+    <a class="btn btn-primary mb-4" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar direcciÃ³n de entrega</a>
     {% endif %}
     {% endif %}
 
@@ -40,13 +40,13 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6">Plan</dt>
-                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} período(s)</dd>
+                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} perÃ­odo(s)</dd>
                         <dt class="col-sm-6">Fecha de entrega programada</dt>
                         <dd class="col-sm-6">{{ solicitud.fecha_inicio|date:"d/m/Y" }}</dd>
-                        <dt class="col-sm-6">Devolución programada</dt>
+                        <dt class="col-sm-6">DevoluciÃ³n programada</dt>
                         <dd class="col-sm-6">{{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
                         <dt class="col-sm-6">Tarifa por plan</dt>
-                        <dd class="col-sm-6">${{ presupuesto.tarifa_periodo|floatformat:2 }}</dd>
+                        <dd class="col-sm-6">${{ presupuesto.tarifa_periodo|entero_con_comas }}</dd>
                         {% if solicitud.comentario %}
                         <dt class="col-sm-6">Obra / comentario</dt>
                         <dd class="col-sm-6">{{ solicitud.comentario }}</dd>
@@ -62,7 +62,7 @@
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
                         <thead class="table-light">
-                            <tr><th class="ps-3">Fecha</th><th>Concepto</th><th>Método</th><th>Referencia</th><th class="text-end pe-3">Monto</th></tr>
+                            <tr><th class="ps-3">Fecha</th><th>Concepto</th><th>MÃ©todo</th><th>Referencia</th><th class="text-end pe-3">Monto</th></tr>
                         </thead>
                         <tbody>
                             {% for pago in presupuesto.pagos.all %}
@@ -70,8 +70,8 @@
                                 <td class="ps-3">{{ pago.creado_en|date:"d/m/Y H:i" }}</td>
                                 <td>{{ pago.get_concepto_display }}</td>
                                 <td>{{ pago.get_metodo_display }}</td>
-                                <td>{{ pago.referencia|default:"—" }}</td>
-                                <td class="text-end pe-3">${{ pago.monto|floatformat:2 }}</td>
+                                <td>{{ pago.referencia|default:"â€”" }}</td>
+                                <td class="text-end pe-3">${{ pago.monto|entero_con_comas }}</td>
                             </tr>
                             {% empty %}
                             <tr><td colspan="5" class="text-center text-muted py-4">No se han registrado pagos.</td></tr>
@@ -89,37 +89,37 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Renta ({{ solicitud.cantidad }} × ${{ presupuesto.tarifa_periodo|floatformat:2 }})</span>
-                        <strong>${{ presupuesto.importe_renta|floatformat:2 }}</strong>
+                        <span>Renta ({{ solicitud.cantidad }} Ã— ${{ presupuesto.tarifa_periodo|entero_con_comas }})</span>
+                        <strong>${{ presupuesto.importe_renta|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Depósito reembolsable (sin operador, cálculo automático)</span>
-                        <strong>RD${{ presupuesto.deposito_garantia|floatformat:2 }}</strong>
+                        <span>DepÃ³sito reembolsable (sin operador, cÃ¡lculo automÃ¡tico)</span>
+                        <strong>RD${{ presupuesto.deposito_garantia|entero_con_comas }}</strong>
                     </div>
                     {% if solicitud.fecha_retorno %}
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Mora por {{ solicitud.dias_atraso }} día(s) de atraso</span>
-                        <strong>${{ presupuesto.mora_total|floatformat:2 }}</strong>
+                        <span>Mora por {{ solicitud.dias_atraso }} dÃ­a(s) de atraso</span>
+                        <strong>${{ presupuesto.mora_total|entero_con_comas }}</strong>
                     </div>
                     {% elif solicitud.dias_atraso_actual %}
                     <div class="alert alert-warning small mt-3 mb-2" role="alert">
-                        Tienes {{ solicitud.dias_atraso_actual }} día(s) de atraso. Se generó una advertencia.
-                        La mora estimada hasta hoy es ${{ mora_estimada|floatformat:2 }} y aumenta cada día.
+                        Tienes {{ solicitud.dias_atraso_actual }} dÃ­a(s) de atraso. Se generÃ³ una advertencia.
+                        La mora estimada hasta hoy es ${{ mora_estimada|entero_con_comas }} y aumenta cada dÃ­a.
                     </div>
                     {% endif %}
                     <hr>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="fw-semibold">Total a pagar</span>
-                        <strong>${{ presupuesto.importe_total_actual|floatformat:2 }}</strong>
+                        <strong>${{ presupuesto.importe_total_actual|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2 text-success">
                         <span>Pagado</span>
-                        <strong>${{ presupuesto.total_pagado|floatformat:2 }}</strong>
+                        <strong>${{ presupuesto.total_pagado|entero_con_comas }}</strong>
                     </div>
                     {% if presupuesto.deposito_reembolsado %}
                     <div class="d-flex justify-content-between mb-2 text-secondary">
-                        <span>Depósito reembolsado</span>
-                        <strong>−${{ presupuesto.deposito_reembolsado|floatformat:2 }}</strong>
+                        <span>DepÃ³sito reembolsado</span>
+                        <strong>âˆ’${{ presupuesto.deposito_reembolsado|entero_con_comas }}</strong>
                     </div>
                     {% endif %}
                     {% if solicitud.cancelada_por_mantenimiento %}
@@ -129,34 +129,34 @@
                     {% else %}
                     <div class="d-flex justify-content-between fs-5 border-top pt-3">
                         <span class="fw-bold">Saldo pendiente</span>
-                        <strong class="text-danger">${{ presupuesto.saldo_pendiente_actual|floatformat:2 }}</strong>
+                        <strong class="text-danger">${{ presupuesto.saldo_pendiente_actual|entero_con_comas }}</strong>
                     </div>
-                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|floatformat:2 }}</strong> · Depósito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|floatformat:2 }}</strong>.</p>
-                    <p class="small text-muted mt-2 mb-0">Los reembolsos del depósito se registran aparte y no reducen la renta pendiente.</p>
-                    <p class="small text-muted mt-3 mb-0">El depósito es una garantía reembolsable. El presupuesto no incluye costos internos de adquisición de la maquinaria.</p>
+                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|entero_con_comas }}</strong> Â· DepÃ³sito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|entero_con_comas }}</strong>.</p>
+                    <p class="small text-muted mt-2 mb-0">Los reembolsos del depÃ³sito se registran aparte y no reducen la renta pendiente.</p>
+                    <p class="small text-muted mt-3 mb-0">El depÃ³sito es una garantÃ­a reembolsable. El presupuesto no incluye costos internos de adquisiciÃ³n de la maquinaria.</p>
                     {% endif %}
                 </div>
             </section>
 
             <section class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso del depósito</h2></div>
+                <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso del depÃ³sito</h2></div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between small mb-2">
-                        <span>Depósito recibido</span><strong>${{ presupuesto.deposito_pagado|floatformat:2 }}</strong>
+                        <span>DepÃ³sito recibido</span><strong>${{ presupuesto.deposito_pagado|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between small mb-2">
-                        <span>Reembolsado</span><strong>${{ presupuesto.deposito_reembolsado|floatformat:2 }}</strong>
+                        <span>Reembolsado</span><strong>${{ presupuesto.deposito_reembolsado|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between small">
-                        <span>Disponible para devolver</span><strong>${{ presupuesto.deposito_por_reembolsar|floatformat:2 }}</strong>
+                        <span>Disponible para devolver</span><strong>${{ presupuesto.deposito_por_reembolsar|entero_con_comas }}</strong>
                     </div>
                     {% if presupuesto.reembolsos_deposito.all %}
                     <hr>
                     <ul class="list-unstyled small mb-0">
                         {% for reembolso in presupuesto.reembolsos_deposito.all %}
                         <li class="d-flex justify-content-between gap-2">
-                            <span>{{ reembolso.creado_en|date:"d/m/Y" }} · {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} · {{ reembolso.referencia }}{% endif %}</span>
-                            <strong>${{ reembolso.monto|floatformat:2 }}</strong>
+                            <span>{{ reembolso.creado_en|date:"d/m/Y" }} Â· {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} Â· {{ reembolso.referencia }}{% endif %}</span>
+                            <strong>${{ reembolso.monto|entero_con_comas }}</strong>
                         </li>
                         {% endfor %}
                     </ul>
@@ -175,7 +175,7 @@
                         <button class="btn btn-outline-success fw-semibold" type="submit">Registrar reembolso</button>
                     </form>
                     {% elif not solicitud.fecha_retorno and not solicitud.cancelada_por_mantenimiento %}
-                    <p class="small text-muted mt-3 mb-0">El depósito recibido podrá devolverse después de registrar el retorno de la maquinaria.</p>
+                    <p class="small text-muted mt-3 mb-0">El depÃ³sito recibido podrÃ¡ devolverse despuÃ©s de registrar el retorno de la maquinaria.</p>
                     {% endif %}
                 </div>
             </section>
@@ -184,10 +184,10 @@
             <section class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso de renta</h2></div>
                 <div class="card-body">
-                    <p class="mb-1">Renta reembolsada: <strong>${{ presupuesto.renta_reembolsada|floatformat:2 }}</strong></p>
-                    <p class="mb-1">Renta pendiente de devolución: <strong>${{ presupuesto.renta_por_reembolsar|floatformat:2 }}</strong></p>
+                    <p class="mb-1">Renta reembolsada: <strong>${{ presupuesto.renta_reembolsada|entero_con_comas }}</strong></p>
+                    <p class="mb-1">Renta pendiente de devoluciÃ³n: <strong>${{ presupuesto.renta_por_reembolsar|entero_con_comas }}</strong></p>
                     {% for reembolso in presupuesto.reembolsos_renta.all %}
-                    <p class="small mb-1">{{ reembolso.creado_en|date:"d/m/Y" }} · {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} · {{ reembolso.referencia }}{% endif %} · ${{ reembolso.monto|floatformat:2 }}</p>
+                    <p class="small mb-1">{{ reembolso.creado_en|date:"d/m/Y" }} Â· {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} Â· {{ reembolso.referencia }}{% endif %} Â· ${{ reembolso.monto|entero_con_comas }}</p>
                     {% endfor %}
                     {% if request.user.es_administrador and presupuesto.renta_por_reembolsar > 0 %}
                     <form method="post" action="{% url 'ventas:reembolso_renta_registrar' presupuesto.pk %}" class="mt-3">
@@ -220,16 +220,16 @@
                         {% if not solicitud.pago_inicial_completo %}
                         <input type="hidden" name="revision_reserva" value="{{ revision_reserva }}">
                         <fieldset id="confirmacion-reserva" class="border rounded-3 p-3 mb-3">
-                            <legend class="float-none w-auto h6 px-1">Confirmación de reserva</legend>
-                            <p class="small">Si este pago completa la renta y el depósito inicial, confirma la reserva. Las solicitudes con fechas cruzadas se mantienen y recibirán este motivo para que sus clientes decidan si aplazan o cancelan.</p>
+                            <legend class="float-none w-auto h6 px-1">ConfirmaciÃ³n de reserva</legend>
+                            <p class="small">Si este pago completa la renta y el depÃ³sito inicial, confirma la reserva. Las solicitudes con fechas cruzadas se mantienen y recibirÃ¡n este motivo para que sus clientes decidan si aplazan o cancelan.</p>
                             {% for afectada, motivo in afectadas %}
                             <div class="mb-3">
-                                <p class="small fw-semibold mb-1">Solicitud #{{ afectada.pk }} · {{ afectada.fecha_inicio|date:"d/m/Y" }} – {{ afectada.fecha_fin|date:"d/m/Y" }}</p>
+                                <p class="small fw-semibold mb-1">Solicitud #{{ afectada.pk }} Â· {{ afectada.fecha_inicio|date:"d/m/Y" }} â€“ {{ afectada.fecha_fin|date:"d/m/Y" }}</p>
                                 <label class="form-label" for="{{ motivo.id_for_label }}">Motivo para el cliente</label>
                                 {{ motivo }}
                                 {% if motivo.errors %}<div class="text-danger small">{{ motivo.errors }}</div>{% endif %}
                             </div>
-                            {% empty %}<p class="small mb-0">No hay otras solicitudes afectadas para este período.</p>{% endfor %}
+                            {% empty %}<p class="small mb-0">No hay otras solicitudes afectadas para este perÃ­odo.</p>{% endfor %}
                         </fieldset>
                         {% endif %}
                         <button id="guardar-pago" class="btn btn-warning fw-semibold" type="submit">Guardar pago</button>

@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import BaseFormSet, formset_factory
 
+from apps.form_utils import GroupedIntegerField, GroupedIntegerWidget
 from .models import PuntoChecklist, Repuesto
 
 
@@ -14,34 +15,30 @@ class ActualizarOrdenForm(forms.Form):
         ),
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
-    dias_estimados = forms.IntegerField(
+    dias_estimados = GroupedIntegerField(
         label='Días estimados restantes',
         required=False,
         min_value=1,
         max_value=36500,
         help_text='Obligatorio en reparación; opcional durante el diagnóstico.',
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '36500'}),
+        empty_value=None,
+        widget=GroupedIntegerWidget(attrs={'class': 'form-control', 'min': '1', 'max': '36500'}),
     )
-    horas_trabajo = forms.DecimalField(
+    horas_trabajo = GroupedIntegerField(
         label='Horas de mano de obra en esta actualización',
-        max_digits=8,
-        decimal_places=1,
         min_value=0,
-        widget=forms.NumberInput(attrs={
+        widget=GroupedIntegerWidget(attrs={
             'class': 'form-control',
             'min': '0',
-            'step': '0.1',
         }),
     )
-    horometro = forms.DecimalField(
+    horometro = GroupedIntegerField(
         label='Lectura actual del horómetro',
-        max_digits=10,
-        decimal_places=1,
         min_value=0,
-        widget=forms.NumberInput(attrs={
+        empty_value=None,
+        widget=GroupedIntegerWidget(attrs={
             'class': 'form-control',
             'min': '0',
-            'step': '0.1',
         }),
     )
     observaciones = forms.CharField(
@@ -147,15 +144,12 @@ class DetalleSolicitudRepuestoForm(forms.Form):
             'placeholder': 'pieza, litro, metro...',
         }),
     )
-    cantidad = forms.DecimalField(
+    cantidad = GroupedIntegerField(
         label='Cantidad solicitada',
-        max_digits=12,
-        decimal_places=2,
-        min_value=0.01,
-        widget=forms.NumberInput(attrs={
+        min_value=0,
+        widget=GroupedIntegerWidget(attrs={
             'class': 'form-control',
-            'min': '0.01',
-            'step': '0.01',
+            'min': '0',
         }),
     )
 
@@ -197,15 +191,12 @@ class ConsumoRepuestoForm(forms.Form):
         queryset=Repuesto.objects.none(),
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
-    cantidad = forms.DecimalField(
+    cantidad = GroupedIntegerField(
         label='Cantidad utilizada',
-        max_digits=12,
-        decimal_places=2,
-        min_value=0.01,
-        widget=forms.NumberInput(attrs={
+        min_value=0,
+        widget=GroupedIntegerWidget(attrs={
             'class': 'form-control',
-            'min': '0.01',
-            'step': '0.01',
+            'min': '0',
         }),
     )
 
@@ -241,14 +232,11 @@ class RepuestoForm(forms.ModelForm):
 
 
 class EntradaRepuestoForm(forms.Form):
-    cantidad = forms.DecimalField(
+    cantidad = GroupedIntegerField(
         label='Cantidad recibida',
-        max_digits=12,
-        decimal_places=2,
-        min_value=0.01,
-        widget=forms.NumberInput(attrs={
+        min_value=0,
+        widget=GroupedIntegerWidget(attrs={
             'class': 'form-control',
-            'min': '0.01',
-            'step': '0.01',
+            'min': '0',
         }),
     )

@@ -23,7 +23,7 @@
         </div>
         <div class="col-md-4">
             <label class="form-label small fw-semibold" for="horas-{{ solicitud.pk }}">Horas actuales del horómetro</label>
-            <input id="horas-{{ solicitud.pk }}" class="form-control form-control-sm" type="number" name="horas_uso_actualizadas" min="{{ solicitud.unidad.horas_uso|unlocalize }}" step="0.1" value="{{ solicitud.unidad.horas_uso|unlocalize }}" required>
+            <input id="horas-{{ solicitud.pk }}" class="form-control form-control-sm" type="text" inputmode="numeric" data-integer-input name="horas_uso_actualizadas" min="{{ solicitud.unidad.horas_uso|unlocalize }}" placeholder="{{ solicitud.unidad.horas_uso|unlocalize }}">
         </div>
         <div class="col-md-6">
             <label class="form-label small fw-semibold" for="obs-{{ solicitud.pk }}">Observaciones del retorno</label>

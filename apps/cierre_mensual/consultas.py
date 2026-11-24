@@ -1,7 +1,5 @@
 import calendar
 from datetime import date, datetime, time, timedelta
-from decimal import Decimal
-
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
@@ -29,7 +27,7 @@ def pagos_de_ingresos(inicio, fin=None):
 def ingresos_periodo_actual():
     return pagos_de_ingresos(
         periodo_activo().inicio_periodo
-    ).aggregate(total=Sum('monto', default=Decimal('0.00')))['total']
+    ).aggregate(total=Sum('monto', default=0))['total']
 
 
 def _inicio_local(fecha):
@@ -100,14 +98,14 @@ def resumen_pagos(pagos):
         ingresos=Sum(
             'monto',
             filter=Q(concepto__in=CONCEPTOS_INGRESO),
-            default=Decimal('0.00'),
+            default=0,
         ),
         depositos=Sum(
             'monto',
             filter=Q(concepto='deposito'),
-            default=Decimal('0.00'),
+            default=0,
         ),
-        total_recibido=Sum('monto', default=Decimal('0.00')),
+        total_recibido=Sum('monto', default=0),
     )
 
 

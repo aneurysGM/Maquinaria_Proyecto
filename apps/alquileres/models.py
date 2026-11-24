@@ -41,8 +41,9 @@ class SolicitudAlquiler(models.Model):
         max_length=10, choices=PLANES, default='diario', verbose_name='Plan de alquiler'
     )
     cantidad = models.PositiveIntegerField(
-        default=1,
-        validators=[MinValueValidator(1)],
+        blank=True,
+        default=0,
+        validators=[MinValueValidator(0)],
         verbose_name='Cantidad de planes',
     )
     comentario = models.CharField(max_length=500, blank=True, verbose_name='Comentario / Obra')

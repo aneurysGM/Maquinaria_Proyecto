@@ -9,6 +9,7 @@ from apps.alquileres.notificaciones import notificar_cancelacion_mantenimiento
 from apps.inventario.models import Unidad
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado, permisos_panel
 from apps.tecnico_mantenimiento.especialidades import opciones_especialidad
+from apps.form_utils import GroupedIntegerField, GroupedIntegerWidget
 from .models import Mantenimiento
 
 
@@ -58,12 +59,10 @@ class MantenimientoForm(forms.Form):
         strip=True, 
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalla las piezas cambiadas, reparaciones o revisiones...'}),
     )
-    costo = forms.DecimalField(
-        label='Costo de la intervención', 
-        max_digits=18, 
-        decimal_places=2, 
+    costo = GroupedIntegerField(
+        label='Costo de la intervención',
         min_value=0,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        widget=GroupedIntegerWidget(attrs={'class': 'form-control'}),
     )
     forzar = forms.BooleanField(
         required=False,

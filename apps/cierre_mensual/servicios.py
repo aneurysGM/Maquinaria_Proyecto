@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from decimal import Decimal
-
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -16,7 +14,7 @@ class ResultadoCierre:
     contenido: bytes
     nombre_archivo: str
     archivo_servidor: str
-    total: Decimal
+    total: int
     cantidad_pagos: int
 
 
@@ -67,7 +65,7 @@ def _crear_excel(pagos):
             nombre,
         ))
 
-    total = sum((pago.monto for pago in pagos), Decimal('0.00'))
+    total = sum((pago.monto for pago in pagos), 0)
     respuesta = exportar_excel(
         'cierre_mensual',
         'Cierre mensual de ingresos',

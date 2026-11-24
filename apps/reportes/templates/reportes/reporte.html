@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Reporte de {{ titulo }}{% endblock %}
-{% block page_name %}Reporte · {{ titulo }}{% endblock %}
+{% block page_name %}Reporte Â· {{ titulo }}{% endblock %}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'reportes.css' %}">
 {% endblock %}
@@ -100,13 +100,13 @@
         <span class="report-eyebrow">COSTOS FILTRADOS</span>
         <h2 class="h5 fw-bold mb-0">Total de mantenimiento</h2>
     </div>
-    <strong>${{ total_costo|floatformat:2 }}</strong>
+    <strong>${{ total_costo|entero_con_comas }}</strong>
 </section>
 {% endif %}
 {% elif csv_retirado %}
 <section class="alert alert-warning report-notice" role="alert">
     <i class="bi bi-info-circle me-2"></i>
-    La descarga CSV ya no está disponible. Consulta el reporte y descarga un archivo Excel.
+    La descarga CSV ya no estÃ¡ disponible. Consulta el reporte y descarga un archivo Excel.
     <a href="{{ volver_url }}" class="alert-link d-block mt-2">Volver al reporte conservando los filtros</a>
 </section>
 {% elif request.GET %}

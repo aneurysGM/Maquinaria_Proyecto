@@ -19,7 +19,7 @@
 
 <div class="container-fluid px-0">
 
-    {# ───────── Encabezado ───────── #}
+    {# â”€â”€â”€â”€â”€â”€â”€â”€â”€ Encabezado â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
     <div class="mb-4">
         {% if request.user.is_authenticated %}
         <a href="{% url 'inventario:maquinaria_lista' %}" class="small text-decoration-none">
@@ -27,7 +27,7 @@
         </a>
         {% else %}
         <a href="{% url 'catalogo' %}" class="small text-decoration-none">
-            <i class="bi bi-arrow-left" aria-hidden="true"></i> Volver al catálogo
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Volver al catÃ¡logo
         </a>
         {% endif %}
 
@@ -46,9 +46,9 @@
                     {% endif %}
                 </div>
                 <p class="text-secondary mb-0">
-                    Código <strong class="text-dark">{{ unidad.maquinaria.codigo }}</strong>
+                    CÃ³digo <strong class="text-dark">{{ unidad.maquinaria.codigo }}</strong>
                     <span class="mx-2 text-body-tertiary">|</span>
-                    N° de serie <strong class="text-dark">{{ unidad.numero_serie }}</strong>
+                    NÂ° de serie <strong class="text-dark">{{ unidad.numero_serie }}</strong>
                 </p>
             </div>
 
@@ -68,10 +68,10 @@
 
     <div class="row g-4">
 
-        {# ═════════ COLUMNA IZQUIERDA: galería + tarifas ═════════ #}
+        {# â•â•â•â•â•â•â•â•â• COLUMNA IZQUIERDA: galerÃ­a + tarifas â•â•â•â•â•â•â•â•â• #}
         <div class="col-lg-5">
             {% with imagenes=unidad.maquinaria.imagenes.all %}
-            <section class="card border-0 shadow-sm rounded-4 mb-4" aria-label="Imágenes de la maquinaria">
+            <section class="card border-0 shadow-sm rounded-4 mb-4" aria-label="ImÃ¡genes de la maquinaria">
                 <div class="card-body p-3">
                     {% if imagenes %}
                     {% with principal=imagenes|first %}
@@ -98,7 +98,7 @@
                     <div class="ratio ratio-1x1 rounded-4 bg-light">
                         <div class="d-flex flex-column align-items-center justify-content-center text-secondary">
                             <i class="bi bi-truck fs-1" aria-hidden="true"></i>
-                            <span class="small mt-2">Sin imágenes</span>
+                            <span class="small mt-2">Sin imÃ¡genes</span>
                         </div>
                     </div>
                     {% endif %}
@@ -108,44 +108,44 @@
 
             <section class="card border-0 shadow-sm rounded-4" aria-labelledby="tarifas-title">
                 <div class="card-body p-4">
-                    <h2 class="h5 fw-bold mb-1" id="tarifas-title"><i class="bi bi-cash-stack text-success me-2" aria-hidden="true"></i>Tarifas y depósito</h2>
+                    <h2 class="h5 fw-bold mb-1" id="tarifas-title"><i class="bi bi-cash-stack text-success me-2" aria-hidden="true"></i>Tarifas y depÃ³sito</h2>
                     <p class="text-secondary small mb-3">Esquema de cobro configurado para el alquiler de este equipo.</p>
 
-                    <div class="price-row"><span class="text-secondary">Tarifa diaria</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</strong></div>
-                    <div class="price-row"><span class="text-secondary">Tarifa semanal</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_semanal|floatformat:2 }}</strong></div>
-                    <div class="price-row"><span class="text-secondary">Tarifa mensual</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_mensual|floatformat:2 }}</strong></div>
-                    <div class="price-row"><span class="text-secondary">Depósito base (1–7 días, sin operador)</span><strong class="fs-5 text-success">RD${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</strong></div>
-                    <p class="small text-secondary mt-2 mb-0">Se ajusta automáticamente según la duración seleccionada.</p>
+                    <div class="price-row"><span class="text-secondary">Tarifa diaria</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_diaria|entero_con_comas }}</strong></div>
+                    <div class="price-row"><span class="text-secondary">Tarifa semanal</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_semanal|entero_con_comas }}</strong></div>
+                    <div class="price-row"><span class="text-secondary">Tarifa mensual</span><strong class="fs-5">${{ unidad.maquinaria.tarifa_mensual|entero_con_comas }}</strong></div>
+                    <div class="price-row"><span class="text-secondary">DepÃ³sito base (1â€“7 dÃ­as, sin operador)</span><strong class="fs-5 text-success">RD${{ unidad.maquinaria.deposito_garantia|entero_con_comas }}</strong></div>
+                    <p class="small text-secondary mt-2 mb-0">Se ajusta automÃ¡ticamente segÃºn la duraciÃ³n seleccionada.</p>
 
                     {% if puede_solicitar_alquiler %}
                     <a class="btn btn-warning fw-bold w-100 mt-3" href="{% url 'alquileres:solicitud_registrar' unidad.id %}">
                         <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>
-                        {% if request.user.is_authenticated %}Solicitar alquiler{% else %}Iniciar sesión para solicitar{% endif %}
+                        {% if request.user.is_authenticated %}Solicitar alquiler{% else %}Iniciar sesiÃ³n para solicitar{% endif %}
                     </a>
-                    <p class="small text-secondary text-center mt-2 mb-0">La solicitud será revisada por un administrador.</p>
+                    <p class="small text-secondary text-center mt-2 mb-0">La solicitud serÃ¡ revisada por un administrador.</p>
                     {% endif %}
                 </div>
             </section>
         </div>
 
-        {# ═════════ COLUMNA DERECHA: datos del equipo ═════════ #}
+        {# â•â•â•â•â•â•â•â•â• COLUMNA DERECHA: datos del equipo â•â•â•â•â•â•â•â•â• #}
         <div class="col-lg-7">
 
-            {# Datos rápidos de la unidad #}
+            {# Datos rÃ¡pidos de la unidad #}
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
                     <div class="spec-tile">
                         <div class="lbl"><i class="bi bi-speedometer2 me-1" aria-hidden="true"></i>Horas de uso</div>
-                        <div class="val">{{ unidad.horas_uso|floatformat:1 }} h</div>
+                        <div class="val">{{ unidad.horas_uso|entero_con_comas }} h</div>
                         {% if unidad.intervalo_mantenimiento_horas %}
-                        <div class="lbl mt-2">Próximo mantenimiento</div>
-                        <div class="val">{{ unidad.proximo_mantenimiento_horas|floatformat:1 }} h</div>
+                        <div class="lbl mt-2">PrÃ³ximo mantenimiento</div>
+                        <div class="val">{{ unidad.proximo_mantenimiento_horas|entero_con_comas }} h</div>
                         {% endif %}
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="spec-tile">
-                        <div class="lbl"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>Año</div>
+                        <div class="lbl"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>AÃ±o</div>
                         <div class="val">{{ unidad.anio_fabricacion|default:"N/D" }}</div>
                     </div>
                 </div>
@@ -157,18 +157,18 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="spec-tile">
-                        <div class="lbl"><i class="bi bi-geo-alt text-danger me-1" aria-hidden="true"></i>Ubicación</div>
+                        <div class="lbl"><i class="bi bi-geo-alt text-danger me-1" aria-hidden="true"></i>UbicaciÃ³n</div>
                         <div class="val">{{ unidad.ubicacion_actual|default:"No especificada" }}</div>
                     </div>
                 </div>
             </div>
 
-            {# Ficha técnica #}
+            {# Ficha tÃ©cnica #}
             <section class="card border-0 shadow-sm rounded-4 mb-4" aria-labelledby="ficha-title">
                 <div class="card-body p-4">
-                    <h2 class="h5 fw-bold mb-3" id="ficha-title"><i class="bi bi-gear-wide-connected text-secondary me-2" aria-hidden="true"></i>Ficha técnica</h2>
+                    <h2 class="h5 fw-bold mb-3" id="ficha-title"><i class="bi bi-gear-wide-connected text-secondary me-2" aria-hidden="true"></i>Ficha tÃ©cnica</h2>
                     <dl class="row mb-0">
-                        <dt class="col-sm-4 text-secondary fw-normal">Categoría</dt>
+                        <dt class="col-sm-4 text-secondary fw-normal">CategorÃ­a</dt>
                         <dd class="col-sm-8"><span class="badge bg-light text-dark border">{{ unidad.maquinaria.categoria.nombre }}</span></dd>
 
                         <dt class="col-sm-4 text-secondary fw-normal">Marca</dt>
@@ -177,31 +177,31 @@
                         <dt class="col-sm-4 text-secondary fw-normal">Modelo</dt>
                         <dd class="col-sm-8 fw-semibold">{{ unidad.maquinaria.modelo|default:"No especificado" }}</dd>
 
-                        <dt class="col-sm-4 text-secondary fw-normal">Código</dt>
+                        <dt class="col-sm-4 text-secondary fw-normal">CÃ³digo</dt>
                         <dd class="col-sm-8 fw-semibold">{{ unidad.maquinaria.codigo }}</dd>
 
-                        <dt class="col-sm-4 text-secondary fw-normal">N° de serie</dt>
+                        <dt class="col-sm-4 text-secondary fw-normal">NÂ° de serie</dt>
                         <dd class="col-sm-8 fw-semibold">{{ unidad.numero_serie }}</dd>
 
                         {% if es_administrador %}
-                        <dt class="col-sm-4 text-secondary fw-normal">Costo de adquisición <small>(uso administrativo)</small></dt>
-                        <dd class="col-sm-8 fw-semibold">${{ unidad.maquinaria.costo_adquisicion|floatformat:2 }}</dd>
+                        <dt class="col-sm-4 text-secondary fw-normal">Costo de adquisiciÃ³n <small>(uso administrativo)</small></dt>
+                        <dd class="col-sm-8 fw-semibold">${{ unidad.maquinaria.costo_adquisicion|entero_con_comas }}</dd>
                         {% endif %}
                     </dl>
                 </div>
             </section>
 
-            {# Descripción #}
+            {# DescripciÃ³n #}
             <section class="card border-0 shadow-sm rounded-4" aria-labelledby="desc-title">
                 <div class="card-body p-4">
-                    <h2 class="h5 fw-bold mb-3" id="desc-title"><i class="bi bi-card-text text-secondary me-2" aria-hidden="true"></i>Descripción</h2>
-                    <p class="mb-0 text-body-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripción disponible."|linebreaksbr }}</p>
+                    <h2 class="h5 fw-bold mb-3" id="desc-title"><i class="bi bi-card-text text-secondary me-2" aria-hidden="true"></i>DescripciÃ³n</h2>
+                    <p class="mb-0 text-body-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripciÃ³n disponible."|linebreaksbr }}</p>
                 </div>
             </section>
         </div>
     </div>
 
-    {# ───────── Comentarios (ancho completo) ───────── #}
+    {# â”€â”€â”€â”€â”€â”€â”€â”€â”€ Comentarios (ancho completo) â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
     <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="machine-comments-title">
         <div class="card-body p-4">
             <h2 class="h5 fw-bold mb-3" id="machine-comments-title">
@@ -218,7 +218,7 @@
                 <p class="mb-0 mt-2">{{ comentario.texto|linebreaksbr }}</p>
             </article>
             {% empty %}
-            <p class="text-secondary mb-0">Todavía no hay comentarios para esta maquinaria.</p>
+            <p class="text-secondary mb-0">TodavÃ­a no hay comentarios para esta maquinaria.</p>
             {% endfor %}
 
             {% if puede_comentar %}
@@ -238,8 +238,8 @@
     </section>
 </div>
 
-{# ───────── Visor de imágenes (ventana emergente: el sidebar no desaparece) ───────── #}
-<div class="modal fade" id="galModal" tabindex="-1" aria-label="Visor de imágenes" aria-hidden="true">
+{# â”€â”€â”€â”€â”€â”€â”€â”€â”€ Visor de imÃ¡genes (ventana emergente: el sidebar no desaparece) â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+<div class="modal fade" id="galModal" tabindex="-1" aria-label="Visor de imÃ¡genes" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content bg-dark border-0 rounded-4 overflow-hidden">
             <div class="modal-body p-0 position-relative text-center">

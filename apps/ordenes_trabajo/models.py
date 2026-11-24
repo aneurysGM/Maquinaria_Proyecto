@@ -72,9 +72,9 @@ class RegistroTrabajo(models.Model):
             ('finalizada', 'Finalizada'),
         ),
     )
-    horas = models.DecimalField(
-        max_digits=8,
-        decimal_places=1,
+    horas = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
         validators=(MinValueValidator(0),),
     )
     observaciones = models.TextField(max_length=2000)
@@ -112,9 +112,8 @@ class Repuesto(models.Model):
     codigo = models.CharField(max_length=40, unique=True)
     nombre = models.CharField(max_length=120)
     unidad_medida = models.CharField(max_length=20, default='pieza')
-    existencia = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+    existencia = models.PositiveBigIntegerField(
+        blank=True,
         default=0,
         validators=(MinValueValidator(0),),
     )
@@ -175,10 +174,10 @@ class DetalleSolicitudRepuesto(models.Model):
     codigo = models.CharField(max_length=40)
     nombre = models.CharField(max_length=120)
     unidad_medida = models.CharField(max_length=20, default='pieza')
-    cantidad = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=(MinValueValidator(0.01),),
+    cantidad = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=(MinValueValidator(0),),
     )
     repuesto = models.ForeignKey(
         Repuesto,
@@ -192,7 +191,7 @@ class DetalleSolicitudRepuesto(models.Model):
         ordering = ('pk',)
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(cantidad__gt=0),
+                condition=models.Q(cantidad__gte=0),
                 name='CK_DetalleSolicitudRepuesto_Cantidad_Positiva',
             ),
         ]
@@ -214,10 +213,10 @@ class ConsumoRepuesto(models.Model):
         on_delete=models.PROTECT,
         related_name='consumos_repuestos_registrados',
     )
-    cantidad = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=(MinValueValidator(0.01),),
+    cantidad = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=(MinValueValidator(0),),
     )
     creado_en = models.DateTimeField(auto_now_add=True)
 
@@ -225,7 +224,7 @@ class ConsumoRepuesto(models.Model):
         ordering = ('-creado_en', '-pk')
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(cantidad__gt=0),
+                condition=models.Q(cantidad__gte=0),
                 name='CK_ConsumoRepuesto_Cantidad_Positiva',
             ),
         ]
@@ -249,10 +248,10 @@ class EntradaRepuesto(models.Model):
         on_delete=models.PROTECT,
         related_name='entradas_repuestos_registradas',
     )
-    cantidad = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=(MinValueValidator(0.01),),
+    cantidad = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=(MinValueValidator(0),),
     )
     creado_en = models.DateTimeField(auto_now_add=True)
 
@@ -260,7 +259,7 @@ class EntradaRepuesto(models.Model):
         ordering = ('-creado_en', '-pk')
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(cantidad__gt=0),
+                condition=models.Q(cantidad__gte=0),
                 name='CK_EntradaRepuesto_Cantidad_Positiva',
             ),
         ]

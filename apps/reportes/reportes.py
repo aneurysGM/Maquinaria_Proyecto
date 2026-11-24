@@ -1,6 +1,5 @@
 """Reportes de lectura: pantalla y XLSX comparten filtros y filas."""
 from datetime import date, datetime, time, timedelta
-from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.decorators import login_required
@@ -110,9 +109,9 @@ def construir_reporte(tipo, datos):
         if datos['tipo']:
             registros = registros.filter(tipo=datos['tipo'])
         registros = list(registros)
-        # Decimal y exactamente las filas leídas: evita otra consulta que pueda
+        # Suma exactamente las filas leídas: evita otra consulta que pueda
         # obtener un total diferente si se registra una actividad entre consultas.
-        total = sum((r.costo for r in registros), Decimal('0.00'))
+        total = sum((r.costo for r in registros), 0)
         encabezados = ('Unidad', 'Fecha', 'Tipo', 'Descripción', 'Responsable', 'Costo')
         filas = [(nombre_unidad(r.unidad), r.fecha, r.tipo, r.descripcion or '', nombre_usuario(r.tecnico), r.costo) for r in registros]
     return encabezados, filas, total

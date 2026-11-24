@@ -13,6 +13,8 @@
     const moneda = new Intl.NumberFormat('es-DO', {
         style: 'currency',
         currency: 'DOP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     });
 
     const tarifas = {
@@ -24,13 +26,11 @@
     const diasPlan = { diario: 1, semanal: 7, mensual: 30 };
 
     function actualizarPresupuesto() {
-        const cantidadPlan = Math.max(Number.parseInt(cantidad.value, 10) || 0, 0);
+        const cantidadPlan = Math.max(Number.parseInt(cantidad.value.replace(/,/g, ''), 10) || 0, 0);
         const importeRenta = (tarifas[plan.value] || 0) * cantidadPlan;
         const dias = (diasPlan[plan.value] || 1) * cantidadPlan;
         const factorDuracion = dias <= 7 ? 1 : dias <= 29 ? 0.85 : 0.75;
-        const importeDeposito = Number(
-            (depositoBase * factorDuracion).toFixed(2)
-        );
+        const importeDeposito = Math.round(depositoBase * factorDuracion);
 
         duracion.textContent = `${dias} día(s)`;
         renta.textContent = moneda.format(importeRenta);

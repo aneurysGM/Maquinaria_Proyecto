@@ -14,17 +14,17 @@ class PresupuestoAlquiler(models.Model):
         on_delete=models.PROTECT,
         related_name='presupuesto',
     )
-    tarifa_periodo = models.DecimalField(
-        max_digits=18, decimal_places=2, validators=[MinValueValidator(0)]
+    tarifa_periodo = models.PositiveBigIntegerField(
+        blank=True, default=0, validators=[MinValueValidator(0)]
     )
-    importe_renta = models.DecimalField(
-        max_digits=18, decimal_places=2, validators=[MinValueValidator(0)]
+    importe_renta = models.PositiveBigIntegerField(
+        blank=True, default=0, validators=[MinValueValidator(0)]
     )
-    deposito_garantia = models.DecimalField(
-        max_digits=18, decimal_places=2, validators=[MinValueValidator(0)]
+    deposito_garantia = models.PositiveBigIntegerField(
+        blank=True, default=0, validators=[MinValueValidator(0)]
     )
-    mora_total = models.DecimalField(
-        max_digits=18, decimal_places=2, default=Decimal('0.00'),
+    mora_total = models.PositiveBigIntegerField(
+        blank=True, default=0,
         validators=[MinValueValidator(0)],
     )
     creado_en = models.DateTimeField(default=timezone.now, editable=False)
@@ -53,7 +53,7 @@ class PresupuestoAlquiler(models.Model):
 
     @property
     def total_pagado(self):
-        return self.pagos.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        return self.pagos.aggregate(total=Sum('monto'))['total'] or 0
 
     @property
     def saldo_pendiente(self):
@@ -65,12 +65,12 @@ class PresupuestoAlquiler(models.Model):
         return self.renta_pendiente + self.deposito_pendiente + self.saldo_por_concepto('mora')
 
     def pagado_por_concepto(self, concepto):
-        return sum((p.monto for p in self.pagos.all() if p.concepto == concepto), Decimal('0.00'))
+        return sum((p.monto for p in self.pagos.all() if p.concepto == concepto), 0)
 
     def saldo_por_concepto(self, concepto, *, actual=True):
         limite = {'renta': self.importe_renta, 'deposito': self.deposito_garantia,
                   'mora': self.mora_aplicable if actual else self.mora_total}[concepto]
-        return max(limite - self.pagado_por_concepto(concepto), Decimal('0.00'))
+        return max(limite - self.pagado_por_concepto(concepto), 0)
 
     @property
     def renta_pendiente(self):
@@ -84,32 +84,32 @@ class PresupuestoAlquiler(models.Model):
     def deposito_reembolsado(self):
         return self.reembolsos_deposito.aggregate(
             total=Sum('monto')
-        )['total'] or Decimal('0.00')
+        )['total'] or 0
 
     @property
     def deposito_pagado(self):
         return self.pagos.filter(
             concepto='deposito'
-        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        ).aggregate(total=Sum('monto'))['total'] or 0
 
     @property
     def deposito_por_reembolsar(self):
         return max(
             self.deposito_pagado - self.deposito_reembolsado,
-            Decimal('0.00'),
+            0,
         )
 
     @property
     def renta_reembolsada(self):
         return self.reembolsos_renta.aggregate(
             total=Sum('monto')
-        )['total'] or Decimal('0.00')
+        )['total'] or 0
 
     @property
     def renta_por_reembolsar(self):
         return max(
             self.pagado_por_concepto('renta') - self.renta_reembolsada,
-            Decimal('0.00'),
+            0,
         )
 
     @property
@@ -125,9 +125,9 @@ class PresupuestoAlquiler(models.Model):
         dias_adicionales = max(dias_atraso - 3, 0)
         factor = Decimal(primeros_dias) * Decimal('0.10')
         factor += Decimal(dias_adicionales) * Decimal('0.20')
-        return (self.tarifa_diaria_equivalente * factor).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP
-        )
+        return int(Decimal(self.tarifa_diaria_equivalente * factor).quantize(
+            Decimal('1'), rounding=ROUND_HALF_UP
+        ))
 
     def __str__(self):
         return f'Presupuesto #{self.pk} - Solicitud #{self.solicitud_id}'
@@ -154,10 +154,10 @@ class PagoAlquiler(models.Model):
     concepto = models.CharField(
         max_length=12, choices=CONCEPTOS, default='renta'
     )
-    monto = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
+    monto = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=[MinValueValidator(0)],
     )
     metodo = models.CharField(max_length=20, choices=METODOS)
     referencia = models.CharField(max_length=120, blank=True)
@@ -187,7 +187,7 @@ class PagoAlquiler(models.Model):
             limite = presupuesto.mora_aplicable
         pagos_existentes = presupuesto.pagos.filter(
             concepto=self.concepto
-        ).exclude(pk=self.pk).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        ).exclude(pk=self.pk).aggregate(total=Sum('monto'))['total'] or 0
         if pagos_existentes + self.monto > limite:
             raise ValidationError({
                 'monto': 'El pago supera el saldo pendiente de ese concepto.'
@@ -209,10 +209,10 @@ class ReembolsoDeposito(models.Model):
         on_delete=models.PROTECT,
         related_name='reembolsos_deposito',
     )
-    monto = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
+    monto = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=[MinValueValidator(0)],
     )
     metodo = models.CharField(max_length=20, choices=METODOS)
     referencia = models.CharField(max_length=120, blank=True)
@@ -247,10 +247,10 @@ class ReembolsoDeposito(models.Model):
             )
         pagos_deposito = presupuesto.pagos.filter(
             concepto='deposito'
-        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        ).aggregate(total=Sum('monto'))['total'] or 0
         reembolsos_previos = presupuesto.reembolsos_deposito.exclude(
             pk=self.pk
-        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        ).aggregate(total=Sum('monto'))['total'] or 0
         if reembolsos_previos + self.monto > pagos_deposito:
             raise ValidationError({
                 'monto': 'El reembolso no puede superar el depósito recibido y aún no devuelto.'
@@ -272,10 +272,10 @@ class ReembolsoRenta(models.Model):
         on_delete=models.PROTECT,
         related_name='reembolsos_renta',
     )
-    monto = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
+    monto = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=[MinValueValidator(0)],
     )
     metodo = models.CharField(max_length=20, choices=METODOS)
     referencia = models.CharField(max_length=120, blank=True)
@@ -305,10 +305,10 @@ class ReembolsoRenta(models.Model):
             raise ValidationError('La renta solo se reembolsa por cancelación antes de la entrega por mantenimiento.')
         pagos_renta = self.presupuesto.pagos.filter(
             concepto='renta'
-        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        ).aggregate(total=Sum('monto'))['total'] or 0
         reembolsos_previos = self.presupuesto.reembolsos_renta.exclude(
             pk=self.pk
-        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        ).aggregate(total=Sum('monto'))['total'] or 0
         if reembolsos_previos + self.monto > pagos_renta:
             raise ValidationError({
                 'monto': 'El reembolso no puede superar la renta recibida y aún no devuelta.'

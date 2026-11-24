@@ -328,7 +328,7 @@
                                 <div class="d-flex justify-content-between align-items-center gap-2 pt-3" style="border-top: 1px dashed var(--line);">
                                     <div class="mr-price">
                                         <small>Desde</small>
-                                        <strong>${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }} <span>/ día</span></strong>
+                                        <strong>${{ unidad.maquinaria.tarifa_diaria|entero_con_comas }} <span>/ día</span></strong>
                                     </div>
                                     <a class="btn btn-sm mr-btn mr-btn-y px-3 py-2" href="{% url 'inventario:maquinaria_detalle' unidad.id %}">
                                         Ver detalle <i class="bi bi-arrow-right" aria-hidden="true"></i>
@@ -471,6 +471,7 @@
     </button>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/integer_fields.js' %}"></script>
     <script>
         const topBtn = document.getElementById('mrTopBtn');
         window.addEventListener('scroll', () => {

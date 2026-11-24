@@ -1,8 +1,6 @@
 from datetime import timedelta
-from decimal import Decimal
-
 from django.db import transaction
-from django.db.models import F, Q, Sum, Value, DecimalField
+from django.db.models import F, Q, Sum, Value, PositiveBigIntegerField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -24,8 +22,8 @@ def pago_inicial_completo(solicitud):
 
 def anotar_pagos_iniciales(queryset):
     cero = Value(
-        Decimal('0.00'),
-        output_field=DecimalField(max_digits=18, decimal_places=2),
+        0,
+        output_field=PositiveBigIntegerField(),
     )
     return queryset.annotate(
         renta_recibida=Coalesce(

@@ -31,7 +31,7 @@
         {% if es_administrador %}
         <div class="d-flex gap-2">
             <a href="{% url 'inventario:categoria_lista' %}" class="btn btn-outline-secondary fw-semibold">
-                <i class="bi bi-tags"></i> Gestionar Categorías
+                <i class="bi bi-tags"></i> Gestionar CategorÃ­as
             </a>
             <a href="{% url 'marca:marca_lista' %}" class="btn btn-outline-secondary fw-semibold">
                 <i class="bi bi-tag"></i> Gestionar Marcas
@@ -44,25 +44,25 @@
         {% endif %}
     </div>
 
-    <!-- TARJETA DE FILTROS Y BÚSQUEDA -->
+    <!-- TARJETA DE FILTROS Y BÃšSQUEDA -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
-                <!-- Buscador por texto (Código, Nombre, Serie, Marca) -->
+                <!-- Buscador por texto (CÃ³digo, Nombre, Serie, Marca) -->
                 <div class="col-md-4">
                     <label for="q" class="form-label small fw-bold text-secondary">Buscar</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
                         <input type="text" class="form-control border-start-0 bg-light" id="q" name="q" 
-                               value="{{ request.GET.q }}" placeholder="Código, nombre, serie o marca...">
+                               value="{{ request.GET.q }}" placeholder="CÃ³digo, nombre, serie o marca...">
                     </div>
                 </div>
 
-                <!-- Filtro por Categoría -->
+                <!-- Filtro por CategorÃ­a -->
                 <div class="col-md-3">
-                    <label for="categoria" class="form-label small fw-bold text-secondary">Categoría</label>
+                    <label for="categoria" class="form-label small fw-bold text-secondary">CategorÃ­a</label>
                     <select name="categoria" id="categoria" class="form-select bg-light">
-                        <option value="">Todas las categorías</option>
+                        <option value="">Todas las categorÃ­as</option>
                         {% for cat in categorias %}
                             <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
                                 {{ cat.nombre }}
@@ -84,7 +84,7 @@
                     </select>
                 </div>
 
-                <!-- Botones de acción del filtro -->
+                <!-- Botones de acciÃ³n del filtro -->
                 <div class="col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-dark w-100 fw-semibold">
                         Filtrar
@@ -106,9 +106,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light text-uppercase small">
                         <tr>
-                            <th class="py-3 ps-4">Código</th>
+                            <th class="py-3 ps-4">CÃ³digo</th>
                             <th class="py-3">Equipo / Nombre</th>
-                            <th class="py-3">Categoría</th>
+                            <th class="py-3">CategorÃ­a</th>
                             <th class="py-3">Tarifa Diaria</th>
                             <th class="py-3">Estado</th>
                             <th class="py-3 text-end pe-4">Acciones</th>
@@ -138,7 +138,7 @@
                                 </div>
                             </td>
                             <td><span class="badge bg-light text-dark border">{{ unidad.maquinaria.categoria.nombre }}</span></td>
-                            <td class="fw-semibold">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</td>
+                            <td class="fw-semibold">${{ unidad.maquinaria.tarifa_diaria|entero_con_comas }}</td>
                             <td>
                                 {% if unidad.estado == 'Disponible' %}
                                 <span class="badge bg-success-subtle text-success">Disponible</span>
@@ -150,7 +150,7 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="d-flex justify-content-end gap-1">
-                                    <!-- Botón Ver Detalle (Asegúrate de ajustar el nombre de la URL si en tus urls.py es diferente, ej: 'inventario:maquinaria_detalle') -->
+                                    <!-- BotÃ³n Ver Detalle (AsegÃºrate de ajustar el nombre de la URL si en tus urls.py es diferente, ej: 'inventario:maquinaria_detalle') -->
                                     <a href="{% url 'inventario:maquinaria_detalle' unidad.id %}" class="btn btn-sm btn-light border text-secondary" title="Ver detalle">
                                         <i class="bi bi-eye"></i>
                                     </a>

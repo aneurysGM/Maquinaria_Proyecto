@@ -35,9 +35,9 @@
                         </td>
                         <td>{{ presupuesto.solicitud.fecha_inicio|date:"d/m/Y" }} – {{ presupuesto.solicitud.fecha_fin|date:"d/m/Y" }}</td>
                         {% if request.GET.vencidos == '1' %}<td>{{ presupuesto.solicitud.fecha_limite_pago|date:"d/m/Y H:i" }}</td>{% endif %}
-                        <td>${{ presupuesto.importe_total_actual|floatformat:2 }}</td>
-                        <td>${{ presupuesto.total_pagado|floatformat:2 }}</td>
-                        <td class="fw-semibold">{% if presupuesto.solicitud.cancelada_por_mantenimiento %}Cancelada · reembolso pendiente: ${{ presupuesto.renta_por_reembolsar|floatformat:2 }} renta / ${{ presupuesto.deposito_por_reembolsar|floatformat:2 }} depósito{% else %}${{ presupuesto.saldo_pendiente_actual|floatformat:2 }}{% endif %}</td>
+                        <td>${{ presupuesto.importe_total_actual|entero_con_comas }}</td>
+                        <td>${{ presupuesto.total_pagado|entero_con_comas }}</td>
+                        <td class="fw-semibold">{% if presupuesto.solicitud.cancelada_por_mantenimiento %}Cancelada · reembolso pendiente: ${{ presupuesto.renta_por_reembolsar|entero_con_comas }} renta / ${{ presupuesto.deposito_por_reembolsar|entero_con_comas }} depósito{% else %}${{ presupuesto.saldo_pendiente_actual|entero_con_comas }}{% endif %}</td>
                         <td class="text-end pe-3">
                             <a class="btn btn-sm btn-outline-dark" href="{% url 'ventas:presupuesto_detalle' presupuesto.pk %}">Ver presupuesto</a>
                         </td>

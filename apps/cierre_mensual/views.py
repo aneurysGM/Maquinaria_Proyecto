@@ -1,4 +1,3 @@
-from decimal import Decimal
 from datetime import date
 
 from django.contrib.auth.decorators import login_required
@@ -95,12 +94,12 @@ def detalle_semana(request, anio, mes, semana):
             'total_presupuesto': presupuesto.importe_total_actual,
             'total_pagado': sum(
                 (item.monto for item in pagos_presupuesto),
-                Decimal('0.00'),
+                0,
             ),
             'saldo': presupuesto.saldo_pendiente_actual,
             'deposito_reembolsado': sum(
                 (item.monto for item in reembolsos),
-                Decimal('0.00'),
+                0,
             ),
         })
 

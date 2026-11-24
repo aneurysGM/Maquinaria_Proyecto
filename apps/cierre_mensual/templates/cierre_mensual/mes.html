@@ -17,13 +17,13 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100"><div class="card-body">
                 <div class="small text-secondary">Ingresos (renta y mora)</div>
-                <div class="h4 mb-0">RD${{ periodo.ingresos|floatformat:"2u" }}</div>
+                <div class="h4 mb-0">RD${{ periodo.ingresos|entero_con_comas }}</div>
             </div></div>
         </div>
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100"><div class="card-body">
-                <div class="small text-secondary">Depósitos recibidos</div>
-                <div class="h4 mb-0">RD${{ periodo.depositos|floatformat:"2u" }}</div>
+                <div class="small text-secondary">DepÃ³sitos recibidos</div>
+                <div class="h4 mb-0">RD${{ periodo.depositos|entero_con_comas }}</div>
             </div></div>
         </div>
         <div class="col-md-4">
@@ -43,18 +43,18 @@
                         <div>
                             <h2 class="h5 mb-1">Semana {{ semana.numero }}</h2>
                             <p class="small text-secondary mb-3">
-                                {{ semana.desde|date:"d/m/Y" }} – {{ semana.hasta|date:"d/m/Y" }}
+                                {{ semana.desde|date:"d/m/Y" }} â€“ {{ semana.hasta|date:"d/m/Y" }}
                             </p>
                         </div>
                         <span class="badge text-bg-light border">{{ semana.resumen.cantidad_pagos }} pago(s)</span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Ingresos</span>
-                        <strong>RD${{ semana.resumen.ingresos|floatformat:"2u" }}</strong>
+                        <strong>RD${{ semana.resumen.ingresos|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between small mt-1">
-                        <span class="text-secondary">Depósitos</span>
-                        <span>RD${{ semana.resumen.depositos|floatformat:"2u" }}</span>
+                        <span class="text-secondary">DepÃ³sitos</span>
+                        <span>RD${{ semana.resumen.depositos|entero_con_comas }}</span>
                     </div>
                     <a class="btn btn-outline-primary btn-sm mt-3"
                        href="{% url 'cierre_mensual:semana' anio=periodo.anio mes=periodo.mes semana=semana.numero %}">

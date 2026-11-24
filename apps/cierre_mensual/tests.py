@@ -85,7 +85,7 @@ class CierreMensualTests(TestCase):
         self.crear_pago('10.00', 'renta', self.inicio - timedelta(seconds=1))
         renta = self.crear_pago('20.00', 'renta', self.inicio + timedelta(seconds=1))
         self.crear_pago('5.00', 'mora', self.inicio + timedelta(seconds=2))
-        self.crear_pago('30.00', 'deposito', self.inicio + timedelta(seconds=3))
+        self.crear_pago('30', 'deposito', self.inicio + timedelta(seconds=3))
 
         self.assertEqual(ingresos_periodo_actual(), Decimal('25.00'))
 
@@ -96,7 +96,7 @@ class CierreMensualTests(TestCase):
     def test_cierre_exporta_periodo_inicia_otro_y_conserva_los_pagos(self):
         self.crear_pago('20.00', 'renta', self.inicio + timedelta(seconds=1))
         self.crear_pago('5.00', 'mora', self.inicio + timedelta(seconds=2))
-        self.crear_pago('30.00', 'deposito', self.inicio + timedelta(seconds=3))
+        self.crear_pago('30', 'deposito', self.inicio + timedelta(seconds=3))
 
         resultado = cerrar_periodo()
         self.periodo.refresh_from_db()
@@ -120,7 +120,7 @@ class CierreMensualTests(TestCase):
         self.client.force_login(self.administrador)
         respuesta = self.client.get(reverse('cuentas:dashboard'))
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, 'RD$20.00')
+        self.assertContains(respuesta, 'RD$20')
         self.assertNotContains(respuesta, 'Cerrar mes y descargar Excel')
 
         self.client.force_login(self.cliente)
@@ -176,7 +176,7 @@ class CierreMensualTests(TestCase):
             self.assertContains(respuesta, f'Semana {numero}')
 
     def test_detalle_semanal_muestra_todos_los_conceptos_y_datos_del_pago(self):
-        pago = self.crear_pago('30.00', 'deposito', timezone.now())
+        pago = self.crear_pago('30', 'deposito', timezone.now())
         self.client.force_login(self.administrador)
         hoy = timezone.localtime(pago.creado_en).date()
         semana = min((hoy.day - 1) // 7 + 1, 4)
@@ -189,7 +189,7 @@ class CierreMensualTests(TestCase):
         self.assertContains(respuesta, self.cliente.email)
         self.assertContains(respuesta, 'CIERRE-01')
         self.assertContains(respuesta, 'Depósito de garantía')
-        self.assertContains(respuesta, '30.00')
+        self.assertContains(respuesta, '30')
 
     def test_solo_administrador_puede_descargar_y_cerrar(self):
         self.client.force_login(self.cliente)

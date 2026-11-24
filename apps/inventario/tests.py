@@ -1,8 +1,13 @@
+from django.core.exceptions import ValidationError
+from django.template import Context, Template
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
+from apps.form_utils import GroupedIntegerField
 from apps.marca.models import Marca
+from apps.ventas.forms import PagoAlquilerForm
+from .forms import MaquinariaIntegralForm
 from .models import Categoria, Maquinaria, Unidad
 
 
@@ -81,3 +86,40 @@ class ConfirmacionesInventarioTests(TestCase):
         self.assertEqual(cliente.get(url).status_code, 200)
         self.assertEqual(cliente.post(url).status_code, 403)
         self.assertTrue(Marca.objects.filter(pk=marca.pk).exists())
+
+
+class CamposNumericosTests(TestCase):
+    def test_campo_entero_acepta_comas_y_no_acepta_decimales(self):
+        campo = GroupedIntegerField()
+
+        self.assertEqual(campo.clean('3,450,000'), 3450000)
+        self.assertEqual(campo.clean(''), 0)
+        with self.assertRaises(ValidationError):
+            campo.clean('12.50')
+
+    def test_formularios_nuevos_no_precargan_cero(self):
+        maquinaria = MaquinariaIntegralForm()
+        pago = PagoAlquilerForm()
+
+        for campo in ('costo_adquisicion', 'tarifa_diaria', 'tarifa_semanal',
+                      'tarifa_mensual', 'horas_uso'):
+            self.assertNotIn('value="0"', str(maquinaria[campo]))
+        self.assertNotIn('value="0"', str(pago['monto']))
+
+    def test_pago_permite_monto_vacio_y_lo_convierte_en_cero(self):
+        formulario = PagoAlquilerForm(data={
+            'concepto': 'renta',
+            'monto': '',
+            'metodo': 'efectivo',
+            'referencia': '',
+        })
+
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        self.assertEqual(formulario.cleaned_data['monto'], 0)
+
+    def test_formato_visible_usa_comas_y_no_muestra_centavos(self):
+        plantilla = Template('{{ valor|entero_con_comas }}')
+        self.assertEqual(
+            plantilla.render(Context({'valor': 3450000})),
+            '3,450,000',
+        )

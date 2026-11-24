@@ -98,6 +98,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.cuentas.models.contexto_panel',
             ],
+            'builtins': ['apps.inventario.templatetags.numeros'],
         },
     },
 ]

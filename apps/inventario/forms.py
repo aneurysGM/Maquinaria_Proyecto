@@ -3,6 +3,7 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from apps.alquileres.bloqueos import bloquear_unidad
+from apps.form_utils import GroupedIntegerField, GroupedIntegerWidget
 from .models import (
     Categoria,
     Maquinaria,
@@ -110,22 +111,31 @@ class MaquinariaIntegralForm(forms.ModelForm):
     # --- Campos inyectados para la Unidad Física ---
     numero_serie = forms.CharField(label='Número de serie', max_length=50, widget=forms.TextInput(attrs={'class': 'form-control'}))
     estado = forms.ChoiceField(label='Estado', choices=Unidad.ESTADOS, initial='Disponible', widget=forms.Select(attrs={'class': 'form-select'}))
-    horas_uso = forms.DecimalField(label='Horas de uso', max_digits=10, decimal_places=1, initial=0, widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}))
-    intervalo_mantenimiento_horas = forms.DecimalField(
+    horas_uso = GroupedIntegerField(
+        label='Horas de uso',
+        max_value=9999999999,
+        widget=GroupedIntegerWidget(attrs={'class': 'form-control'}),
+    )
+    intervalo_mantenimiento_horas = GroupedIntegerField(
         label='Intervalo de mantenimiento preventivo (horas)',
-        max_digits=10,
-        decimal_places=1,
-        min_value=0.1,
+        max_value=9999999999,
+        min_value=1,
         required=False,
+        empty_value=None,
         help_text='Opcional. Al configurarlo, el próximo servicio se calculará por horómetro.',
-        widget=forms.NumberInput(attrs={
+        widget=GroupedIntegerWidget(attrs={
             'class': 'form-control',
-            'min': '0.1',
-            'step': '0.1',
+            'min': '1',
         }),
     )
     fecha_adquisicion = forms.DateField(label='Fecha de adquisición', required=False, widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
-    anio_fabricacion = forms.IntegerField(label='Año de fabricación', required=False, widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1980'}))
+    anio_fabricacion = GroupedIntegerField(
+        label='Año de fabricación',
+        required=False,
+        empty_value=None,
+        min_value=1,
+        widget=GroupedIntegerWidget(attrs={'class': 'form-control', 'min': '1'}),
+    )
     ubicacion_actual = forms.CharField(label='Ubicación actual', max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
 
     class Meta:
@@ -146,10 +156,16 @@ class MaquinariaIntegralForm(forms.ModelForm):
             }),
             'marca': forms.Select(attrs={'class': 'form-select'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
-            'costo_adquisicion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'tarifa_diaria': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'tarifa_semanal': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'tarifa_mensual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'costo_adquisicion': GroupedIntegerWidget(attrs={'class': 'form-control'}),
+            'tarifa_diaria': GroupedIntegerWidget(attrs={'class': 'form-control'}),
+            'tarifa_semanal': GroupedIntegerWidget(attrs={'class': 'form-control'}),
+            'tarifa_mensual': GroupedIntegerWidget(attrs={'class': 'form-control'}),
+        }
+        field_classes = {
+            'costo_adquisicion': GroupedIntegerField,
+            'tarifa_diaria': GroupedIntegerField,
+            'tarifa_semanal': GroupedIntegerField,
+            'tarifa_mensual': GroupedIntegerField,
         }
 
     def __init__(self, *args, **kwargs):
@@ -162,6 +178,15 @@ class MaquinariaIntegralForm(forms.ModelForm):
             kwargs['instance'] = self.unidad_instancia.maquinaria
             
         super().__init__(*args, **kwargs)
+        for nombre in (
+            'costo_adquisicion',
+            'tarifa_diaria',
+            'tarifa_semanal',
+            'tarifa_mensual',
+        ):
+            self.fields[nombre].initial = None
+            if not self.instance.pk:
+                self.initial[nombre] = None
 
         # Precargar los datos de la unidad si estamos editando
         if self.unidad_instancia:
@@ -221,6 +246,10 @@ class MaquinariaIntegralForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if not str(self.data.get('horas_uso', '')).strip():
+            cleaned_data['horas_uso'] = (
+                self.unidad_instancia.horas_uso if self.unidad_instancia else 0
+            )
         cantidad_imagenes = bool(cleaned_data.get('imagen_principal'))
         cantidad_imagenes += len(cleaned_data.get('imagenes_adicionales', []))
         if cantidad_imagenes > 8:

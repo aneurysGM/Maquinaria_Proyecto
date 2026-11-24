@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -47,8 +45,8 @@ class Mantenimiento(models.Model):
         db_column='EstadoOrden',
         verbose_name='Estado de la orden',
     )
-    costo = models.DecimalField(
-        max_digits=18, decimal_places=2, validators=[MinValueValidator(0)], db_column='Costo',
+    costo = models.PositiveBigIntegerField(
+        blank=True, default=0, validators=[MinValueValidator(0)], db_column='Costo',
         verbose_name='Costo ($)'
     )
     tecnico = models.ForeignKey(
@@ -110,7 +108,7 @@ class Mantenimiento(models.Model):
         if registros_prefetch is not None:
             return sum(
                 (registro.horas for registro in registros_prefetch),
-                Decimal('0'),
+                0,
             )
         return self.registros_trabajo.aggregate(
             total=Sum('horas'),

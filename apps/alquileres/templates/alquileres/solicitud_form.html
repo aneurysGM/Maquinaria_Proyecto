@@ -27,19 +27,19 @@
                 <div class="card-body p-4">
                     <span class="badge text-bg-success mb-2">Consulta las fechas disponibles</span>
                     <h2 class="h4 fw-bold">{{ unidad.maquinaria.nombre }}</h2>
-                    <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripción disponible."|linebreaksbr }}</p>
+                    <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripciÃ³n disponible."|linebreaksbr }}</p>
                     <dl class="row mb-0">
-                        <dt class="col-7">Código / Serie</dt>
+                        <dt class="col-7">CÃ³digo / Serie</dt>
                         <dd class="col-5 text-end">{{ unidad.maquinaria.codigo }} / {{ unidad.numero_serie }}</dd>
                         <dt class="col-7">Tarifa diaria</dt>
-                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_diaria|floatformat:2 }}</dd>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_diaria|entero_con_comas }}</dd>
                         <dt class="col-7">Tarifa semanal</dt>
-                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_semanal|floatformat:2 }}</dd>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_semanal|entero_con_comas }}</dd>
                         <dt class="col-7">Tarifa mensual</dt>
-                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_mensual|floatformat:2 }}</dd>
-                        <dt class="col-7">Depósito base (1–7 días)</dt>
-                        <dd class="col-5 text-end">RD${{ unidad.maquinaria.deposito_garantia|floatformat:2 }}</dd>
-                        <dt class="col-7">Condición</dt>
+                        <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_mensual|entero_con_comas }}</dd>
+                        <dt class="col-7">DepÃ³sito base (1â€“7 dÃ­as)</dt>
+                        <dd class="col-5 text-end">RD${{ unidad.maquinaria.deposito_garantia|entero_con_comas }}</dd>
+                        <dt class="col-7">CondiciÃ³n</dt>
                         <dd class="col-5 text-end">Sin operador</dd>
                     </dl>
                 </div>
@@ -51,7 +51,7 @@
                 <div class="card-body p-4 p-md-5">
                     <h2 class="h5 fw-bold mb-3">Plan de alquiler</h2>
                     <div class="alert alert-info" role="note">
-                        El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisará la disponibilidad.
+                        El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisarÃ¡ la disponibilidad.
                     </div>
                     <form method="post" id="solicitud-alquiler-form" novalidate
                         data-hoy="{{ hoy }}"
@@ -74,15 +74,15 @@
 
                         <section class="border rounded-3 p-3 mb-3" aria-label="Calendario de disponibilidad">
                             <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                                <button type="button" id="mes-anterior" class="btn btn-sm btn-outline-secondary" aria-label="Mes anterior">‹</button>
+                                <button type="button" id="mes-anterior" class="btn btn-sm btn-outline-secondary" aria-label="Mes anterior">â€¹</button>
                                 <h3 id="calendario-mes" class="h6 mb-0">Fechas disponibles</h3>
-                                <button type="button" id="mes-siguiente" class="btn btn-sm btn-outline-secondary" aria-label="Mes siguiente">›</button>
+                                <button type="button" id="mes-siguiente" class="btn btn-sm btn-outline-secondary" aria-label="Mes siguiente">â€º</button>
                             </div>
                             <p class="small"><span class="badge text-bg-danger">Ocupadas</span> <span class="badge bg-success-subtle text-success border">Disponibles para solicitar</span></p>
                             <div id="calendario-dias" class="d-grid gap-1" style="grid-template-columns:repeat(7,minmax(0,1fr))"></div>
                             <div id="aviso-disponibilidad" class="small mt-2" role="status" aria-live="polite"></div>
-                            <p class="small text-muted mt-2 mb-0">El período completo del plan debe estar libre. Enviar una solicitud no reserva las fechas.</p>
-                            <noscript><p class="small">Introduce la fecha arriba. El servidor comprobará todo el período al enviar.</p></noscript>
+                            <p class="small text-muted mt-2 mb-0">El perÃ­odo completo del plan debe estar libre. Enviar una solicitud no reserva las fechas.</p>
+                            <noscript><p class="small">Introduce la fecha arriba. El servidor comprobarÃ¡ todo el perÃ­odo al enviar.</p></noscript>
                         </section>
 
                         <div class="mb-3">
@@ -94,7 +94,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold" for="{{ form.cantidad.id_for_label }}">Cantidad de planes</label>
                             {{ form.cantidad }}
-                            <div class="form-text">Una semana equivale a 7 días; un mes, a 30 días.</div>
+                            <div class="form-text">Una semana equivale a 7 dÃ­as; un mes, a 30 dÃ­as.</div>
                             {% if form.cantidad.errors %}<div class="text-danger small mt-1">{{ form.cantidad.errors }}</div>{% endif %}
                         </div>
 
@@ -107,22 +107,22 @@
                         <section class="rounded-3 border bg-light p-3 mb-4" aria-live="polite">
                             <h3 class="h6 fw-bold">Presupuesto estimado</h3>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Duración</span><strong id="presupuesto-duracion">—</strong>
+                                <span>DuraciÃ³n</span><strong id="presupuesto-duracion">â€”</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Devolución programada</span><strong id="presupuesto-fecha-fin">—</strong>
+                                <span>DevoluciÃ³n programada</span><strong id="presupuesto-fecha-fin">â€”</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Renta</span><strong id="presupuesto-renta">—</strong>
+                                <span>Renta</span><strong id="presupuesto-renta">â€”</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Depósito reembolsable</span><strong id="presupuesto-deposito">—</strong>
+                                <span>DepÃ³sito reembolsable</span><strong id="presupuesto-deposito">â€”</strong>
                             </div>
                             <hr class="my-2">
                             <div class="d-flex justify-content-between">
-                                <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">—</strong>
+                                <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">â€”</strong>
                             </div>
-                            <p class="small text-muted mb-0 mt-2">El depósito sin operador equivale al 8% del valor comercial, ajustado por la duración: 100% hasta 7 días, 85% de 8 a 29 días y 75% desde 30 días.</p>
+                            <p class="small text-muted mb-0 mt-2">El depÃ³sito sin operador equivale al 8% del valor comercial, ajustado por la duraciÃ³n: 100% hasta 7 dÃ­as, 85% de 8 a 29 dÃ­as y 75% desde 30 dÃ­as.</p>
                             <p class="small text-muted mb-0 mt-2">La mora, si aplica por atraso, se calcula aparte al devolver el equipo.</p>
                         </section>
 

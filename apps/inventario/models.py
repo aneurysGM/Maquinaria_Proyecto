@@ -60,37 +60,36 @@ class Maquinaria(models.Model):
         related_name='maquinarias_registradas',
         verbose_name='Registrada por',
     )
-    costo_adquisicion = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
+    costo_adquisicion = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
         validators=(MinValueValidator(0),),
         db_column='CostoAdquisicion',
         verbose_name='Costo de adquisición'
     )
-    tarifa_diaria = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        validators=(MinValueValidator(0.01),),
+    tarifa_diaria = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=(MinValueValidator(0),),
         db_column='TarifaDiaria',
         verbose_name='Tarifa diaria ($)'
     )
-    tarifa_semanal = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        validators=(MinValueValidator(0.01),),
+    tarifa_semanal = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=(MinValueValidator(0),),
         db_column='TarifaSemanal',
         verbose_name='Tarifa semanal ($)'
     )
-    tarifa_mensual = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        validators=(MinValueValidator(0.01),),
+    tarifa_mensual = models.PositiveBigIntegerField(
+        blank=True,
+        default=0,
+        validators=(MinValueValidator(0),),
         db_column='TarifaMensual',
         verbose_name='Tarifa mensual ($)'
     )
-    deposito_garantia = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
+    deposito_garantia = models.PositiveBigIntegerField(
+        blank=True,
         default=0,
         editable=False,
         validators=(MinValueValidator(0),),
@@ -113,15 +112,15 @@ class Maquinaria(models.Model):
                 name='CK_Maquinaria_Costo_NoNegativo',
             ),
             models.CheckConstraint(
-                condition=models.Q(tarifa_diaria__gt=0),
+                condition=models.Q(tarifa_diaria__gte=0),
                 name='CK_Maquinaria_TarifaDiaria_Positiva',
             ),
             models.CheckConstraint(
-                condition=models.Q(tarifa_semanal__gt=0),
+                condition=models.Q(tarifa_semanal__gte=0),
                 name='CK_Maquinaria_TarifaSemanal_Positiva',
             ),
             models.CheckConstraint(
-                condition=models.Q(tarifa_mensual__gt=0),
+                condition=models.Q(tarifa_mensual__gte=0),
                 name='CK_Maquinaria_TarifaMensual_Positiva',
             ),
             models.CheckConstraint(
@@ -142,11 +141,11 @@ class Maquinaria(models.Model):
             factor_duracion = Decimal('0.85')
         else:
             factor_duracion = Decimal('0.75')
-        return (
-            self.costo_adquisicion
+        return int((
+            Decimal(self.costo_adquisicion or 0)
             * self.PORCENTAJE_DEPOSITO_SIN_OPERADOR
             * factor_duracion
-        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
     def save(self, *args, **kwargs):
         self.deposito_garantia = self.calcular_deposito_garantia(1)
@@ -216,26 +215,21 @@ class Unidad(models.Model):
     estado = models.CharField(
         max_length=20, choices=ESTADOS, default='Disponible', db_column='Estado', verbose_name='Estado'
     )
-    horas_uso = models.DecimalField(
-        max_digits=10,
-        decimal_places=1,
+    horas_uso = models.PositiveBigIntegerField(
+        blank=True,
         default=0,
         validators=(MinValueValidator(0),),
         db_column='HorasUso',
         verbose_name='Horas de uso'
     )
-    intervalo_mantenimiento_horas = models.DecimalField(
-        max_digits=10,
-        decimal_places=1,
+    intervalo_mantenimiento_horas = models.PositiveBigIntegerField(
         blank=True,
         null=True,
-        validators=(MinValueValidator(0.1),),
+        validators=(MinValueValidator(1),),
         db_column='IntervaloMantenimientoHoras',
         verbose_name='Intervalo de mantenimiento (horas)',
     )
-    proximo_mantenimiento_horas = models.DecimalField(
-        max_digits=10,
-        decimal_places=1,
+    proximo_mantenimiento_horas = models.PositiveBigIntegerField(
         blank=True,
         null=True,
         validators=(MinValueValidator(0),),

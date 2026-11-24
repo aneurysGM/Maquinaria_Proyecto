@@ -69,7 +69,7 @@
                         <td>
                             <form method="post" action="{% url 'Repuestos_Inventario:entrada' repuesto.pk %}" class="d-flex gap-2">
                                 {% csrf_token %}
-                                <input class="form-control form-control-sm" name="cantidad" type="number" min="0.01" step="0.01" required>
+                                <input class="form-control form-control-sm" name="cantidad" type="text" inputmode="numeric" data-integer-input min="0">
                                 <button class="btn btn-sm btn-outline-primary" type="submit">Registrar</button>
                             </form>
                         </td>

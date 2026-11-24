@@ -11,8 +11,8 @@
         </a>
         <h1 class="h2 mt-2 mb-1">Historial mensual de pagos</h1>
         <p class="text-secondary mb-0">
-            Cada mes contiene cuatro secciones: días 1–7, 8–14, 15–21 y 22 hasta el último día.
-            Los depósitos se muestran aparte y no se suman a Ingresos del Mes.
+            Cada mes contiene cuatro secciones: dÃ­as 1â€“7, 8â€“14, 15â€“21 y 22 hasta el Ãºltimo dÃ­a.
+            Los depÃ³sitos se muestran aparte y no se suman a Ingresos del Mes.
         </p>
     </div>
 
@@ -30,11 +30,11 @@
                     </div>
                     <div class="d-flex justify-content-between">
                         <span class="text-secondary">Ingresos</span>
-                        <strong>RD${{ mes.ingresos|floatformat:"2u" }}</strong>
+                        <strong>RD${{ mes.ingresos|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between small mt-1">
-                        <span class="text-secondary">Depósitos recibidos</span>
-                        <span>RD${{ mes.depositos|floatformat:"2u" }}</span>
+                        <span class="text-secondary">DepÃ³sitos recibidos</span>
+                        <span>RD${{ mes.depositos|entero_con_comas }}</span>
                     </div>
                     <div class="small text-secondary mt-3">
                         {{ mes.cantidad_pagos }} pago(s) registrados
@@ -46,7 +46,7 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center text-secondary py-5">
-                    Todavía no hay periodos mensuales para mostrar.
+                    TodavÃ­a no hay periodos mensuales para mostrar.
                 </div>
             </div>
         </div>

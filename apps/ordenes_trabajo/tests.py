@@ -45,7 +45,7 @@ class OrdenTrabajoTests(TestCase):
             maquinaria=maquinaria,
             numero_serie='SERIE-OT-001',
             estado='Mantenimiento',
-            horas_uso=Decimal('100.0'),
+            horas_uso=100,
             intervalo_mantenimiento_horas=Decimal('50.0'),
             proximo_mantenimiento_horas=Decimal('150.0'),
         )
@@ -90,7 +90,7 @@ class OrdenTrabajoTests(TestCase):
         return {
             'avance-estado': 'reparacion',
             'avance-dias_estimados': '3',
-            'avance-horas_trabajo': '2.5',
+            'avance-horas_trabajo': '3',
             'avance-horometro': '120',
             'avance-observaciones': 'Se reparó la unidad.',
             'checklist-resultado_fluidos': 'correcto',
@@ -115,7 +115,7 @@ class OrdenTrabajoTests(TestCase):
         self.orden.refresh_from_db()
         self.unidad.refresh_from_db()
         self.assertEqual(self.orden.estado, 'pendiente')
-        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+        self.assertEqual(self.unidad.horas_uso, 100)
         self.assertEqual(self.orden.registros_trabajo.count(), 0)
         self.assertEqual(self.orden.puntos_checklist.count(), 0)
         respuesta = self.client.get(reverse('ordenes_trabajo:detalle', args=[self.orden.pk]))
@@ -132,9 +132,9 @@ class OrdenTrabajoTests(TestCase):
         self.assertEqual(self.orden.estado, 'finalizada')
         self.assertIsNotNone(self.orden.fecha_fin)
         self.assertEqual(self.unidad.estado, 'Disponible')
-        self.assertEqual(self.unidad.horas_uso, Decimal('120.0'))
-        self.assertEqual(self.unidad.proximo_mantenimiento_horas, Decimal('170.0'))
-        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('2.5'))
+        self.assertEqual(self.unidad.horas_uso, Decimal('120'))
+        self.assertEqual(self.unidad.proximo_mantenimiento_horas, 170)
+        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('3'))
         self.assertEqual(self.orden.puntos_checklist.count(), len(PuntoChecklist.PUNTOS))
         self.assertFalse(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
         self.client.force_login(self.administrador)
@@ -160,7 +160,7 @@ class OrdenTrabajoTests(TestCase):
         self.orden.refresh_from_db()
         self.unidad.refresh_from_db()
         self.assertEqual(self.orden.estado, 'pendiente')
-        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+        self.assertEqual(self.unidad.horas_uso, 100)
         self.assertEqual(self.orden.registros_trabajo.count(), 0)
         self.assertEqual(self.orden.puntos_checklist.count(), 0)
 
@@ -223,7 +223,7 @@ class OrdenTrabajoTests(TestCase):
         self.assertEqual(self.orden.estado, 'finalizada')
         self.assertIsNotNone(self.orden.fecha_fin)
         self.assertEqual(self.unidad.estado, 'Disponible')
-        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('2.5'))
+        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('3'))
 
     def test_finalizacion_exige_checklist_y_programa_proximo_servicio(self):
         self.client.force_login(self.tecnico)
@@ -232,8 +232,8 @@ class OrdenTrabajoTests(TestCase):
             {
                 'estado': 'reparacion',
                 'dias_estimados': '3',
-                'horas_trabajo': '2.5',
-                'horometro': '120.0',
+                'horas_trabajo': '3',
+                'horometro': '120',
                 'observaciones': 'Se corrigió la fuga hidráulica.',
             },
         )
@@ -245,8 +245,8 @@ class OrdenTrabajoTests(TestCase):
         self.orden.refresh_from_db()
         self.assertEqual(self.orden.estado, 'reparacion')
         self.unidad.refresh_from_db()
-        self.assertEqual(self.unidad.horas_uso, Decimal('120.0'))
-        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('2.5'))
+        self.assertEqual(self.unidad.horas_uso, Decimal('120'))
+        self.assertEqual(self.orden.horas_mano_obra_total, Decimal('3'))
 
         respuesta = self.client.post(
             reverse('ordenes_trabajo:finalizar', args=[self.orden.pk]),
@@ -291,7 +291,7 @@ class OrdenTrabajoTests(TestCase):
         self.assertIsNotNone(self.orden.fecha_fin)
         self.assertEqual(
             self.unidad.proximo_mantenimiento_horas,
-            Decimal('170.0'),
+            170,
         )
 
     def test_horometro_no_puede_disminuir(self):
@@ -300,14 +300,14 @@ class OrdenTrabajoTests(TestCase):
             reverse('ordenes_trabajo:actualizar', args=[self.orden.pk]),
             {
                 'estado': 'diagnostico',
-                'horas_trabajo': '1.0',
-                'horometro': '99.0',
+                'horas_trabajo': '1',
+                'horometro': '99',
                 'observaciones': 'Revisión de la falla.',
             },
             follow=True,
         )
         self.unidad.refresh_from_db()
-        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+        self.assertEqual(self.unidad.horas_uso, 100)
         self.assertEqual(self.orden.registros_trabajo.count(), 0)
         self.assertContains(respuesta, 'no puede ser menor')
 
@@ -369,8 +369,8 @@ class OrdenTrabajoTests(TestCase):
             reverse('ordenes_trabajo:actualizar', args=[self.orden.pk]),
             {
                 'estado': 'reparacion',
-                'horas_trabajo': '2.0',
-                'horometro': '110.0',
+                'horas_trabajo': '2',
+                'horometro': '110',
                 'observaciones': 'El administrador no debe registrar avances.',
             },
         )
@@ -379,7 +379,7 @@ class OrdenTrabajoTests(TestCase):
         self.unidad.refresh_from_db()
         self.assertEqual(self.orden.estado, 'pendiente')
         self.assertEqual(self.orden.registros_trabajo.count(), 0)
-        self.assertEqual(self.unidad.horas_uso, Decimal('100.0'))
+        self.assertEqual(self.unidad.horas_uso, 100)
 
         acciones_tecnicas = (
             'ordenes_trabajo:comentar',
@@ -420,7 +420,7 @@ class OrdenTrabajoTests(TestCase):
             'repuestos-0-codigo': 'FILTRO-01',
             'repuestos-0-nombre': 'Filtro hidráulico',
             'repuestos-0-unidad_medida': 'pieza',
-            'repuestos-0-cantidad': '3.00',
+            'repuestos-0-cantidad': '3',
         }
         respuesta = self.client.post(
             reverse('ordenes_trabajo:solicitar_repuestos', args=[self.orden.pk]),
@@ -456,20 +456,20 @@ class OrdenTrabajoTests(TestCase):
         solicitud.refresh_from_db()
         repuesto = Repuesto.objects.get(codigo='FILTRO-01')
         self.assertEqual(solicitud.estado, 'recibida')
-        self.assertEqual(repuesto.existencia, Decimal('3.00'))
+        self.assertEqual(repuesto.existencia, Decimal('3'))
 
         self.client.force_login(self.tecnico)
         respuesta = self.client.post(
             reverse('ordenes_trabajo:consumir_repuesto', args=[self.orden.pk]),
-            {'repuesto': repuesto.pk, 'cantidad': '1.50'},
+            {'repuesto': repuesto.pk, 'cantidad': '1'},
         )
         self.assertRedirects(
             respuesta,
             reverse('ordenes_trabajo:detalle', args=[self.orden.pk]),
         )
         repuesto.refresh_from_db()
-        self.assertEqual(repuesto.existencia, Decimal('1.50'))
-        self.assertEqual(ConsumoRepuesto.objects.get().cantidad, Decimal('1.50'))
+        self.assertEqual(repuesto.existencia, Decimal('2'))
+        self.assertEqual(ConsumoRepuesto.objects.get().cantidad, Decimal('1'))
 
     def test_tecnico_recibe_solicitud_aprobada_y_finaliza_orden(self):
         self.client.force_login(self.tecnico)
@@ -481,7 +481,7 @@ class OrdenTrabajoTests(TestCase):
                 'repuestos-0-codigo': 'NUEVO-01',
                 'repuestos-0-nombre': 'Pieza nueva',
                 'repuestos-0-unidad_medida': 'pieza',
-                'repuestos-0-cantidad': '2.00',
+                'repuestos-0-cantidad': '2',
             },
         )
         solicitud = SolicitudRepuesto.objects.get()
@@ -511,13 +511,13 @@ class OrdenTrabajoTests(TestCase):
         solicitud.refresh_from_db()
         repuesto = Repuesto.objects.get(codigo='NUEVO-01')
         self.assertEqual(solicitud.estado, 'recibida')
-        self.assertEqual(repuesto.existencia, Decimal('2.00'))
+        self.assertEqual(repuesto.existencia, Decimal('2'))
         self.assertEqual(EntradaRepuesto.objects.get(solicitud=solicitud).registrado_por, self.tecnico)
         self.assertEqual(solicitud.detalles.get().repuesto, repuesto)
 
         self.client.post(recibir)
         repuesto.refresh_from_db()
-        self.assertEqual(repuesto.existencia, Decimal('2.00'))
+        self.assertEqual(repuesto.existencia, Decimal('2'))
         self.assertEqual(EntradaRepuesto.objects.filter(solicitud=solicitud).count(), 1)
 
         self.client.post(reverse('ordenes_trabajo:informe', args=[self.orden.pk]), datos)
@@ -530,7 +530,7 @@ class OrdenTrabajoTests(TestCase):
         )
         DetalleSolicitudRepuesto.objects.create(
             solicitud=solicitud, codigo='SEG-01', nombre='Pieza',
-            unidad_medida='pieza', cantidad=Decimal('1.00'),
+            unidad_medida='pieza', cantidad=Decimal('1'),
         )
         aprobar = reverse(
             'ordenes_trabajo:resolver_solicitud_repuesto', args=[solicitud.pk, 'aprobar'],
@@ -554,7 +554,7 @@ class OrdenTrabajoTests(TestCase):
         )
         DetalleSolicitudRepuesto.objects.create(
             solicitud=solicitud, codigo='NUEVO-ROLLBACK', nombre='Pieza nueva',
-            unidad_medida='pieza', cantidad=Decimal('2.00'),
+            unidad_medida='pieza', cantidad=Decimal('2'),
         )
         repuesto = Repuesto.objects.create(
             codigo='EXISTENTE', nombre='Aceite', unidad_medida='litro',
@@ -562,7 +562,7 @@ class OrdenTrabajoTests(TestCase):
         )
         DetalleSolicitudRepuesto.objects.create(
             solicitud=solicitud, codigo='EXISTENTE', nombre='Aceite',
-            unidad_medida='pieza', cantidad=Decimal('1.00'),
+            unidad_medida='pieza', cantidad=Decimal('1'),
         )
         self.client.force_login(self.tecnico)
         respuesta = self.client.post(
@@ -584,7 +584,7 @@ class OrdenTrabajoTests(TestCase):
         )
         DetalleSolicitudRepuesto.objects.create(
             solicitud=solicitud, codigo='FIN-01', nombre='Pieza',
-            unidad_medida='pieza', cantidad=Decimal('1.00'),
+            unidad_medida='pieza', cantidad=Decimal('1'),
         )
         self.orden.estado = 'finalizada'
         self.orden.fecha_fin = timezone.localdate()

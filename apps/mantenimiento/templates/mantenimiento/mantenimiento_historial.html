@@ -26,8 +26,8 @@
                 {% endif %}
             </div>
             <p class="text-secondary mb-0">
-                Código: <strong class="text-dark">{{ unidad.codigo }}</strong> | 
-                N° Serie: <strong class="text-dark">{{ unidad.numero_serie }}</strong> 
+                CÃ³digo: <strong class="text-dark">{{ unidad.codigo }}</strong> |
+                NÂ° Serie: <strong class="text-dark">{{ unidad.numero_serie }}</strong>
                 (Unidad ID: #{{ unidad.pk }})
             </p>
         </div>
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <!-- CONTENIDO: TABLA O ESTADO VACÍO -->
+    <!-- CONTENIDO: TABLA O ESTADO VACÃO -->
     {% if mantenimientos %}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body p-0">
@@ -58,10 +58,10 @@
                             <th class="py-3 ps-4">Fecha</th>
                             <th class="py-3">Tipo</th>
                             <th class="py-3">Estado</th>
-                            <th class="py-3">Descripción</th>
+                            <th class="py-3">DescripciÃ³n</th>
                             <th class="py-3">Mano de obra</th>
                             <th class="py-3">Costo</th>
-                            <th class="py-3 pe-4">Técnico responsable</th>
+                            <th class="py-3 pe-4">TÃ©cnico responsable</th>
                             <th class="py-3 pe-4">Registrado por</th>
                             <th class="py-3 pe-4">Orden</th>
                         </tr>
@@ -88,7 +88,7 @@
                                 {% endfor %}
                             </td>
                             <td>{{ mantenimiento.horas_mano_obra_total }} h</td>
-                            <td class="fw-semibold text-dark">${{ mantenimiento.costo|floatformat:2 }}</td>
+                            <td class="fw-semibold text-dark">${{ mantenimiento.costo|entero_con_comas }}</td>
                             <td class="pe-4">
                                 {% if mantenimiento.tecnico %}
                                     {% with full_name=mantenimiento.tecnico.get_full_name username=mantenimiento.tecnico.username %}
@@ -118,7 +118,7 @@
                             </td>
                             <td class="pe-4">
                                 <a class="btn btn-sm btn-outline-primary" href="{% url 'ordenes_trabajo:detalle' mantenimiento.pk %}">
-                                    {% if es_administrador %}Ver detalle técnico{% else %}Ver orden{% endif %}
+                                    {% if es_administrador %}Ver detalle tÃ©cnico{% else %}Ver orden{% endif %}
                                 </a>
                             </td>
                         </tr>
@@ -129,12 +129,12 @@
         </div>
     </div>
     {% else %}
-    <!-- ESTADO VACÍO -->
+    <!-- ESTADO VACÃO -->
     <div class="card border-0 shadow-sm rounded-4 text-center py-5">
         <div class="card-body">
             <i class="bi bi-clipboard-x display-5 text-secondary mb-3 d-block"></i>
             <h4 class="fw-bold text-dark">Sin mantenimientos registrados</h4>
-            <p class="text-secondary mb-0">Esta unidad todavía no tiene actividades de mantenimiento en su historial.</p>
+            <p class="text-secondary mb-0">Esta unidad todavÃ­a no tiene actividades de mantenimiento en su historial.</p>
         </div>
     </div>
     {% endif %}
