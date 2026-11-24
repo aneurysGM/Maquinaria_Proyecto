@@ -1,56 +1,82 @@
-(function () {
+(() => {
     'use strict';
 
-    var VERSION = '1';
-    var PREFIX = 'maquirent:form-draft:' + VERSION + ':';
-    var PENDING_KEY = PREFIX + 'pending';
-    var MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-    var saveTimers = new WeakMap();
-    var scope = document.body.dataset.formAutosaveScope || 'visitor';
+    const VERSION = '2';
+    const PREFIX = `maquirent:form-draft:${VERSION}:`;
+    const LEGACY_PREFIX = 'maquirent:form-draft:1:';
+    const saveTimers = new WeakMap();
+    const scope = document.body.dataset.formAutosaveScope || 'visitor';
+    const session = window.sessionStorage;
+    let discardOnPageHide = false;
 
     function warn(error) {
-        if (window.console && typeof window.console.warn === 'function') {
-            window.console.warn('No se pudo conservar el borrador del formulario.', error);
-        }
+        console.warn('No se pudo conservar el borrador del formulario.', error);
     }
 
-    function storageGet(storage, key) {
+    function storageGet(key, fallback = null) {
         try {
-            var value = storage.getItem(key);
-            return value ? JSON.parse(value) : null;
+            const value = session.getItem(key);
+            return value ? JSON.parse(value) : fallback;
         } catch (error) {
             warn(error);
-            return null;
+            return fallback;
         }
     }
 
-    function storageSet(storage, key, value) {
+    function storageSet(key, value) {
         try {
             if (value === null) {
-                storage.removeItem(key);
+                session.removeItem(key);
             } else {
-                storage.setItem(key, JSON.stringify(value));
+                session.setItem(key, JSON.stringify(value));
             }
-            return true;
         } catch (error) {
             warn(error);
-            return false;
         }
+    }
+
+    function storageKeys() {
+        const keys = [];
+        for (let index = 0; index < session.length; index += 1) {
+            const key = session.key(index);
+            if (key && (key.startsWith(PREFIX) || key.startsWith(LEGACY_PREFIX))) {
+                keys.push(key);
+            }
+        }
+        return keys;
+    }
+
+    function clearAllDrafts() {
+        storageKeys().forEach((key) => session.removeItem(key));
+    }
+
+    function clearLegacyDrafts() {
+        try {
+            const keys = [];
+            for (let index = 0; index < window.localStorage.length; index += 1) {
+                const key = window.localStorage.key(index);
+                if (key && key.startsWith(LEGACY_PREFIX)) keys.push(key);
+            }
+            keys.forEach((key) => window.localStorage.removeItem(key));
+        } catch (error) {
+            warn(error);
+        }
+    }
+
+    function pageIdentity() {
+        return `${window.location.pathname}${window.location.search}`;
     }
 
     function formKey(form, index) {
-        var identifier = form.id || form.getAttribute('name') || String(index);
-        var action = new URL(form.getAttribute('action') || window.location.href, window.location.href);
-        return PREFIX + scope + ':' + action.pathname + ':' + form.method.toLowerCase() + ':' + identifier;
+        const identifier = form.id || form.getAttribute('name') || String(index);
+        const action = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+        return `${PREFIX}${scope}:${pageIdentity()}:${action.pathname}:${form.method.toLowerCase()}:${identifier}`;
     }
 
     function isSensitive(control) {
-        var identity = [
-            control.name,
-            control.id,
-            control.autocomplete
-        ].join(' ').toLowerCase();
-
+        const identity = [control.name, control.id, control.autocomplete]
+            .join(' ')
+            .toLowerCase();
         return /password|passwd|passphrase|contrasena|contrase[nñ]a|csrf|token|secret|cvv|cvc/.test(identity);
     }
 
@@ -59,55 +85,38 @@
             return false;
         }
 
-        var tagName = control.tagName.toLowerCase();
-        var type = (control.type || '').toLowerCase();
-
-        if (!['input', 'select', 'textarea'].includes(tagName)) {
-            return false;
-        }
-
-        if (['button', 'file', 'hidden', 'image', 'reset', 'submit'].includes(type)) {
-            return false;
-        }
-
-        if (isSensitive(control) || form.hasAttribute('data-autosave-ignore')) {
-            return false;
-        }
-
-        return true;
+        const tagName = control.tagName.toLowerCase();
+        const type = (control.type || '').toLowerCase();
+        if (!['input', 'select', 'textarea'].includes(tagName)) return false;
+        if (['button', 'file', 'hidden', 'image', 'reset', 'submit'].includes(type)) return false;
+        return !isSensitive(control) && !form.hasAttribute('data-autosave-ignore');
     }
 
     function serialize(form) {
-        var controls = Array.prototype.slice.call(form.elements).filter(function (control) {
-            return isPersistable(form, control);
-        });
+        return Array.from(form.elements)
+            .filter((control) => isPersistable(form, control))
+            .map((control) => {
+                let value = control.value;
+                if (control.tagName.toLowerCase() === 'select' && control.multiple) {
+                    value = Array.from(control.options)
+                        .filter((option) => option.selected)
+                        .map((option) => option.value);
+                }
 
-        return controls.map(function (control) {
-            var value = control.value;
-
-            if (control.tagName.toLowerCase() === 'select' && control.multiple) {
-                value = Array.prototype.slice.call(control.options)
-                    .filter(function (option) { return option.selected; })
-                    .map(function (option) { return option.value; });
-            }
-
-            return {
-                id: control.id || null,
-                name: control.name,
-                type: (control.type || control.tagName).toLowerCase(),
-                value: value,
-                checked: control.type === 'checkbox' || control.type === 'radio'
-                    ? control.checked
-                    : null
-            };
-        });
+                return {
+                    id: control.id || null,
+                    name: control.name,
+                    value,
+                    checked: control.type === 'checkbox' || control.type === 'radio'
+                        ? control.checked
+                        : null,
+                };
+            });
     }
 
     function hasValues(fields) {
-        return fields.some(function (field) {
-            if (field.checked !== null) {
-                return field.checked;
-            }
+        return fields.some((field) => {
+            if (field.checked !== null) return field.checked;
             return Array.isArray(field.value)
                 ? field.value.length > 0
                 : field.value !== '' && field.value !== null;
@@ -115,168 +124,136 @@
     }
 
     function save(form, key) {
-        var fields = serialize(form);
+        const fields = serialize(form);
         if (!fields.length || !hasValues(fields)) {
-            storageSet(window.localStorage, key, null);
+            storageSet(key, null);
             return;
         }
 
-        storageSet(window.localStorage, key, {
-            fields: fields,
-            updatedAt: Date.now()
+        storageSet(key, {
+            page: pageIdentity(),
+            fields,
+            updatedAt: Date.now(),
         });
+    }
+
+    function clearDraft(key) {
+        storageSet(key, null);
     }
 
     function restore(form, key) {
-        var draft = storageGet(window.localStorage, key);
-        if (!draft || !Array.isArray(draft.fields)) {
-            return false;
-        }
-
-        if (!draft.updatedAt || Date.now() - draft.updatedAt > MAX_AGE_MS) {
-            storageSet(window.localStorage, key, null);
-            return false;
-        }
-
-        var matched = 0;
-        draft.fields.forEach(function (field) {
-            var candidates = Array.prototype.slice.call(form.elements).filter(function (control) {
-                if (!isPersistable(form, control) || control.name !== field.name) {
-                    return false;
-                }
-
-                return field.id ? control.id === field.id : true;
-            });
-
-            candidates.forEach(function (control) {
-                if (control.type === 'radio' || control.type === 'checkbox') {
-                    if (control.type === 'radio' && control.value !== field.value) {
-                        return;
-                    }
-                    control.checked = Boolean(field.checked);
-                } else if (control.tagName.toLowerCase() === 'select' && control.multiple) {
-                    var selectedValues = Array.isArray(field.value) ? field.value : [];
-                    Array.prototype.forEach.call(control.options, function (option) {
-                        option.selected = selectedValues.includes(option.value);
-                    });
-                } else {
-                    control.value = field.value;
-                }
-
-                control.dispatchEvent(new Event('input', { bubbles: true }));
-                control.dispatchEvent(new Event('change', { bubbles: true }));
-                matched += 1;
-            });
-        });
-
-        return matched > 0;
-    }
-
-    function currentNavigationType() {
-        if (!window.performance || !window.performance.getEntriesByType) {
-            return 'navigate';
-        }
-
-        var entries = window.performance.getEntriesByType('navigation');
-        return entries.length ? entries[0].type : 'navigate';
-    }
-
-    function hasValidationErrors(form) {
-        return Boolean(form.querySelector(
-            '.errorlist, .invalid-feedback, .is-invalid, [aria-invalid="true"]'
-        ));
-    }
-
-    function hasFailureMessage() {
-        return Boolean(document.querySelector(
-            '.alert-danger, .alert-error, .alert-warning:not([hidden]), ' +
-            '[role="alert"][data-level="error"], [role="alert"][data-level="warning"], .errornote'
-        ));
-    }
-
-    function hasSuccessMessage() {
-        return Boolean(document.querySelector(
-            '.alert-success, [role="alert"][data-level="success"]'
-        ));
-    }
-
-    function registerPending(key) {
-        var pending = storageGet(window.sessionStorage, PENDING_KEY);
-        if (!Array.isArray(pending)) {
-            pending = [];
-        }
-        if (!pending.includes(key)) {
-            pending.push(key);
-        }
-        storageSet(window.sessionStorage, PENDING_KEY, pending);
-    }
-
-    function clearCompletedDrafts(formsByKey) {
-        var pending = storageGet(window.sessionStorage, PENDING_KEY);
-        if (!Array.isArray(pending)) {
+        const draft = storageGet(key);
+        if (!draft || !Array.isArray(draft.fields) || draft.page !== pageIdentity()) {
             return;
         }
 
-        var remaining = pending.filter(function (key) {
-            var form = formsByKey.get(key);
-
-            if (hasFailureMessage() || (form && hasValidationErrors(form))) {
-                return true;
-            }
-
-            if (form && currentNavigationType() === 'reload' && !hasSuccessMessage()) {
-                return true;
-            }
-
-            storageSet(window.localStorage, key, null);
-            return false;
+        draft.fields.forEach((field) => {
+            Array.from(form.elements)
+                .filter((control) => isPersistable(form, control)
+                    && control.name === field.name
+                    && (!field.id || control.id === field.id))
+                .forEach((control) => {
+                    if (control.type === 'radio' || control.type === 'checkbox') {
+                        if (control.type === 'radio' && control.value !== field.value) return;
+                        control.checked = Boolean(field.checked);
+                    } else if (control.tagName.toLowerCase() === 'select' && control.multiple) {
+                        const selectedValues = Array.isArray(field.value) ? field.value : [];
+                        Array.from(control.options).forEach((option) => {
+                            option.selected = selectedValues.includes(option.value);
+                        });
+                    } else {
+                        control.value = field.value;
+                    }
+                    control.dispatchEvent(new Event('input', { bubbles: true }));
+                    control.dispatchEvent(new Event('change', { bubbles: true }));
+                });
         });
-
-        storageSet(window.sessionStorage, PENDING_KEY, remaining.length ? remaining : null);
     }
 
-    var formsByKey = new Map();
-    var forms = Array.prototype.slice.call(document.querySelectorAll('form')).filter(function (form) {
-        var method = form.method.toLowerCase();
-        return (method === 'get' || method === 'post') && !form.hasAttribute('data-autosave-ignore');
+    function navigationType() {
+        const entries = window.performance?.getEntriesByType?.('navigation') || [];
+        return entries[0]?.type || 'navigate';
+    }
+
+    function discardDrafts() {
+        discardOnPageHide = true;
+        formsByKey.forEach((form) => clearTimeout(saveTimers.get(form)));
+        clearAllDrafts();
+    }
+
+    clearLegacyDrafts();
+
+    const formsByKey = new Map();
+    const forms = Array.from(document.querySelectorAll('form')).filter((form) => {
+        const method = form.method.toLowerCase();
+        return ['get', 'post'].includes(method) && !form.hasAttribute('data-autosave-ignore');
     });
 
-    forms.forEach(function (form, index) {
-        var key = formKey(form, index);
-        if (serialize(form).length === 0) {
-            return;
-        }
+    forms.forEach((form, index) => {
+        const key = formKey(form, index);
+        if (serialize(form).length === 0) return;
 
         formsByKey.set(key, form);
-
-        function scheduleSave() {
-            window.clearTimeout(saveTimers.get(form));
-            saveTimers.set(form, window.setTimeout(function () {
-                save(form, key);
-            }, 200));
-        }
+        const scheduleSave = () => {
+            clearTimeout(saveTimers.get(form));
+            saveTimers.set(form, setTimeout(() => save(form, key), 200));
+        };
 
         form.addEventListener('input', scheduleSave);
         form.addEventListener('change', scheduleSave);
-        form.addEventListener('reset', function () {
-            window.setTimeout(function () {
-                storageSet(window.localStorage, key, null);
-            }, 0);
-        });
-        form.addEventListener('submit', function () {
-            save(form, key);
-            registerPending(key);
-        });
+        form.addEventListener('reset', () => setTimeout(() => clearDraft(key), 0));
     });
 
-    clearCompletedDrafts(formsByKey);
-    formsByKey.forEach(function (form, key) {
-        restore(form, key);
+    if (navigationType() === 'reload') {
+        formsByKey.forEach((form, key) => restore(form, key));
+    } else {
+        clearAllDrafts();
+    }
+
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
+        if (!link
+            || event.button !== 0
+            || event.ctrlKey
+            || event.metaKey
+            || event.shiftKey
+            || event.altKey
+            || event.defaultPrevented
+            || link.target === '_blank'
+            || link.hasAttribute('download')) {
+            return;
+        }
+        const destination = new URL(link.href, window.location.href);
+        const changesDocument = destination.origin !== window.location.origin
+            || destination.pathname !== window.location.pathname
+            || destination.search !== window.location.search;
+        if (changesDocument) {
+            queueMicrotask(() => {
+                if (!event.defaultPrevented) discardDrafts();
+            });
+        }
     });
 
-    window.addEventListener('pagehide', function () {
-        formsByKey.forEach(function (form, key) {
-            save(form, key);
-        });
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (form instanceof HTMLFormElement) {
+            queueMicrotask(() => {
+                if (!event.defaultPrevented) discardOnPageHide = true;
+            });
+        }
+    }, true);
+
+    window.addEventListener('pagehide', () => {
+        if (discardOnPageHide) {
+            clearAllDrafts();
+        } else {
+            formsByKey.forEach((form, key) => save(form, key));
+        }
+    });
+
+    window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) return;
+        discardDrafts();
+        formsByKey.forEach((form) => form.reset());
     });
 })();
