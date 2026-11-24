@@ -1,17 +1,34 @@
 (() => {
     'use strict';
 
-    const VERSION = '2';
-    const PREFIX = `maquirent:form-draft:${VERSION}:`;
-    const LEGACY_PREFIX = 'maquirent:form-draft:1:';
-    const saveTimers = new WeakMap();
+    const VERSION = '3';
+    const ROOT = 'maquirent:form-draft:';
+    const PREFIX = `${ROOT}${VERSION}:`;
+    const TAB_SWITCH_CLEAR_DELAY_MS = 100;
+    const SENSITIVE = /password|passwd|passphrase|contrasena|contrase[nñ]a|clave|csrf|xsrf|token|secret|cvv|cvc/;
+
+    const formsByKey = new Map();
+    let tabSwitchClearTimer = null;
+    let tabWasHidden = false;
     const scope = document.body.dataset.formAutosaveScope || 'visitor';
-    const session = window.sessionStorage;
-    let discardOnPageHide = false;
+    // true = el usuario se está yendo (enlace, envío, logout): no se guarda nada.
+    let leaving = false;
 
     function warn(error) {
         console.warn('No se pudo conservar el borrador del formulario.', error);
     }
+
+    function getStorage(name) {
+        try {
+            return window[name];
+        } catch (error) {
+            warn(error);
+            return null;
+        }
+    }
+
+    const session = getStorage('sessionStorage');
+    if (!session) return;
 
     function storageGet(key, fallback = null) {
         try {
@@ -35,32 +52,23 @@
         }
     }
 
-    function storageKeys() {
-        const keys = [];
-        for (let index = 0; index < session.length; index += 1) {
-            const key = session.key(index);
-            if (key && (key.startsWith(PREFIX) || key.startsWith(LEGACY_PREFIX))) {
-                keys.push(key);
-            }
-        }
-        return keys;
-    }
-
-    function clearAllDrafts() {
-        storageKeys().forEach((key) => session.removeItem(key));
-    }
-
-    function clearLegacyDrafts() {
+    // Borra todas las claves del autoguardado (de cualquier versión), salvo las de `keep`.
+    function removeOwnKeys(storage, keep) {
+        if (!storage) return;
         try {
             const keys = [];
-            for (let index = 0; index < window.localStorage.length; index += 1) {
-                const key = window.localStorage.key(index);
-                if (key && key.startsWith(LEGACY_PREFIX)) keys.push(key);
+            for (let index = 0; index < storage.length; index += 1) {
+                const key = storage.key(index);
+                if (key && key.startsWith(ROOT) && !(keep && keep.has(key))) keys.push(key);
             }
-            keys.forEach((key) => window.localStorage.removeItem(key));
+            keys.forEach((key) => storage.removeItem(key));
         } catch (error) {
             warn(error);
         }
+    }
+
+    function clearAllDrafts(keep) {
+        removeOwnKeys(session, keep);
     }
 
     function pageIdentity() {
@@ -74,10 +82,11 @@
     }
 
     function isSensitive(control) {
+        if ((control.type || '').toLowerCase() === 'password') return true;
         const identity = [control.name, control.id, control.autocomplete]
             .join(' ')
             .toLowerCase();
-        return /password|passwd|passphrase|contrasena|contrase[nñ]a|csrf|token|secret|cvv|cvc/.test(identity);
+        return SENSITIVE.test(identity);
     }
 
     function isPersistable(form, control) {
@@ -92,40 +101,59 @@
         return !isSensitive(control) && !form.hasAttribute('data-autosave-ignore');
     }
 
+    // true si el usuario cambió el campo respecto al valor con el que cargó la página.
+    function isDirty(control) {
+        const tagName = control.tagName.toLowerCase();
+        const type = (control.type || '').toLowerCase();
+
+        if (type === 'checkbox' || type === 'radio') {
+            return control.checked !== control.defaultChecked;
+        }
+
+        if (tagName === 'select') {
+            const options = Array.from(control.options);
+            if (!options.length) return false;
+            if (control.multiple) {
+                return options.some((option) => option.selected !== option.defaultSelected);
+            }
+            let initial = options.findIndex((option) => option.defaultSelected);
+            if (initial < 0 && control.size <= 1) {
+                initial = options.findIndex((option) => !option.disabled);
+            }
+            return control.selectedIndex !== initial;
+        }
+
+        if (type === 'range' || type === 'color') return false;
+        return control.value !== control.defaultValue;
+    }
+
     function serialize(form) {
-        return Array.from(form.elements)
-            .filter((control) => isPersistable(form, control))
-            .map((control) => {
-                let value = control.value;
-                if (control.tagName.toLowerCase() === 'select' && control.multiple) {
-                    value = Array.from(control.options)
-                        .filter((option) => option.selected)
-                        .map((option) => option.value);
-                }
+        const controls = Array.from(form.elements).filter((control) => isPersistable(form, control));
+        const fields = controls.map((control) => {
+            let value = control.value;
+            if (control.tagName.toLowerCase() === 'select' && control.multiple) {
+                value = Array.from(control.options)
+                    .filter((option) => option.selected)
+                    .map((option) => option.value);
+            }
 
-                return {
-                    id: control.id || null,
-                    name: control.name,
-                    value,
-                    checked: control.type === 'checkbox' || control.type === 'radio'
-                        ? control.checked
-                        : null,
-                };
-            });
-    }
-
-    function hasValues(fields) {
-        return fields.some((field) => {
-            if (field.checked !== null) return field.checked;
-            return Array.isArray(field.value)
-                ? field.value.length > 0
-                : field.value !== '' && field.value !== null;
+            return {
+                id: control.id || null,
+                name: control.name,
+                value,
+                checked: control.type === 'checkbox' || control.type === 'radio'
+                    ? control.checked
+                    : null,
+            };
         });
+
+        return { fields, dirty: controls.some((control) => isDirty(control)) };
     }
 
-    function save(form, key) {
-        const fields = serialize(form);
-        if (!fields.length || !hasValues(fields)) {
+    // La marca solo se crea desde pagehide; así, los borradores intermedios nunca se restauran.
+    function save(form, key, unloading = false) {
+        const { fields, dirty } = serialize(form);
+        if (!fields.length || !dirty) {
             storageSet(key, null);
             return;
         }
@@ -133,17 +161,16 @@
         storageSet(key, {
             page: pageIdentity(),
             fields,
-            updatedAt: Date.now(),
+            unloadSnapshot: unloading,
         });
-    }
-
-    function clearDraft(key) {
-        storageSet(key, null);
     }
 
     function restore(form, key) {
         const draft = storageGet(key);
         if (!draft || !Array.isArray(draft.fields) || draft.page !== pageIdentity()) {
+            return;
+        }
+        if (!draft.unloadSnapshot) {
             return;
         }
 
@@ -175,15 +202,53 @@
         return entries[0]?.type || 'navigate';
     }
 
-    function discardDrafts() {
-        discardOnPageHide = true;
-        formsByKey.forEach((form) => clearTimeout(saveTimers.get(form)));
-        clearAllDrafts();
+    // El usuario se va (o ya terminó): borra todo y no vuelve a guardar hasta que escriba otra vez.
+    function clearControls(form) {
+        Array.from(form.elements).forEach((control) => {
+            if (!isPersistable(form, control)) return;
+
+            if (control.type === 'checkbox' || control.type === 'radio') {
+                control.checked = false;
+            } else if (control.tagName.toLowerCase() === 'select' && control.multiple) {
+                Array.from(control.options).forEach((option) => {
+                    option.selected = false;
+                });
+            } else if (control.tagName.toLowerCase() === 'select') {
+                control.selectedIndex = -1;
+            } else {
+                control.value = '';
+            }
+            control.defaultValue = '';
+            control.defaultChecked = false;
+        });
     }
 
-    clearLegacyDrafts();
+    function discardDrafts(clearFields = false) {
+        leaving = true;
+        clearAllDrafts();
+        if (clearFields) {
+            formsByKey.forEach(clearControls);
+        }
+    }
 
-    const formsByKey = new Map();
+    function resetForms() {
+        formsByKey.forEach(clearControls);
+        clearAllDrafts();
+        leaving = false;
+    }
+
+    function disableNativeRestore(form) {
+        form.setAttribute('autocomplete', 'off');
+        Array.from(form.elements).forEach((control) => {
+            if (['input', 'select', 'textarea'].includes(control.tagName.toLowerCase())) {
+                control.setAttribute('autocomplete', 'off');
+            }
+        });
+    }
+
+    // Borrador antiguo de localStorage (versiones anteriores).
+    removeOwnKeys(getStorage('localStorage'));
+
     const forms = Array.from(document.querySelectorAll('form')).filter((form) => {
         const method = form.method.toLowerCase();
         return ['get', 'post'].includes(method) && !form.hasAttribute('data-autosave-ignore');
@@ -191,69 +256,102 @@
 
     forms.forEach((form, index) => {
         const key = formKey(form, index);
-        if (serialize(form).length === 0) return;
+        if (serialize(form).fields.length === 0) return;
 
         formsByKey.set(key, form);
-        const scheduleSave = () => {
-            clearTimeout(saveTimers.get(form));
-            saveTimers.set(form, setTimeout(() => save(form, key), 200));
-        };
+        disableNativeRestore(form);
 
-        form.addEventListener('input', scheduleSave);
-        form.addEventListener('change', scheduleSave);
-        form.addEventListener('reset', () => setTimeout(() => clearDraft(key), 0));
+        form.addEventListener('reset', () => setTimeout(() => storageSet(key, null), 0));
     });
 
+    // 1) Solo una recarga (F5) puede devolver los datos. Cualquier otra carga los borra.
     if (navigationType() === 'reload') {
         formsByKey.forEach((form, key) => restore(form, key));
+        clearAllDrafts(new Set(formsByKey.keys()));
     } else {
         clearAllDrafts();
     }
 
+    // 2) Cambiar de página / entrar a otro apartado del menú / cerrar sesión por enlace.
     document.addEventListener('click', (event) => {
-        const link = event.target.closest('a[href]');
-        if (!link
-            || event.button !== 0
+        if (event.button !== 0
             || event.ctrlKey
             || event.metaKey
             || event.shiftKey
             || event.altKey
-            || event.defaultPrevented
-            || link.target === '_blank'
-            || link.hasAttribute('download')) {
+            || !(event.target instanceof Element)) {
             return;
         }
+
+        const link = event.target.closest('a[href]');
+        if (!link
+            || (link.target && link.target !== '_self')
+            || link.hasAttribute('download')
+            || link.getAttribute('href').startsWith('#')) {
+            return;
+        }
+
         const destination = new URL(link.href, window.location.href);
-        const changesDocument = destination.origin !== window.location.origin
-            || destination.pathname !== window.location.pathname
-            || destination.search !== window.location.search;
-        if (changesDocument) {
+        if (!/^https?:$/.test(destination.protocol)) return;
+
+        const onlyHashChange = destination.origin === window.location.origin
+            && destination.pathname === window.location.pathname
+            && destination.search === window.location.search
+            && destination.hash !== '';
+
+        // Incluye enlaces a la misma URL: es "entrar de nuevo", no una recarga.
+        if (!onlyHashChange) {
             queueMicrotask(() => {
-                if (!event.defaultPrevented) discardDrafts();
+                if (!event.defaultPrevented) discardDrafts(true);
             });
         }
     });
 
+    // 3) Guardar / enviar cualquier formulario (también el de cerrar sesión).
     document.addEventListener('submit', (event) => {
         const form = event.target;
-        if (form instanceof HTMLFormElement) {
-            queueMicrotask(() => {
-                if (!event.defaultPrevented) discardOnPageHide = true;
-            });
-        }
-    }, true);
+        if (!(form instanceof HTMLFormElement)) return;
+
+        queueMicrotask(() => {
+            if (!event.defaultPrevented) discardDrafts(true);
+        });
+    });
 
     window.addEventListener('pagehide', () => {
-        if (discardOnPageHide) {
+        if (leaving) {
             clearAllDrafts();
         } else {
-            formsByKey.forEach((form, key) => save(form, key));
+            formsByKey.forEach((form, key) => save(form, key, true));
         }
     });
 
+    // Limpiar también la restauración nativa al entrar de forma normal, volver atrás
+    // o recuperar la vista desde la caché. Solo reload usa el borrador propio.
     window.addEventListener('pageshow', (event) => {
-        if (!event.persisted) return;
-        discardDrafts();
-        formsByKey.forEach((form) => form.reset());
+        const type = navigationType();
+        if (!event.persisted && type === 'reload') {
+            formsByKey.forEach((form, key) => restore(form, key));
+            clearAllDrafts(new Set(formsByKey.keys()));
+            return;
+        }
+        resetForms();
     });
+
+    // El breve retraso evita borrar durante el ocultamiento momentáneo de un F5.
+    document.addEventListener('visibilitychange', () => {
+        clearTimeout(tabSwitchClearTimer);
+        if (document.visibilityState === 'visible') {
+            if (tabWasHidden) resetForms();
+            tabWasHidden = false;
+            return;
+        }
+
+        tabWasHidden = true;
+        tabSwitchClearTimer = setTimeout(() => {
+            if (document.visibilityState === 'hidden') resetForms();
+        }, TAB_SWITCH_CLEAR_DELAY_MS);
+    });
+
+    // Para envíos por AJAX o logout hecho con JavaScript: window.FormAutosave.clear()
+    window.FormAutosave = { clear: discardDrafts };
 })();
