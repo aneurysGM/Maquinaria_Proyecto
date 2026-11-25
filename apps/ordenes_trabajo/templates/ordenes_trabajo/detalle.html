@@ -51,21 +51,26 @@
             {% elif not es_administrador %}
             <section class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-4">
-                    <h2 class="h5 fw-bold">Informe de mantenimiento y cierre</h2>
-                    <p class="small text-secondary">Completa el informe y envíalo una sola vez para finalizar la orden. Puedes guardar un borrador y retomarlo después; el borrador no cambia el estado de la orden.</p>
+                    <h2 class="h5 fw-bold">Avances e informe de mantenimiento</h2>
+                    <p class="small text-secondary">Guarda un borrador para continuar más tarde, registra cada avance en la bitácora sin cerrar la orden, o finaliza solo cuando el trabajo esté completo.</p>
                     {% if hay_borrador %}<p class="text-info">Hay un borrador guardado para esta orden.</p>{% endif %}
-                    {% if hay_solicitudes_pendientes %}<div class="alert alert-warning">No se puede finalizar hasta que administración resuelva las solicitudes y se confirme la recepción de los repuestos aprobados.</div>{% endif %}
-                    <form method="post" action="{% url 'ordenes_trabajo:informe' orden.pk %}">
+                    {% if actualizar_form.errors or checklist_form.errors or cierre_form.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        Revisa los campos marcados. Tus datos siguen en el formulario.
+                    </div>
+                    {% endif %}
+                    <form method="post" action="{% url 'ordenes_trabajo:informe' orden.pk %}"
+                        {% if hay_borrador or conservar_informe %}data-preserve-values{% endif %}>
                         {% csrf_token %}
                         <h3 class="h6 fw-bold">Estado, horas y observaciones</h3>
-                        <p class="small text-secondary">Las horas se suman a la bitácora al finalizar; el horómetro no puede retroceder.</p>
+                        <p class="small text-secondary">Al guardar lo realizado, las horas y observaciones quedan en la bitácora. El horómetro no puede retroceder.</p>
                         <div class="row g-3">
                             {% for field in actualizar_form %}
                             <div class="{% if field.name == 'observaciones' %}col-12{% else %}col-md-6{% endif %}">
                                 <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                 {{ field }}
                                 {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
-                                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                                {% for error in field.errors %}<div class="invalid-feedback d-block small">{{ error }}</div>{% endfor %}
                             </div>
                             {% endfor %}
                         </div>
@@ -76,7 +81,7 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                 {{ field }}
-                                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                                {% for error in field.errors %}<div class="invalid-feedback d-block small">{{ error }}</div>{% endfor %}
                             </div>
                             {% endfor %}
                         </div>
@@ -84,12 +89,13 @@
                             {% for field in cierre_form %}
                             <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
-                            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block small">{{ error }}</div>{% endfor %}
                             {% endfor %}
                         </div>
                         <div class="d-flex flex-wrap gap-2 mt-3">
                             <button class="btn btn-outline-primary" type="submit" name="accion" value="borrador" formnovalidate>Guardar borrador</button>
-                            <button class="btn btn-success" type="submit" name="accion" value="finalizar">Enviar informe y finalizar orden</button>
+                            <button class="btn btn-primary" type="submit" name="accion" value="avance">Guardar avances</button>
+                            <button class="btn btn-success" type="submit" name="accion" value="finalizar">Cerrar orden</button>
                         </div>
                     </form>
                 </div>
@@ -274,6 +280,24 @@
 </div>
 <script>
 (() => {
+    const informe = document.querySelector('form[data-preserve-values]');
+    if (informe) {
+        const error = informe.querySelector('.invalid-feedback');
+        const control = error?.parentElement.querySelector('input, select, textarea');
+        if (control) {
+            control.classList.add('is-invalid');
+            control.setAttribute('aria-invalid', 'true');
+            control.scrollIntoView({block: 'center'});
+            control.focus({preventScroll: true});
+        }
+        informe.querySelectorAll('.invalid-feedback').forEach((message) => {
+            const field = message.parentElement.querySelector('input, select, textarea');
+            if (!field) return;
+            field.classList.add('is-invalid');
+            field.setAttribute('aria-invalid', 'true');
+        });
+    }
+
     const formset = document.getElementById('solicitud-repuestos');
     const addButton = document.getElementById('agregar-repuesto');
     if (!formset || !addButton) return;

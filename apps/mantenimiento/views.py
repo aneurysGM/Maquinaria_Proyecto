@@ -81,6 +81,8 @@ def mantenimiento_registrar(request):
     else:
         form = MantenimientoForm(initial=initial_data, usuario=request.user)
 
+    form.fields['unidad'].widget.attrs['data-autosave-keep-initial'] = ''
+
     return render(request, 'mantenimiento/mantenimiento_form.html', {
         'form': form,
         'nombre_usuario': request.user.get_full_name() or request.user.email,

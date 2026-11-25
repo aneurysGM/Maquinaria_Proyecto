@@ -86,6 +86,19 @@ class OrdenTrabajoTests(TestCase):
         respuesta = self.client.get(reverse('ordenes_trabajo:lista'))
         self.assertContains(respuesta, 'SERIE-OT-001')
 
+    def test_registrar_mantenimiento_preselecciona_la_unidad_del_enlace(self):
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.get(
+            reverse('mantenimiento:mantenimiento_registrar'),
+            {'unidad': self.unidad.pk},
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(
+            respuesta,
+            f'<option value="{self.unidad.pk}" selected>',
+        )
+        self.assertContains(respuesta, 'data-autosave-keep-initial')
+
     def datos_informe(self):
         return {
             'avance-estado': 'reparacion',
@@ -142,7 +155,7 @@ class OrdenTrabajoTests(TestCase):
         self.assertContains(respuesta, 'Niveles de fluidos')
         self.assertContains(respuesta, 'Equipo probado y operativo.')
 
-    def test_informe_incompleto_o_repuestos_pendientes_no_publican_nada(self):
+    def test_informe_incompleto_no_publica_y_repuestos_pendientes_no_bloquean(self):
         self.client.force_login(self.tecnico)
         url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
         datos = self.datos_informe()
@@ -156,22 +169,61 @@ class OrdenTrabajoTests(TestCase):
         )
         datos['checklist-resultado_electrico'] = 'correcto'
         respuesta = self.client.post(url, datos)
-        self.assertContains(respuesta, 'aprobadas sin recibir')
+        self.assertRedirects(
+            respuesta, reverse('ordenes_trabajo:detalle', args=[self.orden.pk]),
+        )
         self.orden.refresh_from_db()
         self.unidad.refresh_from_db()
-        self.assertEqual(self.orden.estado, 'pendiente')
-        self.assertEqual(self.unidad.horas_uso, 100)
-        self.assertEqual(self.orden.registros_trabajo.count(), 0)
-        self.assertEqual(self.orden.puntos_checklist.count(), 0)
-
-        solicitud.estado = 'recibida'
-        solicitud.save(update_fields=['estado'])
-        self.orden.estado = 'esperando_repuestos'
-        self.orden.save(update_fields=['estado'])
-        datos['avance-estado'] = 'esperando_repuestos'
-        self.client.post(url, datos)
-        self.orden.refresh_from_db()
         self.assertEqual(self.orden.estado, 'finalizada')
+        self.assertIsNotNone(self.orden.fecha_fin)
+        self.assertEqual(self.unidad.horas_uso, Decimal('120'))
+        self.assertEqual(self.orden.registros_trabajo.count(), 2)
+        self.assertEqual(self.orden.puntos_checklist.count(), len(PuntoChecklist.PUNTOS))
+        self.assertEqual(solicitud.estado, 'aprobada')
+
+    def test_guardar_avance_publica_historial_y_limpia_borrador_sin_finalizar(self):
+        self.client.force_login(self.tecnico)
+        url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
+        borrador = self.datos_informe()
+        borrador['accion'] = 'borrador'
+        self.client.post(url, borrador)
+
+        SolicitudRepuesto.objects.create(
+            mantenimiento=self.orden,
+            solicitada_por=self.tecnico,
+            estado='pendiente',
+        )
+        avance = self.datos_informe()
+        avance.update({
+            'accion': 'avance',
+            'avance-horas_trabajo': '2',
+            'avance-horometro': '105',
+            'avance-observaciones': 'Diagnóstico inicial realizado.',
+            'checklist-resultado_electrico': '',
+        })
+        respuesta = self.client.post(url, avance)
+        self.assertRedirects(
+            respuesta, reverse('ordenes_trabajo:detalle', args=[self.orden.pk]),
+        )
+        self.orden.refresh_from_db()
+        self.unidad.refresh_from_db()
+        registro = self.orden.registros_trabajo.latest('pk')
+        self.assertEqual(self.orden.estado, 'reparacion')
+        self.assertIsNone(self.orden.fecha_fin)
+        self.assertEqual(self.unidad.estado, 'Mantenimiento')
+        self.assertEqual(self.unidad.horas_uso, Decimal('105'))
+        self.assertEqual(registro.observaciones, 'Diagnóstico inicial realizado.')
+        self.assertFalse(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
+
+        respuesta = self.client.get(
+            reverse('mantenimiento:mantenimiento_historial', args=[self.unidad.pk]),
+        )
+        self.assertContains(respuesta, 'Diagnóstico inicial realizado.')
+        self.client.force_login(self.otro_tecnico)
+        respuesta = self.client.get(
+            reverse('mantenimiento:mantenimiento_historial', args=[self.unidad.pk]),
+        )
+        self.assertContains(respuesta, 'Diagnóstico inicial realizado.')
 
     def test_informe_respeta_asignacion_y_otras_ordenes_abiertas(self):
         url = reverse('ordenes_trabajo:informe', args=[self.orden.pk])
@@ -210,20 +262,17 @@ class OrdenTrabajoTests(TestCase):
         )
         datos['accion'] = 'finalizar'
         respuesta = self.client.post(url, datos)
-        self.assertContains(respuesta, 'solicitudes de repuestos pendientes')
+        self.assertRedirects(
+            respuesta, reverse('ordenes_trabajo:detalle', args=[self.orden.pk]),
+        )
         self.orden.refresh_from_db()
-        self.assertEqual(self.orden.estado, 'pendiente')
-        self.assertEqual(self.orden.registros_trabajo.count(), 0)
-        self.assertTrue(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
-        solicitud.estado = 'recibida'
-        solicitud.save(update_fields=['estado'])
-        self.client.post(url, datos)
-        self.orden.refresh_from_db()
-        self.unidad.refresh_from_db()
         self.assertEqual(self.orden.estado, 'finalizada')
         self.assertIsNotNone(self.orden.fecha_fin)
+        self.unidad.refresh_from_db()
         self.assertEqual(self.unidad.estado, 'Disponible')
         self.assertEqual(self.orden.horas_mano_obra_total, Decimal('3'))
+        self.assertEqual(solicitud.estado, 'pendiente')
+        self.assertFalse(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
 
     def test_finalizacion_exige_checklist_y_programa_proximo_servicio(self):
         self.client.force_login(self.tecnico)
@@ -310,6 +359,24 @@ class OrdenTrabajoTests(TestCase):
         self.assertEqual(self.unidad.horas_uso, 100)
         self.assertEqual(self.orden.registros_trabajo.count(), 0)
         self.assertContains(respuesta, 'no puede ser menor')
+
+    def test_borrador_rechaza_horometro_menor_sin_perder_datos(self):
+        self.client.force_login(self.tecnico)
+        datos = self.datos_informe()
+        datos.update({
+            'accion': 'borrador',
+            'avance-horometro': '99',
+        })
+        respuesta = self.client.post(
+            reverse('ordenes_trabajo:informe', args=[self.orden.pk]),
+            datos,
+        )
+        self.assertContains(respuesta, 'no puede ser menor que la lectura actual')
+        self.assertContains(respuesta, 'Se reparó la unidad.')
+        self.assertContains(respuesta, 'Tus datos siguen en el formulario')
+        self.assertFalse(BorradorOrden.objects.filter(mantenimiento=self.orden).exists())
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.horas_uso, 100)
 
     def test_estimacion_en_diagnostico_y_reparacion(self):
         self.client.force_login(self.tecnico)
@@ -502,11 +569,6 @@ class OrdenTrabajoTests(TestCase):
         self.assertContains(self.client.get(detalle), recibir)
         self.assertContains(self.client.get(reverse('Repuestos_Inventario:lista')), recibir)
 
-        datos = {**self.datos_informe(), 'accion': 'finalizar'}
-        self.assertContains(
-            self.client.post(reverse('ordenes_trabajo:informe', args=[self.orden.pk]), datos),
-            'aprobadas sin recibir',
-        )
         self.client.post(recibir)
         solicitud.refresh_from_db()
         repuesto = Repuesto.objects.get(codigo='NUEVO-01')
@@ -520,9 +582,14 @@ class OrdenTrabajoTests(TestCase):
         self.assertEqual(repuesto.existencia, Decimal('2'))
         self.assertEqual(EntradaRepuesto.objects.filter(solicitud=solicitud).count(), 1)
 
-        self.client.post(reverse('ordenes_trabajo:informe', args=[self.orden.pk]), datos)
+        datos = {**self.datos_informe(), 'accion': 'finalizar'}
+        self.assertRedirects(
+            self.client.post(reverse('ordenes_trabajo:informe', args=[self.orden.pk]), datos),
+            reverse('ordenes_trabajo:detalle', args=[self.orden.pk]),
+        )
         self.orden.refresh_from_db()
         self.assertEqual(self.orden.estado, 'finalizada')
+
 
     def test_solo_tecnico_asignado_puede_recibir_y_no_puede_aprobar(self):
         solicitud = SolicitudRepuesto.objects.create(

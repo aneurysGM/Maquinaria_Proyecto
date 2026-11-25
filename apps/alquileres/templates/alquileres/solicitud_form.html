@@ -29,7 +29,7 @@
                     <h2 class="h4 fw-bold">{{ unidad.maquinaria.nombre }}</h2>
                     <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripciÃ³n disponible."|linebreaksbr }}</p>
                     <dl class="row mb-0">
-                        <dt class="col-7">CÃ³digo / Serie</dt>
+                        <dt class="col-7">Codigo / Serie</dt>
                         <dd class="col-5 text-end">{{ unidad.maquinaria.codigo }} / {{ unidad.numero_serie }}</dd>
                         <dt class="col-7">Tarifa diaria</dt>
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_diaria|entero_con_comas }}</dd>
@@ -37,9 +37,9 @@
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_semanal|entero_con_comas }}</dd>
                         <dt class="col-7">Tarifa mensual</dt>
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_mensual|entero_con_comas }}</dd>
-                        <dt class="col-7">DepÃ³sito base (1â€“7 dÃ­as)</dt>
+                        <dt class="col-7">Deposito base (1 a 7 dias)</dt>
                         <dd class="col-5 text-end">RD${{ unidad.maquinaria.deposito_garantia|entero_con_comas }}</dd>
-                        <dt class="col-7">CondiciÃ³n</dt>
+                        <dt class="col-7">Condicion</dt>
                         <dd class="col-5 text-end">Sin operador</dd>
                     </dl>
                 </div>

@@ -140,9 +140,13 @@ def _renderizar_detalle(request, mantenimiento_id, formularios=None):
         if orden.fecha_estimada_fin else None,
     }
     avance_inicial.update(datos_borrador.get('avance', {}))
+    conservar_informe = formularios is not None
     formularios = formularios or {
         'actualizar_form': ActualizarOrdenForm(
-            initial=avance_inicial, prefix='avance', permitir_finalizada=True,
+            initial=avance_inicial,
+            prefix='avance',
+            permitir_finalizada=True,
+            horometro_minimo=orden.unidad.horas_uso,
         ),
         'checklist_form': ChecklistForm(
             checklist_existente=checklist_existente,
@@ -156,12 +160,10 @@ def _renderizar_detalle(request, mantenimiento_id, formularios=None):
         'es_administrador': administrador,
         **formularios,
         'hay_borrador': borrador is not None,
+        'conservar_informe': conservar_informe,
         'comentario_form': ComentarioOrdenForm(),
         'solicitud_formset': SolicitudRepuestoFormSet(prefix='repuestos'),
         'consumo_form': ConsumoRepuestoForm(),
-        'hay_solicitudes_pendientes': orden.solicitudes_repuestos.filter(
-            estado__in=('pendiente', 'aprobada'),
-        ).exists(),
     })
 
 
@@ -212,12 +214,6 @@ def _finalizar_orden(orden, usuario, observaciones):
     }
     if len(checklist) != len(PuntoChecklist.PUNTOS):
         raise ValidationError('Completa todos los puntos del checklist antes de finalizar.')
-    if orden.solicitudes_repuestos.filter(estado__in=('pendiente', 'aprobada')).exists():
-        raise ValidationError(
-            'No puedes finalizar mientras haya solicitudes de repuestos pendientes '
-            'o aprobadas sin recibir.'
-        )
-
     unidad = bloquear_unidad(pk=orden.unidad_id)
     orden.estado = 'finalizada'
     orden.fecha_fin = timezone.localdate()
@@ -251,17 +247,33 @@ def _finalizar_orden(orden, usuario, observaciones):
 def orden_informe(request, mantenimiento_id):
     _requiere_tecnico(request.user)
     accion = request.POST.get('accion')
-    if accion not in ('borrador', 'finalizar'):
+    if accion not in ('borrador', 'avance', 'finalizar'):
         return HttpResponseBadRequest('La acción de la orden no es válida.')
     parcial = accion == 'borrador'
+    orden = _obtener_orden(request.user, mantenimiento_id)
     formularios = {
         'actualizar_form': ActualizarOrdenForm(
-            request.POST, prefix='avance', parcial=parcial, permitir_finalizada=True,
+            request.POST,
+            prefix='avance',
+            parcial=parcial,
+            permitir_finalizada=accion != 'avance',
+            horometro_minimo=orden.unidad.horas_uso,
         ),
-        'checklist_form': ChecklistForm(request.POST, prefix='checklist', parcial=parcial),
-        'cierre_form': CierreOrdenForm(request.POST, prefix='cierre', parcial=parcial),
+        'checklist_form': ChecklistForm(
+            request.POST, prefix='checklist',
+            parcial=parcial or accion == 'avance',
+        ),
+        'cierre_form': CierreOrdenForm(
+            request.POST, prefix='cierre',
+            parcial=parcial or accion == 'avance',
+        ),
     }
-    validos = [form.is_valid() for form in formularios.values()]
+    formularios_a_validar = (
+        [formularios['actualizar_form']]
+        if accion == 'avance'
+        else list(formularios.values())
+    )
+    validos = [form.is_valid() for form in formularios_a_validar]
     if not all(validos):
         messages.error(request, 'Revisa los campos indicados; no se guardaron cambios.')
         return _renderizar_detalle(request, mantenimiento_id, formularios)
@@ -282,6 +294,13 @@ def orden_informe(request, mantenimiento_id):
                 BorradorOrden.objects.update_or_create(
                     mantenimiento=orden, defaults={'datos': datos},
                 )
+            elif accion == 'avance':
+                unidad = bloquear_unidad(pk=orden.unidad_id)
+                _registrar_avance(
+                    orden, unidad, request.user,
+                    formularios['actualizar_form'],
+                )
+                BorradorOrden.objects.filter(mantenimiento=orden).delete()
             else:
                 unidad = bloquear_unidad(pk=orden.unidad_id)
                 _registrar_avance(orden, unidad, request.user, formularios['actualizar_form'])
@@ -290,11 +309,16 @@ def orden_informe(request, mantenimiento_id):
     except (ValidationError, DatabaseError) as error:
         _mensaje_error(request, error)
         return _renderizar_detalle(request, mantenimiento_id, formularios)
-    messages.success(
-        request,
-        'Borrador guardado; todavía no se ha enviado la orden.'
-        if parcial else 'Orden finalizada y formulario enviado.',
-    )
+    if accion == 'borrador':
+        mensaje = 'Borrador guardado; todavía no se publicó en la bitácora.'
+    elif accion == 'avance':
+        mensaje = (
+            'Avance guardado en la bitácora y el historial. '
+            'Puedes continuar con la orden.'
+        )
+    else:
+        mensaje = 'Orden finalizada y formulario enviado.'
+    messages.success(request, mensaje)
     return redirect('ordenes_trabajo:detalle', mantenimiento_id=mantenimiento_id)
 
 
@@ -302,7 +326,10 @@ def orden_informe(request, mantenimiento_id):
 @require_POST
 def orden_actualizar(request, mantenimiento_id):
     _requiere_tecnico(request.user)
-    form = ActualizarOrdenForm(request.POST)
+    orden = _obtener_orden(request.user, mantenimiento_id)
+    form = ActualizarOrdenForm(
+        request.POST, horometro_minimo=orden.unidad.horas_uso,
+    )
     if not form.is_valid():
         _mensaje_error(
             request,

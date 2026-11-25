@@ -52,9 +52,16 @@ class ActualizarOrdenForm(forms.Form):
         }),
     )
 
-    def __init__(self, *args, parcial=False, permitir_finalizada=False, **kwargs):
+    def __init__(
+        self, *args, parcial=False, permitir_finalizada=False,
+        horometro_minimo=None, **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.parcial = parcial
+        self.horometro_minimo = horometro_minimo
+        if horometro_minimo is not None:
+            self.fields['horometro'].min_value = horometro_minimo
+            self.fields['horometro'].widget.attrs['min'] = str(horometro_minimo)
         if permitir_finalizada:
             self.fields['estado'].choices = [
                 *self.fields['estado'].choices,
@@ -71,6 +78,17 @@ class ActualizarOrdenForm(forms.Form):
         datos = super().clean()
         if not self.parcial and datos.get('estado') == 'reparacion' and datos.get('dias_estimados') is None:
             self.add_error('dias_estimados', 'Indica los días estimados para la reparación.')
+        horometro = datos.get('horometro')
+        if (
+            horometro is not None
+            and self.horometro_minimo is not None
+            and horometro < self.horometro_minimo
+        ):
+            self.add_error(
+                'horometro',
+                f'El horómetro no puede ser menor que la lectura actual '
+                f'({self.horometro_minimo} h).',
+            )
         return datos
 
 

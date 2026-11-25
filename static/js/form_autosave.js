@@ -90,7 +90,12 @@
     }
 
     function isPersistable(form, control) {
-        if (!control.name || control.disabled || control.hasAttribute('data-autosave-ignore')) {
+        if (
+            !control.name
+            || control.disabled
+            || control.hasAttribute('data-autosave-ignore')
+            || control.hasAttribute('data-autosave-keep-initial')
+        ) {
             return false;
         }
 
@@ -237,6 +242,22 @@
         leaving = false;
     }
 
+    function hasServerErrors(form) {
+        return Boolean(form.querySelector(
+            '.is-invalid, .invalid-feedback, [aria-invalid="true"]'
+        ));
+    }
+
+    function resetCleanForms() {
+        formsByKey.forEach((form) => {
+            if (!hasServerErrors(form) && !form.hasAttribute('data-preserve-values')) {
+                clearControls(form);
+            }
+        });
+        clearAllDrafts();
+        leaving = false;
+    }
+
     function disableNativeRestore(form) {
         form.setAttribute('autocomplete', 'off');
         Array.from(form.elements).forEach((control) => {
@@ -313,7 +334,7 @@
         if (!(form instanceof HTMLFormElement)) return;
 
         queueMicrotask(() => {
-            if (!event.defaultPrevented) discardDrafts(true);
+            if (!event.defaultPrevented) discardDrafts();
         });
     });
 
@@ -334,12 +355,19 @@
             clearAllDrafts(new Set(formsByKey.keys()));
             return;
         }
-        resetForms();
+        if (event.persisted || type === 'back_forward') {
+            resetForms();
+            return;
+        }
+        // En una entrada normal los valores precargados por Django también deben
+        // borrarse. Solo se conservan cuando el servidor devolvió errores.
+        resetCleanForms();
     });
 
     // El breve retraso evita borrar durante el ocultamiento momentáneo de un F5.
     document.addEventListener('visibilitychange', () => {
         clearTimeout(tabSwitchClearTimer);
+        if (leaving) return;
         if (document.visibilityState === 'visible') {
             if (tabWasHidden) resetForms();
             tabWasHidden = false;
