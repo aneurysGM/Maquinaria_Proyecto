@@ -209,6 +209,17 @@
 
     // El usuario se va (o ya terminó): borra todo y no vuelve a guardar hasta que escriba otra vez.
     function clearControls(form) {
+        if (form.hasAttribute('data-autosave-reset-initial')) {
+            HTMLFormElement.prototype.reset.call(form);
+            Array.from(form.elements).forEach((control) => {
+                if (isPersistable(form, control)) {
+                    control.dispatchEvent(new Event('input', { bubbles: true }));
+                    control.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+            return;
+        }
+
         Array.from(form.elements).forEach((control) => {
             if (!isPersistable(form, control)) return;
 
@@ -359,8 +370,7 @@
             resetForms();
             return;
         }
-        // En una entrada normal los valores precargados por Django también deben
-        // borrarse. Solo se conservan cuando el servidor devolvió errores.
+        // Se borran los formularios nuevos; los de edición restauran los valores iniciales.
         resetCleanForms();
     });
 

@@ -1,25 +1,25 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
     <div>
         <h2 class="h5 fw-bold mb-1"><a class="link-dark" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Solicitud #{{ solicitud.pk }} Â· {{ solicitud.unidad.maquinaria.nombre }}</a></h2>
-        <p class="text-secondary small mb-0">CÃ³digo {{ solicitud.unidad.maquinaria.codigo }} Â· Serie {{ solicitud.unidad.numero_serie }}</p>
+        <p class="text-secondary small mb-0">Codigo {{ solicitud.unidad.maquinaria.codigo }} Â· Serie {{ solicitud.unidad.numero_serie }}</p>
     </div>
     {% include 'alquileres/estado_cliente.html' %}
 </div>
 <dl class="row g-2 mt-3 mb-0">
     <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">{{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}</dd>
-    <dt class="col-sm-3">Plan</dt><dd class="col-sm-9">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} perÃ­odo(s)</dd>
+    <dt class="col-sm-3">Plan</dt><dd class="col-sm-9">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} peri­odo(s)</dd>
     <dt class="col-sm-3">Fechas programadas</dt><dd class="col-sm-9">{{ solicitud.fecha_inicio|date:"d/m/Y" }} â€“ {{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
     <dt class="col-sm-3">Enviada</dt><dd class="col-sm-9">{{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</dd>
     <dt class="col-sm-3">Entrega</dt><dd class="col-sm-9">{{ solicitud.estado_entrega }}</dd>
     {% if solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and not solicitud.pago_inicial_completo and solicitud.fecha_limite_pago %}
-    <dt class="col-sm-3">Fecha lÃ­mite del pago inicial</dt><dd class="col-sm-9">Renta y depÃ³sito: {{ solicitud.fecha_limite_pago|date:"d/m/Y H:i" }}</dd>
+    <dt class="col-sm-3">Fecha li­mite del pago inicial</dt><dd class="col-sm-9">Renta y deposito: {{ solicitud.fecha_limite_pago|date:"d/m/Y H:i" }}</dd>
     {% endif %}
 </dl>
 {% include 'alquileres/proximo_paso.html' %}
 {% if solicitud.cancelada_por_mantenimiento %}
 <div class="alert alert-warning mt-3" role="status">
-    Esta solicitud fue cancelada por mantenimiento forzado. Los pagos de renta y depÃ³sito pendientes de devoluciÃ³n se muestran en el presupuesto; contacta al administrador para coordinar el reembolso.
-    Puedes solicitar otra maquinaria o hacer una nueva solicitud cuando esta unidad estÃ© disponible.
+    Esta solicitud fue cancelada por mantenimiento forzado. Los pagos de renta y deposito pendientes de devolucion se muestran en el presupuesto; contacta al administrador para coordinar el reembolso.
+    Puedes solicitar otra maquinaria o hacer una nueva solicitud cuando esta unidad este disponible.
     {% if es_cliente %}<a href="{% url 'inventario:maquinaria_lista' %}">Ver maquinaria disponible</a>{% endif %}
 </div>
 {% endif %}
@@ -28,7 +28,7 @@
     <strong>{% if es_administrador %}Aviso enviado al cliente{% else %}Mensaje del administrador{% endif %}</strong>
     <p class="mb-1">{{ solicitud.motivo_disponibilidad|linebreaksbr }}</p>
     {% if es_administrador %}
-        {% if solicitud.aplazada %}<small>El cliente aceptÃ³ aplazar la solicitud.</small>
+        {% if solicitud.aplazada %}<small>El cliente acepta³ aplazar la solicitud.</small>
         {% else %}<small>Esperando la respuesta del cliente.</small>{% endif %}
     {% endif %}
 </div>
@@ -38,24 +38,24 @@
 <p class="alert {% if solicitud.aviso_vencimiento == 'Vencido' %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0" role="{% if solicitud.aviso_vencimiento == 'Vencido' %}alert{% else %}status{% endif %}">
     {% if solicitud.aviso_vencimiento == 'Vencido' %}
         {% if request.user.es_cliente %}
-        Tienes atrasada la devoluciÃ³n de <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong>. La fecha estimada era el {{ solicitud.fecha_fin|date:"d/m/Y" }}; llevas {{ solicitud.dias_atraso_actual }} dÃ­a(s) de atraso.
+        Tienes atrasada la devolucion de <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong>. La fecha estimada era el {{ solicitud.fecha_fin|date:"d/m/Y" }}; llevas {{ solicitud.dias_atraso_actual }} dia(s) de atraso.
         {% else %}
-        <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong> sigue con {{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}. DebÃ­a devolverse el {{ solicitud.fecha_fin|date:"d/m/Y" }} y lleva {{ solicitud.dias_atraso_actual }} dÃ­a(s) de atraso.
+        <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong> sigue con {{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}. Debera ­a devolverse el {{ solicitud.fecha_fin|date:"d/m/Y" }} y lleva {{ solicitud.dias_atraso_actual }} dia(s) de atraso.
         {% endif %}
     {% else %}
-        {{ solicitud.aviso_vencimiento }} Â· DevoluciÃ³n programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.
+        {{ solicitud.aviso_vencimiento }} Â· devolucion programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.
     {% endif %}
 </p>
 {% endif %}
 {% if solicitud.dias_atraso_actual > 0 %}
 <div class="alert alert-warning mt-3 mb-0" role="alert">
-    {{ solicitud.dias_atraso_actual }} dÃ­a(s) de atraso.
+    {{ solicitud.dias_atraso_actual }} dia(s) de atraso.
     {% if solicitud.politica_mora_aplica %}
         {% if solicitud.presupuesto %}
             {% if solicitud.fecha_retorno %}Mora registrada: ${{ solicitud.presupuesto.mora_total|entero_con_comas }}.
-            {% else %}Mora estimada hasta hoy: ${{ solicitud.presupuesto.mora_aplicable|entero_con_comas }}; se incrementa cada dÃ­a.{% endif %}
+            {% else %}Mora estimada hasta hoy: ${{ solicitud.presupuesto.mora_aplicable|entero_con_comas }}; se incrementa cada dia.{% endif %}
         {% endif %}
-    {% else %}Registro histÃ³rico exento de mora.{% endif %}
+    {% else %}Registro historico exento de mora.{% endif %}
 </div>
 {% endif %}
 <div class="d-flex flex-wrap gap-2 mt-3">

@@ -22,15 +22,14 @@
         semanal: Number(form.dataset.tarifaSemanal),
         mensual: Number(form.dataset.tarifaMensual),
     };
-    const depositoBase = Number(form.dataset.depositoBase);
+    const depositoGarantia = Number(form.dataset.deposito);
     const diasPlan = { diario: 1, semanal: 7, mensual: 30 };
 
     function actualizarPresupuesto() {
         const cantidadPlan = Math.max(Number.parseInt(cantidad.value.replace(/,/g, ''), 10) || 0, 0);
         const importeRenta = (tarifas[plan.value] || 0) * cantidadPlan;
         const dias = (diasPlan[plan.value] || 1) * cantidadPlan;
-        const factorDuracion = dias <= 7 ? 1 : dias <= 29 ? 0.85 : 0.75;
-        const importeDeposito = Math.round(depositoBase * factorDuracion);
+        const importeDeposito = depositoGarantia;
 
         duracion.textContent = `${dias} día(s)`;
         renta.textContent = moneda.format(importeRenta);

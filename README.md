@@ -589,6 +589,10 @@ ni se crearon registros en la base de trabajo.
   `apps/ventas/static/ventas/animations/presupuesto.js`.
 - Se implementó `apps/ventas/` para conservar en cada presupuesto la tarifa del
   plan elegida al solicitar, el importe de renta y el depósito reembolsable.
+  El administrador establece manualmente el depósito de cada maquinaria; el
+  presupuesto conserva ese importe sin ajustarlo por la duración del alquiler.
+  Al editar una maquinaria se muestran sus datos guardados; al salir se descartan
+  los cambios que no se hayan guardado.
   Los costos internos de adquisición no se muestran al cliente. El cliente
   consulta su presupuesto y el administrador tiene una lista de ventas en
   `/ventas/`; las páginas están en `apps/ventas/templates/ventas/`.
@@ -733,7 +737,7 @@ El comando:
 - copia usuarios sin recalcular sus contraseñas: conserva exactamente el hash;
 - copia grupos, membresías y permisos compatibles, excluyendo Supervisor,
   Operador y los permisos del modelo retirado;
-- convierte el JSON en `Categoria`, `Maquinaria` y `Unidad`;
+- convierte el JSON en `Metodoia`, `Maquinaria` y `Unidad`;
 - no actualiza usuarios, códigos o números de serie que ya existan;
 - verifica al final que usuarios, hashes, roles y unidades estén presentes;
 - se puede repetir sin duplicar datos.

@@ -24,7 +24,7 @@
         </div>
         <div class="col-sm-4">
             <div class="card border-0 shadow-sm h-100"><div class="card-body">
-                <div class="small text-secondary">DepÃ³sitos recibidos</div>
+                <div class="small text-secondary">depositos recibidos</div>
                 <div class="h5 mb-0">RD${{ resumen.depositos|entero_con_comas }}</div>
             </div></div>
         </div>
@@ -48,7 +48,7 @@
                         <th>Periodo / plan</th>
                         <th>Concepto</th>
                         <th>Monto</th>
-                        <th>MÃ©todo / referencia</th>
+                        <th>Metodo / referencia</th>
                         <th>Desglose del presupuesto</th>
                         <th class="pe-3">Registrado por</th>
                     </tr>
@@ -80,7 +80,7 @@
                         <td class="text-nowrap small">
                             Total: RD${{ fila.total_presupuesto|entero_con_comas }}<br>
                             Renta: RD${{ presupuesto.importe_renta|entero_con_comas }}<br>
-                            DepÃ³sito: RD${{ presupuesto.deposito_garantia|entero_con_comas }}<br>
+                            deposito: RD${{ presupuesto.deposito_garantia|entero_con_comas }}<br>
                             Mora: RD${{ presupuesto.mora_aplicable|entero_con_comas }}<br>
                             Pagado: RD${{ fila.total_pagado|entero_con_comas }}<br>
                             Reembolsado: RD${{ fila.deposito_reembolsado|entero_con_comas }}<br>

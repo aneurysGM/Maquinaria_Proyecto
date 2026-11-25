@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.core.exceptions import ValidationError
 from django.template import Context, Template
 from django.test import Client, TestCase
@@ -102,7 +104,7 @@ class CamposNumericosTests(TestCase):
         pago = PagoAlquilerForm()
 
         for campo in ('costo_adquisicion', 'tarifa_diaria', 'tarifa_semanal',
-                      'tarifa_mensual', 'horas_uso'):
+                      'tarifa_mensual', 'deposito_garantia', 'horas_uso'):
             self.assertNotIn('value="0"', str(maquinaria[campo]))
         self.assertNotIn('value="0"', str(pago['monto']))
 
@@ -123,3 +125,75 @@ class CamposNumericosTests(TestCase):
             plantilla.render(Context({'valor': 3450000})),
             '3,450,000',
         )
+
+
+class DepositoManualInventarioTests(TestCase):
+    def setUp(self):
+        self.admin = UsuarioPersonalizado.objects.create_user(
+            email='admin-deposito@example.com', password='pass',
+            rol=RolUsuario.ADMINISTRADOR,
+        )
+        self.categoria = Categoria.objects.create(nombre='Maquinaria')
+        self.client.force_login(self.admin)
+        self.datos = {
+            'categoria': self.categoria.pk,
+            'codigo': 'MAN-01',
+            'nombre': 'Equipo',
+            'costo_adquisicion': '100,000',
+            'tarifa_diaria': '1,000',
+            'tarifa_semanal': '5,000',
+            'tarifa_mensual': '15,000',
+            'deposito_garantia': '12,345',
+            'numero_serie': 'MAN-SERIE',
+            'estado': 'Disponible',
+            'horas_uso': '0',
+            'fecha_adquisicion': '2024-02-15',
+            'ubicacion_actual': 'Almacén',
+            'imagenes-TOTAL_FORMS': '0',
+            'imagenes-INITIAL_FORMS': '0',
+        }
+
+    def test_admin_crea_y_edita_deposito_manualmente(self):
+        crear = reverse('inventario:maquinaria_crear')
+        self.assertContains(self.client.get(crear), 'name="deposito_garantia"')
+        respuesta = self.client.post(crear, self.datos)
+        self.assertEqual(respuesta.status_code, 302, respuesta.context and respuesta.context['form'].errors)
+        maquinaria = Maquinaria.objects.get(codigo='MAN-01')
+        self.assertEqual(maquinaria.deposito_garantia, 12345)
+
+        unidad = maquinaria.unidades.get()
+        self.assertEqual(unidad.fecha_adquisicion, date(2024, 2, 15))
+        editar = reverse('inventario:maquinaria_editar', args=[unidad.pk])
+        self.assertContains(self.client.get(editar), 'value="12345"')
+        self.datos['deposito_garantia'] = '0'
+        self.datos['costo_adquisicion'] = '200,000'
+        respuesta = self.client.post(editar, self.datos)
+        self.assertEqual(respuesta.status_code, 302, respuesta.context and respuesta.context['form'].errors)
+        maquinaria.refresh_from_db()
+        self.assertEqual(maquinaria.deposito_garantia, 0)
+        unidad.refresh_from_db()
+        self.assertEqual(unidad.fecha_adquisicion, date(2024, 2, 15))
+
+    def test_deposito_negativo_no_se_acepta(self):
+        self.datos['deposito_garantia'] = '-1'
+        respuesta = self.client.post(reverse('inventario:maquinaria_crear'), self.datos)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context['form'].errors.get('deposito_garantia'))
+        self.assertFalse(Maquinaria.objects.filter(codigo='MAN-01').exists())
+
+    def test_solo_edicion_conserva_datos_registrados(self):
+        maquinaria = Maquinaria.objects.create(
+            categoria=self.categoria, codigo='EDIT-01', nombre='Equipo registrado',
+            tarifa_diaria=1000, tarifa_semanal=5000, tarifa_mensual=15000,
+            deposito_garantia=12345,
+        )
+        unidad = Unidad.objects.create(
+            maquinaria=maquinaria, numero_serie='EDIT-SERIE',
+            ubicacion_actual='Almacén', fecha_adquisicion=date(2024, 2, 15),
+        )
+        crear = self.client.get(reverse('inventario:maquinaria_crear'))
+        editar = self.client.get(reverse('inventario:maquinaria_editar', args=[unidad.pk]))
+        self.assertNotContains(crear, 'data-autosave-reset-initial')
+        self.assertContains(editar, 'data-autosave-reset-initial')
+        for texto in ('EDIT-01', 'Equipo registrado', 'EDIT-SERIE', 'Almacén', '12345', '2024-02-15'):
+            self.assertContains(editar, texto)

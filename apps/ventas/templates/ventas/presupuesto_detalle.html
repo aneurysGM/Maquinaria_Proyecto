@@ -27,7 +27,7 @@
     {% if solicitud.pendiente_direccion_entrega %}
     {% include 'alquileres/direccion_entrega_resumen.html' %}
     {% if es_cliente and not es_administrador %}
-    <a class="btn btn-primary mb-4" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar direcciÃ³n de entrega</a>
+    <a class="btn btn-primary mb-4" href="{% url 'alquileres:solicitud_direccion_entrega' solicitud.pk %}">Indicar direccion de entrega</a>
     {% endif %}
     {% endif %}
 
@@ -40,10 +40,10 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6">Plan</dt>
-                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} perÃ­odo(s)</dd>
+                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} peri­odo(s)</dd>
                         <dt class="col-sm-6">Fecha de entrega programada</dt>
                         <dd class="col-sm-6">{{ solicitud.fecha_inicio|date:"d/m/Y" }}</dd>
-                        <dt class="col-sm-6">DevoluciÃ³n programada</dt>
+                        <dt class="col-sm-6">devolucion programada</dt>
                         <dd class="col-sm-6">{{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
                         <dt class="col-sm-6">Tarifa por plan</dt>
                         <dd class="col-sm-6">${{ presupuesto.tarifa_periodo|entero_con_comas }}</dd>
@@ -62,7 +62,7 @@
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
                         <thead class="table-light">
-                            <tr><th class="ps-3">Fecha</th><th>Concepto</th><th>MÃ©todo</th><th>Referencia</th><th class="text-end pe-3">Monto</th></tr>
+                            <tr><th class="ps-3">Fecha</th><th>Concepto</th><th>Metodo</th><th>Referencia</th><th class="text-end pe-3">Monto</th></tr>
                         </thead>
                         <tbody>
                             {% for pago in presupuesto.pagos.all %}
@@ -89,22 +89,22 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Renta ({{ solicitud.cantidad }} Ã— ${{ presupuesto.tarifa_periodo|entero_con_comas }})</span>
+                        <span>Renta ({{ solicitud.cantidad }} — ${{ presupuesto.tarifa_periodo|entero_con_comas }})</span>
                         <strong>${{ presupuesto.importe_renta|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>DepÃ³sito reembolsable (sin operador, cÃ¡lculo automÃ¡tico)</span>
+                        <span>deposito reembolsable (sin operador, calculo automatico)</span>
                         <strong>RD${{ presupuesto.deposito_garantia|entero_con_comas }}</strong>
                     </div>
                     {% if solicitud.fecha_retorno %}
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Mora por {{ solicitud.dias_atraso }} dÃ­a(s) de atraso</span>
+                        <span>Mora por {{ solicitud.dias_atraso }} dia(s) de atraso</span>
                         <strong>${{ presupuesto.mora_total|entero_con_comas }}</strong>
                     </div>
                     {% elif solicitud.dias_atraso_actual %}
                     <div class="alert alert-warning small mt-3 mb-2" role="alert">
-                        Tienes {{ solicitud.dias_atraso_actual }} dÃ­a(s) de atraso. Se generÃ³ una advertencia.
-                        La mora estimada hasta hoy es ${{ mora_estimada|entero_con_comas }} y aumenta cada dÃ­a.
+                        Tienes {{ solicitud.dias_atraso_actual }} dia(s) de atraso. Se genero una advertencia.
+                        La mora estimada hasta hoy es ${{ mora_estimada|entero_con_comas }} y aumenta cada dia.
                     </div>
                     {% endif %}
                     <hr>
@@ -118,7 +118,7 @@
                     </div>
                     {% if presupuesto.deposito_reembolsado %}
                     <div class="d-flex justify-content-between mb-2 text-secondary">
-                        <span>DepÃ³sito reembolsado</span>
+                        <span>deposito reembolsado</span>
                         <strong>âˆ’${{ presupuesto.deposito_reembolsado|entero_con_comas }}</strong>
                     </div>
                     {% endif %}
@@ -131,18 +131,18 @@
                         <span class="fw-bold">Saldo pendiente</span>
                         <strong class="text-danger">${{ presupuesto.saldo_pendiente_actual|entero_con_comas }}</strong>
                     </div>
-                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|entero_con_comas }}</strong> Â· DepÃ³sito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|entero_con_comas }}</strong>.</p>
-                    <p class="small text-muted mt-2 mb-0">Los reembolsos del depÃ³sito se registran aparte y no reducen la renta pendiente.</p>
-                    <p class="small text-muted mt-3 mb-0">El depÃ³sito es una garantÃ­a reembolsable. El presupuesto no incluye costos internos de adquisiciÃ³n de la maquinaria.</p>
+                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|entero_con_comas }}</strong> Â· deposito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|entero_con_comas }}</strong>.</p>
+                    <p class="small text-muted mt-2 mb-0">Los reembolsos del deposito se registran aparte y no reducen la renta pendiente.</p>
+                    <p class="small text-muted mt-3 mb-0">El deposito es una garanti­a reembolsable. El presupuesto no incluye costos internos de adquisicion de la maquinaria.</p>
                     {% endif %}
                 </div>
             </section>
 
             <section class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso del depÃ³sito</h2></div>
+                <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso del deposito</h2></div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between small mb-2">
-                        <span>DepÃ³sito recibido</span><strong>${{ presupuesto.deposito_pagado|entero_con_comas }}</strong>
+                        <span>deposito recibido</span><strong>${{ presupuesto.deposito_pagado|entero_con_comas }}</strong>
                     </div>
                     <div class="d-flex justify-content-between small mb-2">
                         <span>Reembolsado</span><strong>${{ presupuesto.deposito_reembolsado|entero_con_comas }}</strong>
@@ -175,7 +175,7 @@
                         <button class="btn btn-outline-success fw-semibold" type="submit">Registrar reembolso</button>
                     </form>
                     {% elif not solicitud.fecha_retorno and not solicitud.cancelada_por_mantenimiento %}
-                    <p class="small text-muted mt-3 mb-0">El depÃ³sito recibido podrÃ¡ devolverse despuÃ©s de registrar el retorno de la maquinaria.</p>
+                    <p class="small text-muted mt-3 mb-0">El deposito recibido podra devolverse despues de registrar el retorno de la maquinaria.</p>
                     {% endif %}
                 </div>
             </section>
@@ -185,7 +185,7 @@
                 <div class="card-header bg-white py-3"><h2 class="h5 mb-0">Reembolso de renta</h2></div>
                 <div class="card-body">
                     <p class="mb-1">Renta reembolsada: <strong>${{ presupuesto.renta_reembolsada|entero_con_comas }}</strong></p>
-                    <p class="mb-1">Renta pendiente de devoluciÃ³n: <strong>${{ presupuesto.renta_por_reembolsar|entero_con_comas }}</strong></p>
+                    <p class="mb-1">Renta pendiente de devolucion: <strong>${{ presupuesto.renta_por_reembolsar|entero_con_comas }}</strong></p>
                     {% for reembolso in presupuesto.reembolsos_renta.all %}
                     <p class="small mb-1">{{ reembolso.creado_en|date:"d/m/Y" }} Â· {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} Â· {{ reembolso.referencia }}{% endif %} Â· ${{ reembolso.monto|entero_con_comas }}</p>
                     {% endfor %}
@@ -220,16 +220,16 @@
                         {% if not solicitud.pago_inicial_completo %}
                         <input type="hidden" name="revision_reserva" value="{{ revision_reserva }}">
                         <fieldset id="confirmacion-reserva" class="border rounded-3 p-3 mb-3">
-                            <legend class="float-none w-auto h6 px-1">ConfirmaciÃ³n de reserva</legend>
-                            <p class="small">Si este pago completa la renta y el depÃ³sito inicial, confirma la reserva. Las solicitudes con fechas cruzadas se mantienen y recibirÃ¡n este motivo para que sus clientes decidan si aplazan o cancelan.</p>
+                            <legend class="float-none w-auto h6 px-1">Confirmacion de reserva</legend>
+                            <p class="small">Si este pago completa la renta y el deposito inicial, confirma la reserva. Las solicitudes con fechas cruzadas se mantienen y recibiran este motivo para que sus clientes decidan si aplazan o cancelan.</p>
                             {% for afectada, motivo in afectadas %}
                             <div class="mb-3">
-                                <p class="small fw-semibold mb-1">Solicitud #{{ afectada.pk }} Â· {{ afectada.fecha_inicio|date:"d/m/Y" }} â€“ {{ afectada.fecha_fin|date:"d/m/Y" }}</p>
+                                <p class="small fw-semibold mb-1">Solicitud #{{ afectada.pk }} · {{ afectada.fecha_inicio|date:"d/m/Y" }} – {{ afectada.fecha_fin|date:"d/m/Y" }}</p>
                                 <label class="form-label" for="{{ motivo.id_for_label }}">Motivo para el cliente</label>
                                 {{ motivo }}
                                 {% if motivo.errors %}<div class="text-danger small">{{ motivo.errors }}</div>{% endif %}
                             </div>
-                            {% empty %}<p class="small mb-0">No hay otras solicitudes afectadas para este perÃ­odo.</p>{% endfor %}
+                            {% empty %}<p class="small mb-0">No hay otras solicitudes afectadas para este peri­odo.</p>{% endfor %}
                         </fieldset>
                         {% endif %}
                         <button id="guardar-pago" class="btn btn-warning fw-semibold" type="submit">Guardar pago</button>

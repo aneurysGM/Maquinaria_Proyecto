@@ -23,7 +23,7 @@
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4 p-md-5">
             
-            <form method="post" enctype="multipart/form-data" novalidate>
+            <form method="post" enctype="multipart/form-data" novalidate {% if unidad %}data-autosave-reset-initial{% endif %}>
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
@@ -191,7 +191,7 @@
                 <hr class="my-4 text-muted opacity-25">
                 <h5 class="fw-bold mb-3 text-dark">Información Financiera y Tarifas</h5>
 
-                <!-- Fila 4: Valor comercial -->
+                <!-- Fila 4: Valor comercial y depósito -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label for="{{ form.costo_adquisicion.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
@@ -205,8 +205,17 @@
                             <div class="invalid-feedback d-block small">{% for error in form.costo_adquisicion.errors %}{{ error }}{% endfor %}</div>
                         {% endif %}
                     </div>
-                    <div class="col-md-6 d-flex align-items-end">
-                        <p class="form-text mb-2">El depósito se calcula automáticamente como el 8% del valor comercial y se ajusta según la duración del alquiler.</p>
+                    <div class="col-md-6">
+                        <label for="{{ form.deposito_garantia.id_for_label }}" class="form-label fw-semibold small text-uppercase text-secondary">
+                            {{ form.deposito_garantia.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">RD$</span>
+                            {{ form.deposito_garantia }}
+                        </div>
+                        {% if form.deposito_garantia.errors %}
+                            <div class="invalid-feedback d-block small">{% for error in form.deposito_garantia.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -372,7 +381,17 @@
         const prefix = container.dataset.formsetPrefix;
         const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
         const maximum = Number(container.dataset.maxNum);
+        const initialRows = new Set(container.querySelectorAll('.image-form-row'));
         if (Number(totalForms.value) >= maximum) addButton.disabled = true;
+
+        form.addEventListener('reset', function () {
+            container.querySelectorAll('.image-form-row').forEach((row) => {
+                if (!initialRows.has(row)) row.remove();
+            });
+            setTimeout(() => {
+                addButton.disabled = Number(totalForms.value) >= maximum;
+            }, 0);
+        });
 
         addButton.addEventListener('click', function () {
             const index = Number(totalForms.value);

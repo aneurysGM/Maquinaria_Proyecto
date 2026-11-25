@@ -79,7 +79,7 @@
         font-weight: 600;
     }
 
-    /* TÃTULO DE SECCIÃ“N */
+    /* TITULO DE SECCION */
     .mr-section-title {
         font-weight: 800;
         display: flex; align-items: center; gap: .6rem;
@@ -168,7 +168,7 @@
     {% if devoluciones_tardias or alquileres_vencidos %}
     <div class="alert mr-alert mr-alert-warning" role="alert">
         <strong><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Warning en la cuenta.</strong>
-        {{ devoluciones_tardias }} devoluciÃ³n(es) tardÃ­a(s) registrada(s) y
+        {{ devoluciones_tardias }} devolucion(es) tardia(s) registrada(s) y
         {{ alquileres_vencidos }} alquiler(es) actualmente vencido(s).
     </div>
     {% endif %}
@@ -177,7 +177,7 @@
         <div class="card-body">
             {% if cliente.is_active %}
             <h2 class="h5 fw-bold">Inactivar cliente</h2>
-            <p class="text-secondary mb-3">La inactivaciÃ³n es manual y no se aplicarÃ¡ por devoluciones tardÃ­as.</p>
+            <p class="text-secondary mb-3">La inactivacion es manual y no se aplicara¡ por devoluciones tardias.</p>
             <form method="post" action="{% url 'clientes:cliente_cambiar_estado' cliente.pk %}">
                 {% csrf_token %}
                 <input type="hidden" name="accion" value="inactivar">
@@ -205,7 +205,7 @@
                 <div class="card-body d-flex gap-3 align-items-start">
                     <div class="mr-icon"><i class="bi bi-envelope" aria-hidden="true"></i></div>
                     <div class="min-w-0">
-                        <span class="mr-label">Correo electrÃ³nico</span>
+                        <span class="mr-label">Correo electronico</span>
                         <div class="fw-semibold text-break mt-1">{{ cliente.email }}</div>
                     </div>
                 </div>
@@ -216,7 +216,7 @@
                 <div class="card-body d-flex gap-3 align-items-start">
                     <div class="mr-icon"><i class="bi bi-telephone" aria-hidden="true"></i></div>
                     <div>
-                        <span class="mr-label">TelÃ©fono</span>
+                        <span class="mr-label">Telefono</span>
                         <div class="fw-semibold mt-1">{{ cliente.telefono|default:"No registrado" }}</div>
                     </div>
                 </div>
@@ -260,7 +260,7 @@
                         <th scope="col" class="ps-3">Maquinaria</th>
                         <th scope="col">Plan y fecha programada</th>
                         <th scope="col">Solicitud</th>
-                        <th scope="col">Entrega / devoluciÃ³n real</th>
+                        <th scope="col">Entrega / devolucion real</th>
                         <th scope="col">Presupuesto / mora</th>
                     </tr>
                 </thead>
@@ -274,9 +274,9 @@
                             </span>
                         </td>
                         <td>
-                            <span class="d-block">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} perÃ­odo(s)</span>
+                            <span class="d-block">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} peri­odo(s)</span>
                             <span class="d-block small">Entrega: {{ solicitud.fecha_inicio|date:"d/m/Y" }}</span>
-                            <span class="d-block small">DevoluciÃ³n estimada: {{ solicitud.fecha_fin|date:"d/m/Y" }}</span>
+                            <span class="d-block small">devolucion estimada: {{ solicitud.fecha_fin|date:"d/m/Y" }}</span>
                             <span class="small text-muted">Solicitada {{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</span>
                         </td>
                         <td>
@@ -303,14 +303,14 @@
                             {% if solicitud.fecha_retorno %}
                             <span class="d-block small">Devuelta: {{ solicitud.fecha_retorno|date:"d/m/Y H:i" }}</span>
                             {% if solicitud.dias_atraso > 0 %}
-                            <span class="mr-badge mr-badge-late mt-1">{{ solicitud.dias_atraso }} dÃ­a(s) tarde</span>
+                            <span class="mr-badge mr-badge-late mt-1">{{ solicitud.dias_atraso }} dia(s) tarde</span>
                             {% else %}
                             <span class="mr-badge mr-badge-ok mt-1">A tiempo</span>
                             {% endif %}
                             {% elif solicitud.fecha_salida %}
                             <span class="d-block small text-muted">Retorno pendiente</span>
                             {% if solicitud.dias_atraso_actual > 0 %}
-                            <span class="mr-badge mr-badge-late mt-1">Warning Â· {{ solicitud.dias_atraso_actual }} dÃ­a(s) tarde</span>
+                            <span class="mr-badge mr-badge-late mt-1">Warning Â· {{ solicitud.dias_atraso_actual }} dia(s) tarde</span>
                             {% endif %}
                             {% endif %}
                         </td>
@@ -325,7 +325,7 @@
                             {% endif %}
                             <a class="d-inline-block small mt-1" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                             {% else %}
-                            <span class="small text-muted">Sin presupuesto histÃ³rico</span>
+                            <span class="small text-muted">Sin presupuesto historico</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -333,7 +333,7 @@
                     <tr>
                         <td colspan="5" class="text-center py-5">
                             <div class="mr-empty-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
-                            <span class="fw-semibold">Este cliente todavÃ­a no tiene solicitudes de alquiler.</span>
+                            <span class="fw-semibold">Este cliente Todavi­a no tiene solicitudes de alquiler.</span>
                         </td>
                     </tr>
                     {% endfor %}

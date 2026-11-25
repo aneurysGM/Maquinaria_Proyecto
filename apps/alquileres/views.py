@@ -176,9 +176,7 @@ def solicitud_registrar(request, unidad_id):
                         solicitud=solicitud,
                         tarifa_periodo=tarifa_periodo,
                         importe_renta=tarifa_periodo * solicitud.cantidad,
-                        deposito_garantia=unidad.maquinaria.calcular_deposito_garantia(
-                            dias_alquiler
-                        ),
+                        deposito_garantia=unidad.maquinaria.deposito_garantia,
                     )
             except ValidationError as error:
                 for mensaje in error.messages:

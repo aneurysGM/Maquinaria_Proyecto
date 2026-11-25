@@ -27,7 +27,7 @@
                 <div class="card-body p-4">
                     <span class="badge text-bg-success mb-2">Consulta las fechas disponibles</span>
                     <h2 class="h4 fw-bold">{{ unidad.maquinaria.nombre }}</h2>
-                    <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripciÃ³n disponible."|linebreaksbr }}</p>
+                    <p class="text-secondary">{{ unidad.maquinaria.descripcion|default:"Sin descripcion disponible."|linebreaksbr }}</p>
                     <dl class="row mb-0">
                         <dt class="col-7">Codigo / Serie</dt>
                         <dd class="col-5 text-end">{{ unidad.maquinaria.codigo }} / {{ unidad.numero_serie }}</dd>
@@ -37,7 +37,7 @@
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_semanal|entero_con_comas }}</dd>
                         <dt class="col-7">Tarifa mensual</dt>
                         <dd class="col-5 text-end">${{ unidad.maquinaria.tarifa_mensual|entero_con_comas }}</dd>
-                        <dt class="col-7">Deposito base (1 a 7 dias)</dt>
+                        <dt class="col-7">Depósito de garantía</dt>
                         <dd class="col-5 text-end">RD${{ unidad.maquinaria.deposito_garantia|entero_con_comas }}</dd>
                         <dt class="col-7">Condicion</dt>
                         <dd class="col-5 text-end">Sin operador</dd>
@@ -51,14 +51,14 @@
                 <div class="card-body p-4 p-md-5">
                     <h2 class="h5 fw-bold mb-3">Plan de alquiler</h2>
                     <div class="alert alert-info" role="note">
-                        El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisarÃ¡ la disponibilidad.
+                        El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisara¡ la disponibilidad.
                     </div>
                     <form method="post" id="solicitud-alquiler-form" novalidate
                         data-hoy="{{ hoy }}"
                         data-tarifa-diaria="{{ unidad.maquinaria.tarifa_diaria|unlocalize }}"
                         data-tarifa-semanal="{{ unidad.maquinaria.tarifa_semanal|unlocalize }}"
                         data-tarifa-mensual="{{ unidad.maquinaria.tarifa_mensual|unlocalize }}"
-                        data-deposito-base="{{ unidad.maquinaria.deposito_garantia|unlocalize }}">
+                        data-deposito="{{ unidad.maquinaria.deposito_garantia|unlocalize }}">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
@@ -81,8 +81,8 @@
                             <p class="small"><span class="badge text-bg-danger">Ocupadas</span> <span class="badge bg-success-subtle text-success border">Disponibles para solicitar</span></p>
                             <div id="calendario-dias" class="d-grid gap-1" style="grid-template-columns:repeat(7,minmax(0,1fr))"></div>
                             <div id="aviso-disponibilidad" class="small mt-2" role="status" aria-live="polite"></div>
-                            <p class="small text-muted mt-2 mb-0">El perÃ­odo completo del plan debe estar libre. Enviar una solicitud no reserva las fechas.</p>
-                            <noscript><p class="small">Introduce la fecha arriba. El servidor comprobarÃ¡ todo el perÃ­odo al enviar.</p></noscript>
+                            <p class="small text-muted mt-2 mb-0">El peri­odo completo del plan debe estar libre. Enviar una solicitud no reserva las fechas.</p>
+                            <noscript><p class="small">Introduce la fecha arriba. El servidor comprobara¡ todo el peri­odo al enviar.</p></noscript>
                         </section>
 
                         <div class="mb-3">
@@ -94,7 +94,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold" for="{{ form.cantidad.id_for_label }}">Cantidad de planes</label>
                             {{ form.cantidad }}
-                            <div class="form-text">Una semana equivale a 7 dÃ­as; un mes, a 30 dÃ­as.</div>
+                            <div class="form-text">Una semana equivale a 7 di­as; un mes, a 30 di­as.</div>
                             {% if form.cantidad.errors %}<div class="text-danger small mt-1">{{ form.cantidad.errors }}</div>{% endif %}
                         </div>
 
@@ -107,22 +107,21 @@
                         <section class="rounded-3 border bg-light p-3 mb-4" aria-live="polite">
                             <h3 class="h6 fw-bold">Presupuesto estimado</h3>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>DuraciÃ³n</span><strong id="presupuesto-duracion">â€”</strong>
+                                <span>Duracion</span><strong id="presupuesto-duracion">â€”</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>DevoluciÃ³n programada</span><strong id="presupuesto-fecha-fin">â€”</strong>
+                                <span>Devolucion programada</span><strong id="presupuesto-fecha-fin">â€”</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
                                 <span>Renta</span><strong id="presupuesto-renta">â€”</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>DepÃ³sito reembolsable</span><strong id="presupuesto-deposito">â€”</strong>
+                                <span>Deposito reembolsable</span><strong id="presupuesto-deposito">â€”</strong>
                             </div>
                             <hr class="my-2">
                             <div class="d-flex justify-content-between">
                                 <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">â€”</strong>
                             </div>
-                            <p class="small text-muted mb-0 mt-2">El depÃ³sito sin operador equivale al 8% del valor comercial, ajustado por la duraciÃ³n: 100% hasta 7 dÃ­as, 85% de 8 a 29 dÃ­as y 75% desde 30 dÃ­as.</p>
                             <p class="small text-muted mb-0 mt-2">La mora, si aplica por atraso, se calcula aparte al devolver el equipo.</p>
                         </section>
 
@@ -140,6 +139,6 @@
 {% block extra_js %}
 {{ block.super }}
 {{ periodos_ocupados|json_script:"periodos-ocupados" }}
-<script src="{% static 'ventas/animations/presupuesto.js' %}" defer></script>
+<script src="{% static 'ventas/animations/presupuesto.js' %}?v=2" defer></script>
 <script src="{% static 'alquileres/disponibilidad.js' %}" defer></script>
 {% endblock %}

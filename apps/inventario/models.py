@@ -1,5 +1,3 @@
-from decimal import Decimal, ROUND_HALF_UP
-
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.conf import settings
@@ -29,8 +27,6 @@ class Categoria(models.Model):
 
 
 class Maquinaria(models.Model):
-    PORCENTAJE_DEPOSITO_SIN_OPERADOR = Decimal('0.08')
-
     id = models.AutoField(primary_key=True, db_column='EquipoID')
     categoria = models.ForeignKey(
         Categoria,
@@ -91,10 +87,9 @@ class Maquinaria(models.Model):
     deposito_garantia = models.PositiveBigIntegerField(
         blank=True,
         default=0,
-        editable=False,
         validators=(MinValueValidator(0),),
         db_column='DepositoGarantia',
-        verbose_name='Depósito de garantía base (RD$)'
+        verbose_name='Depósito de garantía (RD$)'
     )
     activo = models.BooleanField(default=True, db_column='Activo', verbose_name='Activo')
     fecha_modificacion = models.DateTimeField(
@@ -131,29 +126,6 @@ class Maquinaria(models.Model):
 
     def __str__(self):
         return f'{self.codigo} - {self.nombre}'
-
-    def calcular_deposito_garantia(self, dias_alquiler):
-        if dias_alquiler < 1:
-            raise ValueError('La duración del alquiler debe ser al menos de un día.')
-        if dias_alquiler <= 7:
-            factor_duracion = Decimal('1.00')
-        elif dias_alquiler <= 29:
-            factor_duracion = Decimal('0.85')
-        else:
-            factor_duracion = Decimal('0.75')
-        return int((
-            Decimal(self.costo_adquisicion or 0)
-            * self.PORCENTAJE_DEPOSITO_SIN_OPERADOR
-            * factor_duracion
-        ).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
-
-    def save(self, *args, **kwargs):
-        self.deposito_garantia = self.calcular_deposito_garantia(1)
-        update_fields = kwargs.get('update_fields')
-        if update_fields is not None:
-            kwargs['update_fields'] = set(update_fields) | {'deposito_garantia'}
-        super().save(*args, **kwargs)
-
 
 class MaquinariaImagen(models.Model):
     maquinaria = models.ForeignKey(

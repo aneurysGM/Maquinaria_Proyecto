@@ -128,7 +128,11 @@ class MaquinariaIntegralForm(forms.ModelForm):
             'min': '1',
         }),
     )
-    fecha_adquisicion = forms.DateField(label='Fecha de adquisición', required=False, widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
+    fecha_adquisicion = forms.DateField(
+        label='Fecha de adquisición',
+        required=False,
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+    )
     anio_fabricacion = GroupedIntegerField(
         label='Año de fabricación',
         required=False,
@@ -143,7 +147,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
         fields = [
             'categoria', 'codigo', 'nombre', 'descripcion', 'marca', 'modelo',
             'costo_adquisicion', 'tarifa_diaria', 'tarifa_semanal',
-            'tarifa_mensual'
+            'tarifa_mensual', 'deposito_garantia'
         ]
         widgets = {
             'categoria': forms.Select(attrs={'class': 'form-select'}),
@@ -160,12 +164,14 @@ class MaquinariaIntegralForm(forms.ModelForm):
             'tarifa_diaria': GroupedIntegerWidget(attrs={'class': 'form-control'}),
             'tarifa_semanal': GroupedIntegerWidget(attrs={'class': 'form-control'}),
             'tarifa_mensual': GroupedIntegerWidget(attrs={'class': 'form-control'}),
+            'deposito_garantia': GroupedIntegerWidget(attrs={'class': 'form-control'}),
         }
         field_classes = {
             'costo_adquisicion': GroupedIntegerField,
             'tarifa_diaria': GroupedIntegerField,
             'tarifa_semanal': GroupedIntegerField,
             'tarifa_mensual': GroupedIntegerField,
+            'deposito_garantia': GroupedIntegerField,
         }
 
     def __init__(self, *args, **kwargs):
@@ -183,6 +189,7 @@ class MaquinariaIntegralForm(forms.ModelForm):
             'tarifa_diaria',
             'tarifa_semanal',
             'tarifa_mensual',
+            'deposito_garantia',
         ):
             self.fields[nombre].initial = None
             if not self.instance.pk:

@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
@@ -10,23 +9,23 @@ from apps.inventario.models import Categoria, Maquinaria, Unidad
 from .models import SolicitudAlquiler
 
 
-class DepositoGarantiaAutomaticoTests(TestCase):
+class DepositoGarantiaManualTests(TestCase):
     def setUp(self):
         self.cliente = UsuarioPersonalizado.objects.create_user(
             email='deposito@example.com',
             password='pass',
             rol=RolUsuario.CLIENTE,
         )
-        categoria = Categoria.objects.create(nombre='Depósitos automáticos')
+        categoria = Categoria.objects.create(nombre='Depósitos manuales')
         self.maquinaria = Maquinaria.objects.create(
             categoria=categoria,
             codigo='DEP-01',
             nombre='Máquina de prueba',
-            costo_adquisicion=Decimal('5070000.00'),
-            tarifa_diaria=Decimal('1000.00'),
-            tarifa_semanal=Decimal('6000.00'),
-            tarifa_mensual=Decimal('20000.00'),
-            deposito_garantia=Decimal('1.00'),
+            costo_adquisicion=5070000,
+            tarifa_diaria=1000,
+            tarifa_semanal=6000,
+            tarifa_mensual=20000,
+            deposito_garantia=12345,
         )
         self.unidad = Unidad.objects.create(
             maquinaria=self.maquinaria,
@@ -34,47 +33,60 @@ class DepositoGarantiaAutomaticoTests(TestCase):
         )
         self.client.force_login(self.cliente)
 
-    def test_calcula_factor_y_redondea_a_dos_decimales(self):
-        esperados = {
-            1: Decimal('405600.00'),
-            7: Decimal('405600.00'),
-            8: Decimal('344760.00'),
-            29: Decimal('344760.00'),
-            30: Decimal('304200.00'),
-        }
-        for dias, esperado in esperados.items():
-            with self.subTest(dias=dias):
-                self.assertEqual(
-                    self.maquinaria.calcular_deposito_garantia(dias),
-                    esperado,
-                )
-
-    def test_valor_ingresado_como_deposito_manual_se_ignora(self):
+    def test_deposito_no_cambia_al_modificar_costo_o_guardar_otro_campo(self):
         self.maquinaria.refresh_from_db()
-        self.assertEqual(
-            self.maquinaria.deposito_garantia,
-            Decimal('405600.00'),
-        )
+        self.assertEqual(self.maquinaria.deposito_garantia, 12345)
+        self.maquinaria.costo_adquisicion = 100000
+        self.maquinaria.save()
+        self.maquinaria.deposito_garantia = 99999
+        self.maquinaria.nombre = 'Nombre actualizado'
+        self.maquinaria.save(update_fields=['nombre'])
+        self.maquinaria.refresh_from_db()
+        self.assertEqual(self.maquinaria.deposito_garantia, 12345)
 
-    def test_solicitud_guarda_el_deposito_segun_su_duracion(self):
+    def test_solicitud_conserva_deposito_manual_sin_importar_duracion(self):
         fecha_inicio = timezone.localdate() + timedelta(days=1)
+        pagina = self.client.get(
+            reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]),
+        )
+        self.assertContains(pagina, 'data-deposito="12345"')
+        for plan, cantidad in (('diario', 1), ('semanal', 2), ('mensual', 1)):
+            with self.subTest(plan=plan):
+                respuesta = self.client.post(
+                    reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]),
+                    {
+                        'fecha_inicio': fecha_inicio.isoformat(),
+                        'plan': plan,
+                        'cantidad': cantidad,
+                        'comentario': '',
+                    },
+                )
+                solicitud = SolicitudAlquiler.objects.get(
+                    unidad=self.unidad, plan=plan,
+                )
+                self.assertRedirects(
+                    respuesta,
+                    reverse('ventas:presupuesto_detalle', args=[solicitud.presupuesto.pk]),
+                )
+                self.assertEqual(solicitud.presupuesto.deposito_garantia, 12345)
 
+        self.maquinaria.deposito_garantia = 0
+        self.maquinaria.save()
+        solicitud.presupuesto.refresh_from_db()
+        self.assertEqual(solicitud.presupuesto.deposito_garantia, 12345)
         respuesta = self.client.post(
             reverse('alquileres:solicitud_registrar', args=[self.unidad.pk]),
             {
-                'fecha_inicio': fecha_inicio.isoformat(),
+                'fecha_inicio': (fecha_inicio + timedelta(days=60)).isoformat(),
                 'plan': 'mensual',
-                'cantidad': '1',
-                'comentario': '',
+                'cantidad': 1,
             },
         )
-
-        solicitud = SolicitudAlquiler.objects.get(unidad=self.unidad)
+        solicitud_cero = SolicitudAlquiler.objects.get(
+            unidad=self.unidad, fecha_inicio=fecha_inicio + timedelta(days=60),
+        )
         self.assertRedirects(
             respuesta,
-            reverse('ventas:presupuesto_detalle', args=[solicitud.presupuesto.pk]),
+            reverse('ventas:presupuesto_detalle', args=[solicitud_cero.presupuesto.pk]),
         )
-        self.assertEqual(
-            solicitud.presupuesto.deposito_garantia,
-            Decimal('304200.00'),
-        )
+        self.assertEqual(solicitud_cero.presupuesto.deposito_garantia, 0)
