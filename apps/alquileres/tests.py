@@ -2,13 +2,9 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
-<<<<<<< HEAD
 from django.core import mail
-from django.test import TestCase, override_settings
-=======
 from django.db import DatabaseError
-from django.test import Client, TestCase
->>>>>>> 191d8e13641f7d9c3cc64f83dd23cd71f42e1ac5
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -415,9 +411,82 @@ class DireccionEntregaTests(TestCase):
         otro_navegador = Client()
         otro_navegador.force_login(self.cliente)
         self.assertContains(otro_navegador.get(self.detalle), 'Indicar dirección de entrega')
-        self.assertEqual(otro_navegador.post(self.url, self.nueva).status_code, 302)
+        respuesta = otro_navegador.post(self.url, self.nueva, follow=True)
+        self.assertRedirects(respuesta, self.detalle)
+        self.assertTemplateUsed(respuesta, 'alquileres/solicitud_detalle.html')
+        self.assertContains(respuesta, f'Detalle de solicitud #{self.solicitud.pk}')
+        self.assertContains(respuesta, 'Revisión, salida y retorno')
+        self.assertContains(respuesta, self.nueva['direccion'])
+        self.assertNotContains(respuesta, 'Indicar dirección de entrega')
         self.solicitud.refresh_from_db()
         self.assertTrue(self.solicitud.direccion_entrega_confirmada)
+
+    def test_detalle_cliente_muestra_resumen_cronologia_y_oculta_acciones_administrativas(self):
+        self.solicitud.comentario = 'Alquiler para la obra del parque'
+        self.solicitud.save(update_fields=['comentario'])
+        respuesta = self.client.get(self.detalle)
+        self.assertContains(respuesta, f'Detalle de solicitud #{self.solicitud.pk}')
+        self.assertContains(respuesta, 'Excavadora')
+        self.assertContains(respuesta, self.solicitud.comentario)
+        self.assertContains(respuesta, 'Ver presupuesto')
+        self.assertContains(respuesta, 'Revisión, salida y retorno')
+        self.assertContains(respuesta, self.admin.email)
+        self.assertContains(respuesta, 'Sin entregar')
+        self.assertContains(respuesta, 'Sin retorno registrado')
+        self.assertNotContains(respuesta, 'Rechazar solicitud')
+        self.assertNotContains(respuesta, 'Registrar entrega de maquinaria')
+        self.assertNotContains(respuesta, 'Registrar retorno')
+
+    def test_ver_motivo_enlaza_al_detalle_con_motivo_y_control_de_apertura(self):
+        self.solicitud.estado = 'Rechazada'
+        self.solicitud.motivo_rechazo = 'La unidad requiere una revisión antes de alquilarse.'
+        self.solicitud.save(update_fields=['estado', 'motivo_rechazo'])
+        lista = self.client.get(reverse('alquileres:solicitud_lista'))
+        self.assertContains(lista, f'href="{self.detalle}#motivo-rechazo"')
+        respuesta = self.client.get(self.detalle)
+        self.assertContains(respuesta, 'id="alternar-motivo-rechazo"')
+        self.assertContains(respuesta, 'aria-controls="motivo-rechazo"')
+        self.assertContains(respuesta, 'id="motivo-rechazo"')
+        self.assertContains(respuesta, self.solicitud.motivo_rechazo)
+        self.assertContains(respuesta, 'alquileres/motivo_rechazo.js')
+        self.assertContains(respuesta, 'Ver otras maquinarias')
+        self.assertContains(respuesta, 'Ver fechas disponibles')
+
+    def test_detalle_administrador_conserva_acciones_y_cronologia_del_ciclo(self):
+        self.client.force_login(self.admin)
+        self.solicitud.estado = 'Pendiente'
+        self.solicitud.save(update_fields=['estado'])
+        respuesta = self.client.get(self.detalle)
+        self.assertContains(respuesta, 'Aprobar')
+        self.assertContains(respuesta, 'Rechazar solicitud')
+        self.assertNotContains(respuesta, 'Registrar entrega de maquinaria')
+        self.solicitud.estado = 'Aprobada'
+        self.solicitud.save(update_fields=['estado'])
+        self.assertNotContains(self.client.get(self.detalle), 'Registrar entrega de maquinaria')
+        self.pagar()
+        self.client.force_login(self.admin)
+        self.assertNotContains(self.client.get(self.detalle), 'Registrar entrega de maquinaria')
+        self.client.force_login(self.cliente)
+        self.assertRedirects(self.client.post(self.url, self.nueva), self.detalle)
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(self.detalle), 'Registrar entrega de maquinaria')
+        self.client.post(reverse('alquileres:solicitud_salida', args=[self.solicitud.pk]))
+        respuesta = self.client.get(self.detalle)
+        self.assertContains(respuesta, 'Entregada por')
+        self.assertContains(respuesta, 'Registrar retorno')
+        self.assertNotContains(respuesta, 'Registrar entrega de maquinaria')
+        self.client.post(reverse('alquileres:solicitud_retorno', args=[self.solicitud.pk]), {
+            'horas_uso_actualizadas': '5.0', 'observaciones_retorno': 'Equipo recibido sin daños.',
+        })
+        for usuario in (self.admin, self.cliente):
+            with self.subTest(usuario=usuario.email):
+                self.client.force_login(usuario)
+                respuesta = self.client.get(self.detalle)
+                self.assertContains(respuesta, 'Entregada por')
+                self.assertContains(respuesta, 'Recibida por')
+                self.assertContains(respuesta, 'Equipo recibido sin daños.')
+                self.assertNotContains(respuesta, 'Registrar retorno')
+                self.assertNotContains(respuesta, 'Registrar entrega de maquinaria')
 
     def test_sin_guardadas_abre_nueva_y_confirma_sin_guardar_en_libreta(self):
         self.pagar()
