@@ -6,7 +6,7 @@
     <a class="btn btn-outline-secondary mb-3" href="{% url 'configuraciones:mis_direcciones' %}">Volver a Mis direcciones</a>
     <h1 class="h3 fw-bold mb-4">{% if direccion.pk %}Editar{% else %}Agregar{% endif %} dirección</h1>
     <section class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
-        <form method="post">
+        <form method="post"{% if direccion.pk %} data-autosave-reset-initial{% endif %}>
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}

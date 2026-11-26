@@ -13,7 +13,7 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
                     <h2 class="h5 fw-bold mb-3">Datos personales</h2>
-                    <form method="post" novalidate>
+                    <form method="post" novalidate data-autosave-reset-initial>
                         {% csrf_token %}
                         {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
                         {% for field in form %}
