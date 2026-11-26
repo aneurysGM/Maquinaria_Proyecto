@@ -20,6 +20,12 @@ el aviso de atraso sigue mostrándose aparte. El comando `expirado` continúa
 persistiendo el vencimiento; la interfaz ya lo reconoce aunque aún no se haya
 ejecutado el comando.
 
+Para solicitudes vencidas, el administrador puede usar **Enviar solicitud** para
+dejar un aviso en Mis alquileres y enviar un correo al cliente preguntando si
+sigue interesado. El cliente puede **Volver a solicitar** con nuevas fechas;
+el aviso no crea una solicitud ni garantiza disponibilidad. Solo los clientes
+pueden registrar solicitudes de alquiler.
+
 Pendiente de aprobación conserva el amarillo; Pendiente de pago usa azul claro
 con texto azul oscuro. Devuelto usa fondo gris carbón `#343A40` y texto blanco,
 mientras En uso conserva el verde. Estas etiquetas se comparten entre Solicitudes,

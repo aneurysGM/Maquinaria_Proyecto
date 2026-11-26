@@ -9,8 +9,10 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods, require_safe
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_http_methods, require_POST, require_safe
 
 from apps.cuentas.models import DireccionCliente, permisos_panel
 from apps.inventario.models import Unidad
@@ -21,6 +23,7 @@ from .forms import (
     SolicitudFiltroForm, DireccionEntregaForm,
 )
 from .models import SolicitudAlquiler
+from .notificaciones import notificar_vencimiento
 from .reservas import (
     liberar_unidad_si_no_reservada,
     puede_aprobar_reserva,
@@ -112,7 +115,7 @@ def filtrar_solicitudes(solicitudes, datos):
 def solicitud_registrar(request, unidad_id):
     """Permite solicitar el alquiler de una unidad con un plan y duración."""
     permisos = permisos_panel(request.user)
-    if not (permisos.get('es_cliente') or permisos.get('es_administrador')):
+    if not permisos.get('es_cliente') or permisos.get('es_administrador'):
         raise PermissionDenied(
             'No tienes autorización para realizar solicitudes de alquiler.'
         )
@@ -196,10 +199,10 @@ def solicitud_registrar(request, unidad_id):
                     presupuesto_id=presupuesto.pk,
                 )
     else:
-        plan = request.GET.get('plan', 'diario')
+        plan = request.GET.get('plan', '')
         if plan not in dict(SolicitudAlquiler.PLANES):
-            plan = 'diario'
-        form = SolicitudAlquilerForm(initial={'plan': plan})
+            plan = ''
+        form = SolicitudAlquilerForm(initial={'plan': plan, 'cantidad': 1})
 
     return render(
         request,
@@ -263,6 +266,34 @@ def solicitud_detalle(request, solicitud_id):
         'alquileres/solicitud_detalle.html',
         {'solicitud': solicitud, 'hoy': timezone.localdate().isoformat()},
     )
+
+
+@login_required(login_url='cuentas:login')
+@require_POST
+@movimiento_atomico
+def solicitud_avisar_vencimiento(request, solicitud_id):
+    if not permisos_panel(request.user).get('es_administrador'):
+        raise PermissionDenied('Solo el administrador puede enviar este aviso.')
+
+    solicitud, _unidad = bloquear_movimiento(solicitud_id)
+    destino = request.POST.get('next', '')
+    if not url_has_allowed_host_and_scheme(
+        destino, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ):
+        destino = reverse('alquileres:solicitud_lista')
+
+    if solicitud.estado_cliente != 'Vencido':
+        messages.warning(request, 'Solo se puede enviar este aviso para una solicitud vencida.')
+        return redirect(destino)
+
+    solicitud.fecha_aviso_vencimiento = timezone.now()
+    solicitud.save(update_fields=['fecha_aviso_vencimiento'])
+    enlace = request.build_absolute_uri(reverse('alquileres:solicitud_lista'))
+    transaction.on_commit(partial(
+        messages.success, request, 'El aviso quedó guardado en Mis alquileres del cliente.',
+    ))
+    transaction.on_commit(partial(notificar_vencimiento, solicitud, enlace, request=request))
+    return redirect(destino)
 
 
 @login_required(login_url='cuentas:login')

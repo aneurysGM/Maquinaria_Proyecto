@@ -56,10 +56,21 @@ class DireccionEntregaForm(forms.Form):
 
 
 class SolicitudAlquilerForm(forms.ModelForm):
+    plan = forms.ChoiceField(
+        choices=[('', 'Selecciona un tipo de plan'), *SolicitudAlquiler.PLANES],
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'data-autosave-reset-selected': '',
+        }),
+    )
     cantidad = GroupedIntegerField(
         label='Cantidad de planes',
         min_value=0,
-        widget=GroupedIntegerWidget(attrs={'class': 'form-control', 'min': '0'}),
+        widget=GroupedIntegerWidget(attrs={
+            'class': 'form-control',
+            'min': '0',
+            'data-autosave-reset-value': '1',
+        }),
     )
 
     class Meta:
@@ -67,7 +78,6 @@ class SolicitudAlquilerForm(forms.ModelForm):
         fields = ['fecha_inicio', 'plan', 'cantidad', 'comentario']
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'plan': forms.Select(attrs={'class': 'form-select'}),
             'comentario': forms.Textarea(attrs={
                 'class': 'form-control', 
                 'rows': 3, 

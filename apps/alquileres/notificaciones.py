@@ -79,6 +79,21 @@ def notificar_reprogramacion(solicitud, *, request=None):
     _enviar_correo(request, cliente.email, asunto, contenido)
 
 
+def notificar_vencimiento(solicitud, enlace, *, request=None):
+    cliente = solicitud.cliente
+    nombre = cliente.get_full_name().strip() or cliente.email
+    asunto = f'Tu solicitud de alquiler vencida #{solicitud.pk}'
+    contenido = (
+        f'Hola {nombre},\n\n'
+        f'El plazo de pago inicial de tu solicitud de {solicitud.unidad.maquinaria.nombre} '
+        'terminó. Si todavía te interesa, puedes volver a solicitarla con nuevas fechas '
+        'desde Mis alquileres. La disponibilidad se comprobará al enviar la nueva solicitud.\n\n'
+        f'Mis alquileres: {enlace}\n\n'
+        'Saludos cordiales,\nEquipo de alquileres'
+    )
+    _enviar_correo(request, cliente.email, asunto, contenido)
+
+
 def notificar_cancelacion_mantenimiento(solicitud, *, request=None):
     cliente = solicitud.cliente
     nombre = cliente.get_full_name().strip() or cliente.email

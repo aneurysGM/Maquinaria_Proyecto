@@ -28,7 +28,7 @@
     function actualizarPresupuesto() {
         const cantidadPlan = Math.max(Number.parseInt(cantidad.value.replace(/,/g, ''), 10) || 0, 0);
         const importeRenta = (tarifas[plan.value] || 0) * cantidadPlan;
-        const dias = (diasPlan[plan.value] || 1) * cantidadPlan;
+        const dias = (diasPlan[plan.value] || 0) * cantidadPlan;
         const importeDeposito = depositoGarantia;
 
         duracion.textContent = `${dias} día(s)`;
@@ -36,8 +36,8 @@
         deposito.textContent = moneda.format(importeDeposito);
         total.textContent = moneda.format(importeRenta + importeDeposito);
 
-        if (!fechaInicio.value || !cantidadPlan) {
-            fechaFin.textContent = 'Selecciona fecha y cantidad';
+        if (!plan.value || !fechaInicio.value || !cantidadPlan) {
+            fechaFin.textContent = 'Selecciona plan, fecha y cantidad';
             return;
         }
 

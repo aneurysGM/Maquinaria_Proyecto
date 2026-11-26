@@ -377,7 +377,9 @@ class MaquinariaDetalleView(DetailView):
         )
         context['puede_solicitar_alquiler'] = (
             self.object.estado in ('Disponible', 'Alquilado')
-            and (not usuario.is_authenticated or usuario.es_cliente)
+            and (not usuario.is_authenticated or (
+                usuario.es_cliente and not usuario.es_administrador
+            ))
         )
         return context
 

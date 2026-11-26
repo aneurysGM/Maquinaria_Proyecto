@@ -15,7 +15,8 @@
         return periodos.some(p => p.inicio <= fecha && p.fin >= fecha);
     }
     function periodoLibre(fecha) {
-        const dias = ({diario: 1, semanal: 7, mensual: 30}[plan.value] || 1) * Number(cantidad.value);
+        const dias = ({diario: 1, semanal: 7, mensual: 30}[plan.value] || 0)
+            * Number(cantidad.value.replace(/,/g, ''));
         if (!Number.isSafeInteger(dias) || dias < 1) return false;
         const fin = parse(fecha);
         fin.setUTCDate(fin.getUTCDate() + dias - 1);
@@ -25,7 +26,11 @@
     function actualizar() {
         const aviso = document.getElementById('aviso-disponibilidad');
         const valido = !inicio.value || periodoLibre(inicio.value);
-        aviso.textContent = valido ? 'Selecciona una fecha disponible para solicitar.' : 'El período completo incluye fechas ocupadas. Elige otra fecha de inicio.';
+        aviso.textContent = !plan.value
+            ? 'Selecciona un tipo de plan para consultar las fechas.'
+            : valido
+                ? 'Selecciona una fecha disponible para solicitar.'
+                : 'El período completo incluye fechas ocupadas. Elige otra fecha de inicio.';
         aviso.classList.toggle('text-danger', !valido);
         inicio.setCustomValidity(valido ? '' : aviso.textContent);
         form.querySelector('button[type="submit"]').disabled = !valido;
@@ -50,7 +55,7 @@
             boton.textContent = dia;
             boton.className = `btn btn-sm ${ocupadoDia ? 'btn-danger' : 'btn-outline-success'}`;
             boton.disabled = fecha < hoy || !libre;
-            boton.setAttribute('aria-label', `${fecha}: ${ocupadoDia ? 'Ocupada' : libre ? 'Disponible para solicitar' : 'El plan incluye fechas ocupadas'}`);
+            boton.setAttribute('aria-label', `${fecha}: ${ocupadoDia ? 'Ocupada' : !plan.value ? 'Selecciona un tipo de plan' : libre ? 'Disponible para solicitar' : 'El plan incluye fechas ocupadas'}`);
             boton.setAttribute('aria-pressed', String(inicio.value === fecha));
             if (inicio.value === fecha) boton.classList.add('active');
             boton.addEventListener('click', () => {

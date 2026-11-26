@@ -51,6 +51,7 @@ class SolicitudAlquiler(models.Model):
     motivo_disponibilidad = models.CharField(max_length=1000, blank=True, editable=False)
     cancelada_por_mantenimiento = models.BooleanField(default=False, editable=False)
     fecha_aviso_disponibilidad = models.DateTimeField(null=True, blank=True, editable=False)
+    fecha_aviso_vencimiento = models.DateTimeField(null=True, blank=True, editable=False)
     aplazada = models.BooleanField(default=False, editable=False)
     fecha_confirmacion = models.DateTimeField(null=True, blank=True, editable=False)
     politica_mora_aplica = models.BooleanField(default=True, editable=False)

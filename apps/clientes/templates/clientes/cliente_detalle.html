@@ -270,11 +270,11 @@
                         <td class="ps-3">
                             <span class="d-block fw-semibold">{{ solicitud.unidad.maquinaria.nombre }}</span>
                             <span class="small text-muted">
-                                {{ solicitud.unidad.maquinaria.categoria.nombre }} Â· Serie {{ solicitud.unidad.numero_serie }}
+                                {{ solicitud.unidad.maquinaria.categoria.nombre }} · Serie {{ solicitud.unidad.numero_serie }}
                             </span>
                         </td>
                         <td>
-                            <span class="d-block">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} peri­odo(s)</span>
+                            <span class="d-block">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} peri­odo(s)</span>
                             <span class="d-block small">Entrega: {{ solicitud.fecha_inicio|date:"d/m/Y" }}</span>
                             <span class="d-block small">devolucion estimada: {{ solicitud.fecha_fin|date:"d/m/Y" }}</span>
                             <span class="small text-muted">Solicitada {{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</span>
@@ -310,7 +310,7 @@
                             {% elif solicitud.fecha_salida %}
                             <span class="d-block small text-muted">Retorno pendiente</span>
                             {% if solicitud.dias_atraso_actual > 0 %}
-                            <span class="mr-badge mr-badge-late mt-1">Warning Â· {{ solicitud.dias_atraso_actual }} dia(s) tarde</span>
+                            <span class="mr-badge mr-badge-late mt-1">Warning · {{ solicitud.dias_atraso_actual }} dia(s) tarde</span>
                             {% endif %}
                             {% endif %}
                         </td>

@@ -19,7 +19,7 @@
             </a>
             {% endif %}
             <h1 class="h2 mt-2 mb-1">Presupuesto #{{ solicitud.pk }}</h1>
-            <p class="text-muted mb-0">{{ solicitud.unidad.maquinaria.nombre }} Â· Serie {{ solicitud.unidad.numero_serie }}</p>
+            <p class="text-muted mb-0">{{ solicitud.unidad.maquinaria.nombre }} · Serie {{ solicitud.unidad.numero_serie }}</p>
         </div>
         {% include 'alquileres/estado_cliente.html' %}
     </div>
@@ -40,7 +40,7 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6">Plan</dt>
-                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} peri­odo(s)</dd>
+                        <dd class="col-sm-6">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} peri­odo(s)</dd>
                         <dt class="col-sm-6">Fecha de entrega programada</dt>
                         <dd class="col-sm-6">{{ solicitud.fecha_inicio|date:"d/m/Y" }}</dd>
                         <dt class="col-sm-6">devolucion programada</dt>
@@ -70,7 +70,7 @@
                                 <td class="ps-3">{{ pago.creado_en|date:"d/m/Y H:i" }}</td>
                                 <td>{{ pago.get_concepto_display }}</td>
                                 <td>{{ pago.get_metodo_display }}</td>
-                                <td>{{ pago.referencia|default:"â€”" }}</td>
+                                <td>{{ pago.referencia|default:"-" }}</td>
                                 <td class="text-end pe-3">${{ pago.monto|entero_con_comas }}</td>
                             </tr>
                             {% empty %}
@@ -119,7 +119,7 @@
                     {% if presupuesto.deposito_reembolsado %}
                     <div class="d-flex justify-content-between mb-2 text-secondary">
                         <span>deposito reembolsado</span>
-                        <strong>âˆ’${{ presupuesto.deposito_reembolsado|entero_con_comas }}</strong>
+                        <strong>−${{ presupuesto.deposito_reembolsado|entero_con_comas }}</strong>
                     </div>
                     {% endif %}
                     {% if solicitud.cancelada_por_mantenimiento %}
@@ -131,7 +131,7 @@
                         <span class="fw-bold">Saldo pendiente</span>
                         <strong class="text-danger">${{ presupuesto.saldo_pendiente_actual|entero_con_comas }}</strong>
                     </div>
-                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|entero_con_comas }}</strong> Â· deposito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|entero_con_comas }}</strong>.</p>
+                    <p class="small mt-2 mb-0">Renta pendiente: <strong>${{ presupuesto.renta_pendiente|entero_con_comas }}</strong> · deposito inicial pendiente: <strong>${{ presupuesto.deposito_pendiente|entero_con_comas }}</strong>.</p>
                     <p class="small text-muted mt-2 mb-0">Los reembolsos del deposito se registran aparte y no reducen la renta pendiente.</p>
                     <p class="small text-muted mt-3 mb-0">El deposito es una garanti­a reembolsable. El presupuesto no incluye costos internos de adquisicion de la maquinaria.</p>
                     {% endif %}
@@ -155,7 +155,7 @@
                     <ul class="list-unstyled small mb-0">
                         {% for reembolso in presupuesto.reembolsos_deposito.all %}
                         <li class="d-flex justify-content-between gap-2">
-                            <span>{{ reembolso.creado_en|date:"d/m/Y" }} Â· {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} Â· {{ reembolso.referencia }}{% endif %}</span>
+                            <span>{{ reembolso.creado_en|date:"d/m/Y" }} · {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} · {{ reembolso.referencia }}{% endif %}</span>
                             <strong>${{ reembolso.monto|entero_con_comas }}</strong>
                         </li>
                         {% endfor %}
@@ -187,7 +187,7 @@
                     <p class="mb-1">Renta reembolsada: <strong>${{ presupuesto.renta_reembolsada|entero_con_comas }}</strong></p>
                     <p class="mb-1">Renta pendiente de devolucion: <strong>${{ presupuesto.renta_por_reembolsar|entero_con_comas }}</strong></p>
                     {% for reembolso in presupuesto.reembolsos_renta.all %}
-                    <p class="small mb-1">{{ reembolso.creado_en|date:"d/m/Y" }} Â· {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} Â· {{ reembolso.referencia }}{% endif %} Â· ${{ reembolso.monto|entero_con_comas }}</p>
+                    <p class="small mb-1">{{ reembolso.creado_en|date:"d/m/Y" }} · {{ reembolso.get_metodo_display }}{% if reembolso.referencia %} · {{ reembolso.referencia }}{% endif %} · ${{ reembolso.monto|entero_con_comas }}</p>
                     {% endfor %}
                     {% if request.user.es_administrador and presupuesto.renta_por_reembolsar > 0 %}
                     <form method="post" action="{% url 'ventas:reembolso_renta_registrar' presupuesto.pk %}" class="mt-3">

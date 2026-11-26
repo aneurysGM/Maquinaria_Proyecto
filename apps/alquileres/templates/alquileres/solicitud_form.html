@@ -53,7 +53,7 @@
                     <div class="alert alert-info" role="note">
                         El presupuesto se calcula con las tarifas actuales. Enviar la solicitud no confirma el alquiler; un administrador revisara¡ la disponibilidad.
                     </div>
-                    <form method="post" id="solicitud-alquiler-form" novalidate
+                    <form method="post" id="solicitud-alquiler-form" novalidate {% if form.is_bound %}data-preserve-values{% endif %}
                         data-hoy="{{ hoy }}"
                         data-tarifa-diaria="{{ unidad.maquinaria.tarifa_diaria|unlocalize }}"
                         data-tarifa-semanal="{{ unidad.maquinaria.tarifa_semanal|unlocalize }}"
@@ -74,9 +74,9 @@
 
                         <section class="border rounded-3 p-3 mb-3" aria-label="Calendario de disponibilidad">
                             <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                                <button type="button" id="mes-anterior" class="btn btn-sm btn-outline-secondary" aria-label="Mes anterior">â€¹</button>
+                                <button type="button" id="mes-anterior" class="btn btn-sm btn-outline-secondary" aria-label="Mes anterior">&#8592;</button>
                                 <h3 id="calendario-mes" class="h6 mb-0">Fechas disponibles</h3>
-                                <button type="button" id="mes-siguiente" class="btn btn-sm btn-outline-secondary" aria-label="Mes siguiente">â€º</button>
+                                <button type="button" id="mes-siguiente" class="btn btn-sm btn-outline-secondary" aria-label="Mes siguiente">&#8594;</button>
                             </div>
                             <p class="small"><span class="badge text-bg-danger">Ocupadas</span> <span class="badge bg-success-subtle text-success border">Disponibles para solicitar</span></p>
                             <div id="calendario-dias" class="d-grid gap-1" style="grid-template-columns:repeat(7,minmax(0,1fr))"></div>
@@ -107,20 +107,20 @@
                         <section class="rounded-3 border bg-light p-3 mb-4" aria-live="polite">
                             <h3 class="h6 fw-bold">Presupuesto estimado</h3>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Duracion</span><strong id="presupuesto-duracion">â€”</strong>
+                                <span>Duracion</span><strong id="presupuesto-duracion">-</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Devolucion programada</span><strong id="presupuesto-fecha-fin">â€”</strong>
+                                <span>Devolucion programada</span><strong id="presupuesto-fecha-fin">-</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Renta</span><strong id="presupuesto-renta">â€”</strong>
+                                <span>Renta</span><strong id="presupuesto-renta">-</strong>
                             </div>
                             <div class="d-flex justify-content-between small mb-1">
-                                <span>Deposito reembolsable</span><strong id="presupuesto-deposito">â€”</strong>
+                                <span>Deposito reembolsable</span><strong id="presupuesto-deposito">-</strong>
                             </div>
                             <hr class="my-2">
                             <div class="d-flex justify-content-between">
-                                <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">â€”</strong>
+                                <span class="fw-semibold">Total inicial</span><strong id="presupuesto-total">-</strong>
                             </div>
                             <p class="small text-muted mb-0 mt-2">La mora, si aplica por atraso, se calcula aparte al devolver el equipo.</p>
                         </section>
@@ -139,6 +139,6 @@
 {% block extra_js %}
 {{ block.super }}
 {{ periodos_ocupados|json_script:"periodos-ocupados" }}
-<script src="{% static 'ventas/animations/presupuesto.js' %}?v=2" defer></script>
-<script src="{% static 'alquileres/disponibilidad.js' %}" defer></script>
+<script src="{% static 'ventas/animations/presupuesto.js' %}?v=3" defer></script>
+<script src="{% static 'alquileres/disponibilidad.js' %}?v=2" defer></script>
 {% endblock %}

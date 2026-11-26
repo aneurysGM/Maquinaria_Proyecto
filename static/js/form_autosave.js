@@ -220,10 +220,22 @@
             return;
         }
 
+        const restoredDefaults = [];
         Array.from(form.elements).forEach((control) => {
             if (!isPersistable(form, control)) return;
 
-            if (control.type === 'checkbox' || control.type === 'radio') {
+            if (control.hasAttribute('data-autosave-reset-value')) {
+                control.value = control.getAttribute('data-autosave-reset-value');
+                restoredDefaults.push(control);
+                return;
+            } else if (control.hasAttribute('data-autosave-reset-selected')) {
+                const options = Array.from(control.options);
+                let initial = options.findIndex((option) => option.defaultSelected);
+                if (initial < 0) initial = options.findIndex((option) => !option.disabled);
+                control.selectedIndex = initial;
+                restoredDefaults.push(control);
+                return;
+            } else if (control.type === 'checkbox' || control.type === 'radio') {
                 control.checked = false;
             } else if (control.tagName.toLowerCase() === 'select' && control.multiple) {
                 Array.from(control.options).forEach((option) => {
@@ -236,6 +248,10 @@
             }
             control.defaultValue = '';
             control.defaultChecked = false;
+        });
+        restoredDefaults.forEach((control) => {
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+            control.dispatchEvent(new Event('change', { bubbles: true }));
         });
     }
 

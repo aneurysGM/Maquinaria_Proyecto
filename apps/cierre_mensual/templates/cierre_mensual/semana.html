@@ -1,6 +1,6 @@
 {% extends "dashboard/base_dashboard.html" %}
 
-{% block title %}Semana {{ intervalo.numero }} Â· {{ periodo.fecha|date:"F Y" }}{% endblock %}
+{% block title %}Semana {{ intervalo.numero }} · {{ periodo.fecha|date:"F Y" }}{% endblock %}
 {% block page_name %}Detalle de pagos{% endblock %}
 
 {% block content %}
@@ -11,7 +11,7 @@
         </a>
         <h1 class="h2 mt-2 mb-1">Semana {{ intervalo.numero }}</h1>
         <p class="text-secondary mb-0">
-            {{ intervalo.desde|date:"d/m/Y" }} â€“ {{ intervalo.hasta|date:"d/m/Y" }}
+            {{ intervalo.desde|date:"d/m/Y" }} - {{ intervalo.hasta|date:"d/m/Y" }}
         </p>
     </div>
 
@@ -61,21 +61,21 @@
                         <td>{{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}</td>
                         <td>
                             <span class="d-block fw-semibold">{{ maquinaria.nombre }}</span>
-                            <span class="small text-secondary">{{ maquinaria.codigo }} Â· Serie {{ solicitud.unidad.numero_serie }}</span>
+                            <span class="small text-secondary">{{ maquinaria.codigo }} · Serie {{ solicitud.unidad.numero_serie }}</span>
                         </td>
                         <td class="text-nowrap">
                             Solicitud #{{ solicitud.pk }}<br>
                             <a href="{% url 'ventas:presupuesto_detalle' presupuesto.pk %}">Presupuesto #{{ presupuesto.pk }}</a>
                         </td>
                         <td class="text-nowrap">
-                            {{ solicitud.fecha_inicio|date:"d/m/Y" }} â€“ {{ solicitud.fecha_fin|date:"d/m/Y" }}<br>
-                            <span class="small text-secondary">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} periodo(s)</span>
+                            {{ solicitud.fecha_inicio|date:"d/m/Y" }} - {{ solicitud.fecha_fin|date:"d/m/Y" }}<br>
+                            <span class="small text-secondary">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} periodo(s)</span>
                         </td>
                         <td>{{ pago.get_concepto_display }}</td>
                         <td class="text-nowrap fw-semibold">RD${{ pago.monto|entero_con_comas }}</td>
                         <td>
                             {{ pago.get_metodo_display }}<br>
-                            <span class="small text-secondary">{{ pago.referencia|default:"â€”" }}</span>
+                            <span class="small text-secondary">{{ pago.referencia|default:"-" }}</span>
                         </td>
                         <td class="text-nowrap small">
                             Total: RD${{ fila.total_presupuesto|entero_con_comas }}<br>

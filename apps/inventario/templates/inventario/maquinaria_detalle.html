@@ -19,7 +19,7 @@
 
 <div class="container-fluid px-0">
 
-    {# â”€â”€â”€â”€â”€â”€â”€â”€â”€ Encabezado â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+    {# ----------- Encabezado ----------- #}
     <div class="mb-4">
         {% if request.user.is_authenticated %}
         <a href="{% url 'inventario:maquinaria_lista' %}" class="small text-decoration-none">
@@ -127,7 +127,7 @@
             </section>
         </div>
 
-        {# â•â•â•â•â•â•â•â•â• COLUMNA DERECHA: datos del equipo â•â•â•â•â•â•â•â•â• #}
+        {# ----------- COLUMNA DERECHA: datos del equipo ----------- #}
         <div class="col-lg-7">
 
             {# Datos rapidos de la unidad #}
@@ -200,7 +200,7 @@
         </div>
     </div>
 
-    {# â”€â”€â”€â”€â”€â”€â”€â”€â”€ Comentarios (ancho completo) â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+    {# ----------- Comentarios (ancho completo) ----------- #}
     <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="machine-comments-title">
         <div class="card-body p-4">
             <h2 class="h5 fw-bold mb-3" id="machine-comments-title">
@@ -237,7 +237,7 @@
     </section>
 </div>
 
-{# â”€â”€â”€â”€â”€â”€â”€â”€â”€ Visor de imagenes (ventana emergente: el sidebar no desaparece) â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+{# ----------- Visor de imagenes (ventana emergente: el sidebar no desaparece) ----------- #}
 <div class="modal fade" id="galModal" tabindex="-1" aria-label="Visor de imagenes" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content bg-dark border-0 rounded-4 overflow-hidden">

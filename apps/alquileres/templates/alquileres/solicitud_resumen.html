@@ -1,14 +1,14 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
     <div>
-        <h2 class="h5 fw-bold mb-1"><a class="link-dark" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Solicitud #{{ solicitud.pk }} Â· {{ solicitud.unidad.maquinaria.nombre }}</a></h2>
-        <p class="text-secondary small mb-0">Codigo {{ solicitud.unidad.maquinaria.codigo }} Â· Serie {{ solicitud.unidad.numero_serie }}</p>
+        <h2 class="h5 fw-bold mb-1"><a class="link-dark" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">Solicitud #{{ solicitud.pk }} · {{ solicitud.unidad.maquinaria.nombre }}</a></h2>
+        <p class="text-secondary small mb-0">Codigo {{ solicitud.unidad.maquinaria.codigo }} · Serie {{ solicitud.unidad.numero_serie }}</p>
     </div>
     {% include 'alquileres/estado_cliente.html' %}
 </div>
 <dl class="row g-2 mt-3 mb-0">
     <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">{{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}</dd>
-    <dt class="col-sm-3">Plan</dt><dd class="col-sm-9">{{ solicitud.get_plan_display }} Â· {{ solicitud.cantidad }} peri­odo(s)</dd>
-    <dt class="col-sm-3">Fechas programadas</dt><dd class="col-sm-9">{{ solicitud.fecha_inicio|date:"d/m/Y" }} â€“ {{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
+    <dt class="col-sm-3">Plan</dt><dd class="col-sm-9">{{ solicitud.get_plan_display }} · {{ solicitud.cantidad }} peri­odo(s)</dd>
+    <dt class="col-sm-3">Fechas programadas</dt><dd class="col-sm-9">{{ solicitud.fecha_inicio|date:"d/m/Y" }} - {{ solicitud.fecha_fin|date:"d/m/Y" }}</dd>
     <dt class="col-sm-3">Enviada</dt><dd class="col-sm-9">{{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</dd>
     <dt class="col-sm-3">Entrega</dt><dd class="col-sm-9">{{ solicitud.estado_entrega }}</dd>
     {% if solicitud.estado == 'Aprobada' and not solicitud.fecha_salida and not solicitud.pago_inicial_completo and solicitud.fecha_limite_pago %}
@@ -43,7 +43,7 @@
         <strong>{{ solicitud.unidad.maquinaria.nombre }}</strong> sigue con {{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}. Debera ­a devolverse el {{ solicitud.fecha_fin|date:"d/m/Y" }} y lleva {{ solicitud.dias_atraso_actual }} dia(s) de atraso.
         {% endif %}
     {% else %}
-        {{ solicitud.aviso_vencimiento }} Â· devolucion programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.
+        {{ solicitud.aviso_vencimiento }} · devolucion programada: {{ solicitud.fecha_fin|date:"d/m/Y" }}.
     {% endif %}
 </p>
 {% endif %}
@@ -63,5 +63,5 @@
     {% if es_administrador or solicitud.unidad.estado == 'Disponible' or solicitud.unidad.estado == 'Alquilado' %}
     <a class="btn btn-sm btn-outline-secondary" href="{% url 'inventario:maquinaria_detalle' solicitud.unidad_id %}">Ver maquinaria</a>
     {% endif %}
-    {% if solicitud.presupuesto %}<a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto Â· ${{ solicitud.presupuesto.importe_total_actual|entero_con_comas }}</a>{% endif %}
+    {% if solicitud.presupuesto %}<a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:presupuesto_detalle' solicitud.presupuesto.pk %}">Ver presupuesto · ${{ solicitud.presupuesto.importe_total_actual|entero_con_comas }}</a>{% endif %}
 </div>

@@ -587,6 +587,7 @@ ni se crearon registros en la base de trabajo.
   en `apps/alquileres/templates/alquileres/solicitud_form.html`; la vista
   previa del presupuesto usa
   `apps/ventas/static/ventas/animations/presupuesto.js`.
+  El cliente selecciona el tipo de plan; la cantidad empieza en 1 y puede cambiarse.
 - Se implementó `apps/ventas/` para conservar en cada presupuesto la tarifa del
   plan elegida al solicitar, el importe de renta y el depósito reembolsable.
   El administrador establece manualmente el depósito de cada maquinaria; el
