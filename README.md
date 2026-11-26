@@ -769,6 +769,18 @@ no se transforma automáticamente en un cliente.
 
 ## Comprobar y ejecutar
 
+Para ejecutar el servidor local con `.venv` y los estilos del panel:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/iniciar_local.py
+```
+
+El lanzador activa `DEBUG=True` solo durante esa ejecución y escucha en
+`127.0.0.1:8000`. Esto evita que un valor heredado como `DEBUG=release` desactive
+la entrega de archivos estáticos de `runserver` y deje `/reportes/` sin su
+encabezado y tarjetas. No cambia `.env` ni la configuración de producción.
+Abre <http://127.0.0.1:8000/auth/login/> y, tras iniciar sesión, `/reportes/`.
+
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
