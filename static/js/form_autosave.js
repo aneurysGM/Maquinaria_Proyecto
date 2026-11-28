@@ -4,12 +4,9 @@
     const VERSION = '3';
     const ROOT = 'maquirent:form-draft:';
     const PREFIX = `${ROOT}${VERSION}:`;
-    const TAB_SWITCH_CLEAR_DELAY_MS = 100;
     const SENSITIVE = /password|passwd|passphrase|contrasena|contrase[nñ]a|clave|csrf|xsrf|token|secret|cvv|cvc/;
 
     const formsByKey = new Map();
-    let tabSwitchClearTimer = null;
-    let tabWasHidden = false;
     const scope = document.body.dataset.formAutosaveScope || 'visitor';
     // true = el usuario se está yendo (enlace, envío, logout): no se guarda nada.
     let leaving = false;
@@ -388,22 +385,6 @@
         }
         // Se borran los formularios nuevos; los de edición restauran los valores iniciales.
         resetCleanForms();
-    });
-
-    // El breve retraso evita borrar durante el ocultamiento momentáneo de un F5.
-    document.addEventListener('visibilitychange', () => {
-        clearTimeout(tabSwitchClearTimer);
-        if (leaving) return;
-        if (document.visibilityState === 'visible') {
-            if (tabWasHidden) resetForms();
-            tabWasHidden = false;
-            return;
-        }
-
-        tabWasHidden = true;
-        tabSwitchClearTimer = setTimeout(() => {
-            if (document.visibilityState === 'hidden') resetForms();
-        }, TAB_SWITCH_CLEAR_DELAY_MS);
     });
 
     // Para envíos por AJAX o logout hecho con JavaScript: window.FormAutosave.clear()

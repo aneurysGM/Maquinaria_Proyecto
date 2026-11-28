@@ -1,14 +1,18 @@
-from datetime import date
+from datetime import date, datetime
 
 from django.core.exceptions import ValidationError
 from django.template import Context, Template
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
+from apps.alquileres.models import SolicitudAlquiler
 from apps.cuentas.models import RolUsuario, UsuarioPersonalizado
 from apps.form_utils import GroupedIntegerField
+from apps.mantenimiento.models import Mantenimiento
 from apps.marca.models import Marca
 from apps.ventas.forms import PagoAlquilerForm
+from apps.ventas.models import PagoAlquiler, PresupuestoAlquiler, ReembolsoDeposito
 from .forms import MaquinariaIntegralForm
 from .models import Categoria, Maquinaria, Unidad
 
@@ -197,3 +201,131 @@ class DepositoManualInventarioTests(TestCase):
         self.assertContains(editar, 'data-autosave-reset-initial')
         for texto in ('EDIT-01', 'Equipo registrado', 'EDIT-SERIE', 'Almacén', '12345', '2024-02-15'):
             self.assertContains(editar, texto)
+
+
+class HistorialMaquinariaTests(TestCase):
+    def setUp(self):
+        self.admin = UsuarioPersonalizado.objects.create_user(
+            email='historial-admin@example.com', password='pass',
+            rol=RolUsuario.ADMINISTRADOR,
+        )
+        self.tecnico = UsuarioPersonalizado.objects.create_user(
+            email='historial-tecnico@example.com', password='pass',
+            rol=RolUsuario.TECNICO, first_name='Ana', last_name='Técnica',
+            especialidad='Hidráulica',
+        )
+        self.cliente_historial = UsuarioPersonalizado.objects.create_user(
+            email='cliente-historial@example.com', password='pass',
+            rol=RolUsuario.CLIENTE, first_name='Mario', last_name='Cliente',
+        )
+        self.otro_cliente = UsuarioPersonalizado.objects.create_user(
+            email='otro-cliente@example.com', password='pass',
+            rol=RolUsuario.CLIENTE,
+        )
+        categoria = Categoria.objects.create(nombre='Historial')
+        maquinaria = Maquinaria.objects.create(
+            categoria=categoria, codigo='HIST-01', nombre='Excavadora histórica',
+            tarifa_diaria=100, tarifa_semanal=500, tarifa_mensual=1500,
+        )
+        self.unidad = Unidad.objects.create(
+            maquinaria=maquinaria, numero_serie='HIST-SERIE',
+            ubicacion_actual='Almacén',
+        )
+        self.url = reverse('inventario:maquinaria_detalle', args=[self.unidad.pk])
+
+        salida = timezone.make_aware(datetime(2026, 1, 10, 8))
+        retorno = timezone.make_aware(datetime(2026, 1, 15, 16))
+        self.solicitud = SolicitudAlquiler.objects.create(
+            cliente=self.cliente_historial,
+            unidad=self.unidad,
+            fecha_inicio=date(2026, 1, 10),
+            fecha_fin=date(2026, 1, 14),
+            plan='diario',
+            cantidad=5,
+            estado='Aprobada',
+            fecha_revision=timezone.now(),
+            revisado_por=self.admin,
+            fecha_salida=salida,
+            entregado_por=self.admin,
+            fecha_retorno=retorno,
+            recibido_por=self.admin,
+            dias_atraso=1,
+        )
+        presupuesto = PresupuestoAlquiler.objects.create(
+            solicitud=self.solicitud,
+            importe_renta=100,
+            deposito_garantia=20,
+            mora_total=10,
+            tarifa_periodo=100,
+        )
+        for concepto, monto in (('renta', 100), ('deposito', 20), ('mora', 10)):
+            PagoAlquiler.objects.create(
+                presupuesto=presupuesto,
+                concepto=concepto,
+                monto=monto,
+                metodo='efectivo',
+                registrado_por=self.admin,
+            )
+        ReembolsoDeposito.objects.create(
+            presupuesto=presupuesto,
+            monto=5,
+            metodo='efectivo',
+            registrado_por=self.admin,
+        )
+        Mantenimiento.objects.create(
+            unidad=self.unidad,
+            fecha=date(2026, 2, 5),
+            tipo='Correctivo',
+            descripcion='Cambio de manguera hidráulica',
+            estado='finalizada',
+            fecha_fin=date(2026, 2, 5),
+            costo=300,
+            tecnico=self.tecnico,
+            registrado_por=self.admin,
+        )
+        Mantenimiento.objects.create(
+            unidad=self.unidad,
+            fecha=date(2026, 3, 2),
+            tipo='Preventivo',
+            descripcion='Revisión general',
+            estado='pendiente',
+            costo=200,
+            tecnico=self.tecnico,
+            registrado_por=self.admin,
+        )
+
+    def test_admin_ve_historial_financiero_y_mantenimientos_centralizados(self):
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertContains(respuesta, 'Historial de solicitudes y alquileres')
+        self.assertContains(respuesta, 'Mario Cliente')
+        self.assertContains(respuesta, '10/01/2026 - 14/01/2026')
+        self.assertContains(respuesta, 'RD$125')
+        self.assertContains(respuesta, 'Recaudación neta acumulada')
+        self.assertContains(respuesta, 'Historial de mantenimiento y reparaciones')
+        self.assertContains(respuesta, 'Ana Técnica')
+        self.assertContains(respuesta, 'Cambio de manguera hidráulica')
+        self.assertContains(respuesta, 'RD$500')
+        self.assertEqual(respuesta.context['total_recaudado_maquinaria'], 125)
+        self.assertEqual(respuesta.context['total_invertido_mantenimiento'], 500)
+
+    def test_historial_financiero_no_se_expone_a_clientes(self):
+        self.client.force_login(self.otro_cliente)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertNotContains(respuesta, 'Historial de solicitudes y alquileres')
+        self.assertNotContains(respuesta, self.cliente_historial.email)
+        self.assertNotContains(respuesta, 'Historial de mantenimiento y reparaciones')
+
+    def test_tecnico_ve_mantenimiento_sin_datos_financieros_de_clientes(self):
+        self.client.force_login(self.tecnico)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertNotContains(respuesta, 'Historial de solicitudes y alquileres')
+        self.assertNotContains(respuesta, self.cliente_historial.email)
+        self.assertContains(respuesta, 'Historial de mantenimiento y reparaciones')
+        self.assertContains(respuesta, 'RD$500')

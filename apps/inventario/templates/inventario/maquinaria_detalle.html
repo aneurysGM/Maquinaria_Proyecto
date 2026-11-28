@@ -200,6 +200,159 @@
         </div>
     </div>
 
+    {% if es_administrador %}
+    <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="rental-history-title">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1" id="rental-history-title">
+                        <i class="bi bi-calendar2-week text-primary me-2" aria-hidden="true"></i>
+                        Historial de solicitudes y alquileres
+                    </h2>
+                    <p class="text-secondary mb-0">Clientes, períodos y movimientos económicos de esta unidad.</p>
+                </div>
+                <div class="text-end">
+                    <div class="small text-secondary">Recaudación neta acumulada</div>
+                    <div class="fs-4 fw-bold text-success">RD${{ total_recaudado_maquinaria|entero_con_comas }}</div>
+                </div>
+            </div>
+
+            {% if historial_solicitudes %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="py-3">Solicitud</th>
+                            <th class="py-3">Cliente</th>
+                            <th class="py-3">Período</th>
+                            <th class="py-3">Estado</th>
+                            <th class="py-3 text-end">Monto total</th>
+                            <th class="py-3 text-end">Mora</th>
+                            <th class="py-3 text-end">Pagado</th>
+                            <th class="py-3 text-end">Reembolsado</th>
+                            <th class="py-3 text-end">Neto recaudado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for solicitud in historial_solicitudes %}
+                        <tr>
+                            <td>
+                                <a class="fw-semibold text-decoration-none" href="{% url 'alquileres:solicitud_detalle' solicitud.pk %}">
+                                    #{{ solicitud.pk }}
+                                </a>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ solicitud.cliente.get_full_name|default:solicitud.cliente.email }}
+                                </div>
+                                {% if solicitud.cliente.get_full_name %}
+                                <div class="small text-secondary">{{ solicitud.cliente.email }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ solicitud.fecha_inicio|date:"d/m/Y" }} - {{ solicitud.fecha_fin|date:"d/m/Y" }}</div>
+                                {% if solicitud.fecha_salida %}
+                                <div class="small text-secondary">
+                                    Entrega {{ solicitud.fecha_salida|date:"d/m/Y" }}{% if solicitud.fecha_retorno %} · Retorno {{ solicitud.fecha_retorno|date:"d/m/Y" }}{% else %} · En uso{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if solicitud.estado == 'Aprobada' %}text-bg-success{% elif solicitud.estado == 'Pendiente' %}text-bg-warning{% elif solicitud.estado == 'Rechazada' or solicitud.estado == 'Cancelada' %}text-bg-danger{% else %}text-bg-secondary{% endif %}">
+                                    {{ solicitud.get_estado_display }}
+                                </span>
+                            </td>
+                            <td class="text-end fw-semibold">RD${{ solicitud.total_contratado|entero_con_comas }}</td>
+                            <td class="text-end {% if solicitud.mora_mostrar %}text-danger fw-semibold{% endif %}">RD${{ solicitud.mora_mostrar|entero_con_comas }}</td>
+                            <td class="text-end">RD${{ solicitud.total_pagado|entero_con_comas }}</td>
+                            <td class="text-end">RD${{ solicitud.total_reembolsado|entero_con_comas }}</td>
+                            <td class="text-end fw-bold text-success">RD${{ solicitud.recaudado_neto|entero_con_comas }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-secondary mb-0">Esta unidad todavía no tiene solicitudes de alquiler registradas.</p>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if es_administrador or es_tecnico %}
+    <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="maintenance-history-title">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1" id="maintenance-history-title">
+                        <i class="bi bi-tools text-warning me-2" aria-hidden="true"></i>
+                        Historial de mantenimiento y reparaciones
+                    </h2>
+                    <p class="text-secondary mb-0">Intervenciones realizadas, técnicos responsables y costo invertido.</p>
+                </div>
+                <div class="text-end">
+                    <div class="small text-secondary">Total invertido</div>
+                    <div class="fs-4 fw-bold text-dark">RD${{ total_invertido_mantenimiento|entero_con_comas }}</div>
+                </div>
+            </div>
+
+            {% if historial_mantenimientos %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="py-3">Fecha</th>
+                            <th class="py-3">Intervención</th>
+                            <th class="py-3">Estado</th>
+                            <th class="py-3">Técnico</th>
+                            <th class="py-3 text-end">Costo</th>
+                            <th class="py-3 text-end">Orden</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mantenimiento in historial_mantenimientos %}
+                        <tr>
+                            <td class="fw-semibold">{{ mantenimiento.fecha|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge text-bg-light border mb-1">{{ mantenimiento.get_tipo_display }}</span>
+                                <div>{{ mantenimiento.descripcion|default:"Sin descripción" }}</div>
+                                <div class="small text-secondary">{{ mantenimiento.horas_mano_obra_total }} h de mano de obra</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if mantenimiento.estado == 'finalizada' %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                                    {{ mantenimiento.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if mantenimiento.tecnico %}
+                                <div class="fw-semibold">
+                                    {{ mantenimiento.tecnico.get_full_name|default:mantenimiento.tecnico.email }}
+                                </div>
+                                {% if mantenimiento.tecnico.especialidad %}
+                                <div class="small text-secondary">{{ mantenimiento.tecnico.especialidad }}</div>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-secondary">No asignado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold">RD${{ mantenimiento.costo|entero_con_comas }}</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'ordenes_trabajo:detalle' mantenimiento.pk %}" aria-label="Ver orden de trabajo {{ mantenimiento.pk }}">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-secondary mb-0">Esta unidad todavía no tiene mantenimientos o reparaciones registrados.</p>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
     {# ----------- Comentarios (ancho completo) ----------- #}
     <section class="card border-0 shadow-sm rounded-4 mt-4" aria-labelledby="machine-comments-title">
         <div class="card-body p-4">

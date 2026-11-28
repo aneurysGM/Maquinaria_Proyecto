@@ -381,6 +381,57 @@ class MaquinariaDetalleView(DetailView):
                 usuario.es_cliente and not usuario.es_administrador
             ))
         )
+        if usuario.is_authenticated and usuario.es_administrador:
+            solicitudes = list(self.object.solicitudes_alquiler.select_related(
+                'cliente', 'presupuesto',
+            ).prefetch_related(
+                'presupuesto__pagos',
+                'presupuesto__reembolsos_deposito',
+                'presupuesto__reembolsos_renta',
+            ).order_by('-fecha_inicio', '-id'))
+
+            for solicitud in solicitudes:
+                solicitud.total_contratado = 0
+                solicitud.mora_mostrar = 0
+                solicitud.total_pagado = 0
+                solicitud.total_reembolsado = 0
+                solicitud.recaudado_neto = 0
+                presupuesto = getattr(solicitud, 'presupuesto', None)
+                if presupuesto is None:
+                    continue
+
+                solicitud.total_contratado = presupuesto.importe_total_actual
+                solicitud.mora_mostrar = presupuesto.mora_aplicable
+                solicitud.total_pagado = sum(
+                    pago.monto for pago in presupuesto.pagos.all()
+                )
+                solicitud.total_reembolsado = sum(
+                    reembolso.monto
+                    for reembolso in presupuesto.reembolsos_deposito.all()
+                ) + sum(
+                    reembolso.monto
+                    for reembolso in presupuesto.reembolsos_renta.all()
+                )
+                solicitud.recaudado_neto = (
+                    solicitud.total_pagado - solicitud.total_reembolsado
+                )
+
+            context['historial_solicitudes'] = solicitudes
+            context['total_recaudado_maquinaria'] = sum(
+                solicitud.recaudado_neto for solicitud in solicitudes
+            )
+
+        if usuario.is_authenticated and (usuario.es_administrador or usuario.es_tecnico):
+            mantenimientos = self.object.mantenimientos.select_related(
+                'tecnico', 'registrado_por',
+            ).prefetch_related(
+                'registros_trabajo__tecnico',
+            ).order_by('-fecha', '-id')
+            context['historial_mantenimientos'] = list(mantenimientos)
+            context['total_invertido_mantenimiento'] = sum(
+                mantenimiento.costo
+                for mantenimiento in context['historial_mantenimientos']
+            )
         return context
 
     def post(self, request, *args, **kwargs):

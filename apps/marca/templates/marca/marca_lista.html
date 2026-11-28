@@ -36,16 +36,21 @@
                         <td class="ps-4 fw-semibold">{{ marca.nombre }}</td>
                         <td class="text-center">{{ marca.cantidad_maquinarias }}</td>
                         <td class="text-end pe-4">
-                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'marca:marca_editar' marca.pk %}">
-                                Editar
+                            <a class="btn btn-sm btn-light border" href="{% url 'marca:marca_editar' marca.pk %}"
+                                title="Editar marca" aria-label="Editar marca {{ marca.nombre }}">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
                             </a>
                             {% if marca.cantidad_maquinarias %}
-                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled
-                                    title="No se puede borrar una marca asignada a maquinaria">
-                                En uso
+                            <button class="btn btn-sm btn-outline-danger" type="button" disabled
+                                    title="No se puede borrar una marca asignada a maquinaria"
+                                    aria-label="No se puede eliminar la marca {{ marca.nombre }} porque está en uso">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
                             </button>
                             {% else %}
-                            <a class="btn btn-sm btn-outline-danger" href="{% url 'marca:marca_eliminar' marca.pk %}">Borrar</a>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'marca:marca_eliminar' marca.pk %}"
+                                title="Eliminar marca" aria-label="Eliminar marca {{ marca.nombre }}">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
+                            </a>
                             {% endif %}
                         </td>
                     </tr>
